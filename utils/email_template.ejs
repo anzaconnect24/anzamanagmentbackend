@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anza Marketplace</title>
+    <style>
+        body{
+            max-width: 900px;
+            background-color: #f8f9fa;
+        }
+        .email-content {
+            max-width: 800px;
+        }
+        .header {
+            background-color: #ffffff;
+            padding: 10px;
+            text-align: center;
+        }
+        .product-grid {
+            background-color: #ffffff;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .product-card {
+            width: calc(50% - 20px);
+            margin-bottom: 20px;
+        }
+        .footer {
+            background-color: #ffffff;
+            padding: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-content">
+        <div class="header">
+            <div class="row ">
+                <img src="https://testingwebprojects.com/images/home/Shule-Yetu-%E2%80%93-52.png" alt="..." width="70px" height="30px">
+                <h2>Anza Marketplace</h2>
+            </div>
+        </div>
+        <hr style="margin-left: 10%;margin-right: 10%;">
+        <!-- <div class="product-grid"> -->
+            <div class="row">
+                <p style="padding-left:10%;padding-right:10%;">
+                    <%- message %>
+                </p>
+            </div>
+            <% if(status != 'customer_promotion' && status != 'seller_promotion' ){%>
+                <div class="row">
+                    <p style="padding-left:10%;padding-right:10%;">
+                        Best regards,<br>
+                        Anza Marketplace
+                    </p>
+                </div>
+            <% }%>
+        <!-- </div> -->
+        <hr style="margin-left: 10%;margin-right: 10%;">
+        <div class="footer">
+            <p>Thank you for shopping with us!</p>
+        </div>
+    </div>
+</body>
+</html>

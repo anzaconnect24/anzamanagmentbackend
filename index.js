@@ -1,7 +1,11 @@
 const express = require('express')
 const bodyParser = require("body-parser");
 
-
+const UserRoutes =  require("./modules/user/user.routes")
+const RoleRoutes =  require("./modules/role/role.routes")
+const PermissionRoutes =  require("./modules/permission/permission.routes")
+const UserRoleRoutes =  require("./modules/user_role/user_role.routes")
+const UserPermissionRoutes =  require("./modules/user_permission/user_permission.routes")
 
 const cors = require('cors')
 const app = express()
@@ -10,6 +14,11 @@ app.use(express.json());
 app.use(express.static("files"));
 app.use(bodyParser.text({ type: "/" }));
 
+app.use("/user",UserRoutes)
+app.use("/role",RoleRoutes)
+app.use("/permission",PermissionRoutes)
+app.use("/user_role",UserRoleRoutes)
+app.use("/user_permission",UserPermissionRoutes)
 
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")

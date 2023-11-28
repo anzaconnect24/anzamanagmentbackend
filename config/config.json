@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "u290081935_anzamanagement",
+    "password": "Anza@2023",
+    "database": "u290081935_anzamanagement",
+    "host": "srv1004.hstgr.io",
+    "dialect": "mysql"
+  }, 
+  "test": {
+    "username": "u290081935_anzamanagement",
+    "password": "Anza@2023",
+    "database": "u290081935_anzamanagement",
+    "host": "srv1004.hstgr.io",
+    "dialect": "mysql"
+  },
+  "production": {
+    "username": "u290081935_anzamanagement",
+    "password": "Anza@2023",
+    "database": "u290081935_anzamanagement",
+    "host": "srv1004.hstgr.io",
+    "dialect": "mysql"
+  }
+}
