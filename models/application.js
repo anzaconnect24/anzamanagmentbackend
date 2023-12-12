@@ -176,6 +176,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('Phase 1','Phase 2','Phase 3'),
       allowNull:true  
     },
+    status : {
+      type: DataTypes.ENUM('pending','assigned'),
+      defaultValue:'pending'  
+    },
     
 
   }, {

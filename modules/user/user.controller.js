@@ -1,4 +1,4 @@
-const { User,Business,Product } = require("../../models");
+const { User,Business,Product,Role } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
@@ -287,6 +287,39 @@ const loginUser = async (req, res) => {
     }
   }
 
+  const getUsersByRole = async(req,res)=>{
+    try {
+      const uuid = req.params.uuid
+
+      let {page,limit} = req.query
+      page = parseInt(page)
+      limit = parseInt(limit)
+      const offset = (page-1)*limit
+
+      const role = await Role.findOne({
+        where:{
+          uuid
+        }
+      })
+
+      const {count, rows} = await User.findAndCountAll({
+        offset: offset, //ruka ngapi
+        limit: limit, //leta ngapi
+        include:{
+          model:UserRole,
+          required:true,
+          where:{
+            roleId:role.id
+          }
+        }
+      })
+      const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+      successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
+
 
   const getAllCustomers = async(req,res)=>{
     try {
@@ -525,5 +558,6 @@ const getUserDetails = async(req,res)=>{
     getAllSellers,
     getAllAdmins,
     getUserCounts,
-    getMyDetails
+    getMyDetails,
+    getUsersByRole
   }

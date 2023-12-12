@@ -1,38 +1,38 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {ApplicationReview,User,Application} = require("../../models");
+const {BusinessReview,User,Business} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
-const createApplicationReview = async(req,res)=>{
+const createBusinessReview = async(req,res)=>{
     try {
         const {
             name,
             description,
-            application_uuid,
+            business_uuid,
         } = req.body;
         
         const user = req.user
-        const applicationReview = await ApplicationReview.findOne({
+        const BusinessReview = await BusinessReview.findOne({
             where:{
                 userId:user.id
             }
         })
-        if (applicationReview) {
+        if (BusinessReview) {
             res.status(403).json({
             status: false,
-            message: "ApplicationReview already created1!"
+            message: "BusinessReview already created1!"
             });
         }else{
-            const application = await Application.findOne({
+            const business = await Business.findOne({
                 where:{
-                    uuid:application_uuid
+                    uuid:business_uuid
                 }
             })
-            if (application) {
-                const response = await ApplicationReview.create({
+            if (business) {
+                const response = await BusinessReview.create({
                     ...req.body,
                     // name,
                     userId:user.id,
-                    applicationId:application.id,
+                    businessId:business.id,
                     // description,
                 })
                 successResponse(res,response)
@@ -40,7 +40,7 @@ const createApplicationReview = async(req,res)=>{
             } else {
                 res.status(403).json({
                     status: false,
-                    message: "Application not found!"
+                    message: "business not found!"
                 });
             }
         }
@@ -49,15 +49,15 @@ const createApplicationReview = async(req,res)=>{
     }
 }
 
-const getUserApplicationReview = async(req,res)=>{
+const getUserBusinessReview = async(req,res)=>{
     try {
         const user = req.user
-        const response = await ApplicationReview.findOne({
+        const response = await BusinessReview.findOne({
             where:{
                 userId:user.id
             },
             include:{
-                model: Application,
+                model: business,
                 required: true
             }
         })
@@ -67,58 +67,58 @@ const getUserApplicationReview = async(req,res)=>{
     }
 }
 
-const updateApplicationReview = async(req,res)=>{
+const updateBusinessReview = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const ApplicationReview = await ApplicationReview.findOne({
+        const BusinessReview = await BusinessReview.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:ApplicationReview.userId}
+            where:{id:BusinessReview.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await ApplicationReview.update(req.body)
+        const response = await BusinessReview.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deleteApplicationReview = async(req,res)=>{
+const deleteBusinessReview = async(req,res)=>{
     try {
         let {
             name
         } = req.body;
         const uuid = req.params.uuid
-        const ApplicationReview = await ApplicationReview.findOne({
+        const BusinessReview = await BusinessReview.findOne({
             where:{
                 uuid
             }
         });
-        const response = await ApplicationReview.destroy()
+        const response = await BusinessReview.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const getAllApplicationReviews = async(req, res) =>{
+const getAllBusinessReviews = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ApplicationReview.findAndCountAll({
+        const {count, rows} = await BusinessReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             distinct:true,
             include:{
-                model: Application,
+                model: business,
                 required: true
             }
 
@@ -132,5 +132,5 @@ const getAllApplicationReviews = async(req, res) =>{
 
 
 module.exports = {
-    createApplicationReview,updateApplicationReview,deleteApplicationReview,getUserApplicationReview,getAllApplicationReviews
+    createBusinessReview,updateBusinessReview,deleteBusinessReview,getUserBusinessReview,getAllBusinessReviews
 }

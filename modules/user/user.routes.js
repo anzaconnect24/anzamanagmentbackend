@@ -3,7 +3,7 @@ const { validateJWT } = require("../../utils/validateJWT")
 const router = Router()
 const upload = require("../../utils/upload");
 const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,  sendPasswordLink, passwordReset, sendMessage, getAllUsers, getUserDetails, 
-    getAllCustomers,getAllSellers,getAllAdmins,getUserCounts,getMyDetails } = require("./user.controller");
+    getAllCustomers,getAllSellers,getAllAdmins,getUserCounts,getMyDetails,getUsersByRole } = require("./user.controller");
 
 router.post("/register", registerUser)
 router.post("/message",validateJWT,sendMessage)
@@ -21,5 +21,6 @@ router.get("/counts",validateJWT,getUserCounts)
 router.get("/me",validateJWT,getMyDetails)
 router.get("/:uuid",validateJWT,getUserDetails)
 router.get("/",validateJWT,getAllUsers)
+router.get("/role/:uuid",validateJWT,getUsersByRole)
 
 module.exports = router

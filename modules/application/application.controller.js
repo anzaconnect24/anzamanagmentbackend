@@ -107,7 +107,30 @@ const getAllApplications = async(req, res) =>{
     }
 }
 
+const getPendingApplication = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Application.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            distinct:true,
+            where:{
+                status:'Pending'
+            }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 
 module.exports = {
-    createApplication,updateApplication,deleteApplication,getUserApplication,getAllApplications
+    createApplication,updateApplication,deleteApplication,
+    getUserApplication,getAllApplications,getPendingApplication
 }

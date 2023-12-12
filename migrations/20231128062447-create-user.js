@@ -25,6 +25,10 @@ module.exports = {
         type: DataTypes.STRING, 
         allowNull:false 
       },
+      company: {
+        type: DataTypes.STRING, 
+        allowNull:false 
+      },
       image: {
         type: DataTypes.STRING, 
         allowNull:true
