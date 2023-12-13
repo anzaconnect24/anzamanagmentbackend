@@ -1,6 +1,6 @@
 const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
-const { createBusinessReview, updateBusinessReview, deleteBusinessReview, getUserBusinessReview, getAllBusinessReviews } = require('./application_review.controller');
+const { createBusinessReview, updateBusinessReview, deleteBusinessReview, getUserBusinessReview, getAllBusinessReviews } = require('./business_review.controller');
 
 const router = Router()
 router.post("/",validateJWT,createBusinessReview)

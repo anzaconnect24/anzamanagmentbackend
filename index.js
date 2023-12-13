@@ -9,6 +9,8 @@ const UserPermissionRoutes =  require("./modules/user_permission/user_permission
 const ApplicationRoutes =  require("./modules/application/application.routes")
 const ApplicationReviewRoutes =  require("./modules/application_review/application_review.routes")
 const AttachmentRoutes =  require("./modules/attachment/attachment.routes")
+const BusinessRoutes =  require("./modules/business/business.routes")
+const BusinessReviewRoutes =  require("./modules/business_review/business_review.routes")
 
 const cors = require('cors')
 const app = express()
@@ -25,6 +27,8 @@ app.use("/user_permission",UserPermissionRoutes)
 app.use("/application",ApplicationRoutes)
 app.use("/application_review",ApplicationReviewRoutes)
 app.use("/attachment",AttachmentRoutes)
+app.use("/business",BusinessRoutes)
+app.use("/business_review",BusinessReviewRoutes)
 
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")
