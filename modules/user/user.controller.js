@@ -138,6 +138,7 @@ const registerUser = async (req, res) => {
         name,
         email,
         phone, 
+        company, 
         password
       } = req.body;
      let role = "customer"
@@ -153,6 +154,7 @@ const registerUser = async (req, res) => {
           name,
           phone,
           email,
+          company,
           password: hashedPassword,
           role
         });  
@@ -265,7 +267,8 @@ const loginUser = async (req, res) => {
       }
     }
   } catch (error) {
-    internalError();
+    // internalError();
+    errorResponse(res,error)
   }
 };
 

@@ -22,7 +22,7 @@ module.exports = {
         allowNull:false
       },
       isReviewed:{
-        type: DataTypes.ENUM(true,false), 
+        type: DataTypes.BOOLEAN, 
         defaultValue:false
       },
       createdAt: {

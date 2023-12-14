@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull:false
       },
       isReviewed:{
-        type: DataTypes.ENUM(true,false), 
+        type: DataTypes.BOOLEAN, 
         defaultValue:false
       },
   }, {
