@@ -407,16 +407,16 @@ const loginUser = async (req, res) => {
             role: "admin"
           }
         })
-        const revenue = await Payment.count('amount')
+        // const revenue = await Payment.count('amount')
 
-        const products = await Product.count({})
+        // const products = await Product.count({})
 
         const applications = await Business.count({
           where:{
             status:"waiting"
           }
         })
-        successResponse(res,{customers:customers, sellers:sellers, admins:admins, revenue: revenue, products:products, applications:applications  })
+        successResponse(res,{customers:customers, sellers:sellers, admins:admins, /*revenue: revenue, products:products,*/ applications:applications  })
     } catch (error) {
         errorResponse(res,error)
     }

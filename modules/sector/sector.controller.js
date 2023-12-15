@@ -31,12 +31,20 @@ const createBusinessSector = async(req,res)=>{
 const getAllBusinessSector = async(req,res)=>{
     try {
         const uuid = req.params.uuid
-        const response = await BusinessSector.findAll({
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await BusinessSector.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
             attributes:{
                 exclude:["id"/*,"uuid","name","createdAt","updatedAt"*/]
             },
         })
-        successResponse(res,response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res,error)
     }

@@ -11,6 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Business.belongsTo(models.User);
+      Business.belongsTo(models.BusinessSector);
+      // Business.hasMany(models.Product, { onDelete: 'cascade'});
     }
   }
   Business.init({
@@ -24,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
      },
     reviewerId:{
       type:DataTypes.INTEGER,
-      allowNull:false
+      allowNull:true
     },
     businessSectorId:{
       type: DataTypes.INTEGER, 

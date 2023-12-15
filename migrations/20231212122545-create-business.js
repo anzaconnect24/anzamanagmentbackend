@@ -19,7 +19,7 @@ module.exports = {
       },
       reviewerId:{
         type:DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
       },
       businessSectorId:{
         type: DataTypes.INTEGER, 

@@ -5,10 +5,15 @@ const { sendEmail } = require("../../utils/send_email");
 const createBusiness = async(req,res)=>{
     try {
         const {
-            name,
-            region,
+            // reviewer_uuid,
+            registration,
+            stage,
+            problem,
+            solution,
+            team,
             business_sector_uuid,
-            description,
+            traction,
+            // status,
         } = req.body;
         
         const user = req.user
@@ -18,11 +23,16 @@ const createBusiness = async(req,res)=>{
             }
         })
         const response = await Business.create({
-            name,
-            region,
+            // reviewerId,
+            registration,
+            stage,
+            problem,
+            solution,
+            team,
             userId:user.id,
             businessSectorId: businessSector.id,
-            description,
+            traction,
+            // status,
         })
         successResponse(res,response)
     } catch (error) {
