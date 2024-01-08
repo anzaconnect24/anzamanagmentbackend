@@ -18,6 +18,7 @@ router.get("/sellers",validateJWT,getAllSellers)
 router.get("/admins",validateJWT,getAllAdmins)
 router.get("/counts",validateJWT,getUserCounts)
 // router.get("/hash",getHash)
+
 router.get("/me",validateJWT,getMyDetails)
 router.get("/:uuid",validateJWT,getUserDetails)
 router.get("/",validateJWT,getAllUsers)

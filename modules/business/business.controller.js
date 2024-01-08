@@ -8,6 +8,9 @@ const createBusiness = async(req,res)=>{
             // reviewer_uuid,
             registration,
             stage,
+            name,
+            email,
+            phone,
             problem,
             solution,
             team,
@@ -26,12 +29,14 @@ const createBusiness = async(req,res)=>{
             // reviewerId,
             registration,
             stage,
+            name,email,phone,
             problem,
             solution,
             team,
-            userId:user.id,
             businessSectorId: businessSector.id,
             traction,
+            userId:user.id,
+           
             // status,
         })
         successResponse(res,response)

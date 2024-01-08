@@ -17,6 +17,18 @@ module.exports = {
         type:DataTypes.INTEGER,
         allowNull:false
       },
+      name:{
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      phone:{
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      email:{
+        type: DataTypes.STRING,
+        allowNull:false
+      },
       reviewerId:{
         type:DataTypes.INTEGER,
         allowNull:true

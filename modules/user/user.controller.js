@@ -137,11 +137,18 @@ const registerUser = async (req, res) => {
       const {
         name,
         email,
-        phone, 
-        company, 
-        password
+        phone,
+        password,
+        role
       } = req.body;
-     let role = "customer"
+      console.log(role)
+      console.log(name)
+      console.log(email)
+      console.log(password)
+      console.log(phone)
+
+
+    
       const user = await User.findOne({ where: { email } });
       if (user) {
         res.status(403).json({
@@ -154,7 +161,6 @@ const registerUser = async (req, res) => {
           name,
           phone,
           email,
-          company,
           password: hashedPassword,
           role
         });  

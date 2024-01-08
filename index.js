@@ -23,6 +23,8 @@ const Promotions =  require("./modules/promotion/promotion.routes")
 const Payments =  require("./modules/payment/payment.routes")
 const Admin =  require("./modules/admin/admin.routes")
 const Seller =  require("./modules/seller/seller.routes")
+// const BusinessSectorRoutes =  require("./modules/business_sector/business_sector.routes")
+
 const Subscription =  require("./modules/subscription/subscription.routes")
 // ********************
 
@@ -42,6 +44,7 @@ app.use("/application",ApplicationRoutes)
 app.use("/application_review",ApplicationReviewRoutes)
 app.use("/attachment",AttachmentRoutes)
 app.use("/business",BusinessRoutes)
+// app.use("/business_sector",BusinessSectorRoutes)
 app.use("/business_review",BusinessReviewRoutes)
 // *************
 app.use("/product",ProductRoutes)
@@ -60,6 +63,6 @@ app.use("/subscription",Subscription)
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")
 })
-app.listen(6000,()=>{
-  console.log("Server started at port 6000")
+app.listen(5000,()=>{
+  console.log("Server started at port 5000")
 })
