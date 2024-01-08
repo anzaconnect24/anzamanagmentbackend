@@ -135,7 +135,6 @@ const getCategories = async(req,res)=>{
 const getAllBusiness = async(req, res) =>{
     try {
         const response = await Business.findAll()
-        res.status(200).json({body:response});
         successResponse(res, response)
     } catch (error) {
         errorResponse(res, error)
