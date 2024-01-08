@@ -17,10 +17,6 @@ module.exports = {
         type:DataTypes.INTEGER,
         allowNull:false
       },
-      reviewerId:{
-        type:DataTypes.INTEGER,
-        allowNull:true
-      },
       businessSectorId:{
         type: DataTypes.INTEGER, 
         allowNull:false  
