@@ -1,6 +1,6 @@
 const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
-const { createBusiness, getCategories, updateBusiness, deleteBusiness, getUserBusiness, getAllBusiness, getSellersApplications, getApprovedBusiness } = require('./business.controller');
+const { createBusiness, getCategories, updateBusiness, deleteBusiness, getUserBusiness, getAllBusiness, getSellersApplications, getApprovedBusiness, getWaitingBusinesses, getApprovedBusinesses, getRejectedBusinesses, findBusiness } = require('./business.controller');
 
 const router = Router()
 router.post("/",validateJWT,createBusiness)

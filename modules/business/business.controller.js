@@ -271,5 +271,5 @@ const getRejectedBusinesses = async(req, res) =>{
 
 
 module.exports = {
-    createBusiness,updateBusiness,getApprovedBusinesses,getRejectedBusinesses, getCategories,findBusiness, deleteBusiness,getUserBusiness,getAllBusiness,getWaitingBusinesses
+    createBusiness,updateBusiness,getApprovedBusinesses,getRejectedBusinesses,getWaitingBusinesses, getCategories,findBusiness, deleteBusiness,getUserBusiness,getAllBusiness,getWaitingBusinesses
 }
