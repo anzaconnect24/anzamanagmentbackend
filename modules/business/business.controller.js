@@ -142,8 +142,70 @@ const getCategories = async(req,res)=>{
 
 const getAllBusiness = async(req, res) =>{
     try {
-        const response = await Business.findAll()
-        successResponse(res, response)
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            distinct:true,
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getApprovedBusiness = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            distinct:true,
+            where:{
+                status: "accepted",
+            },
+            // attributes:{
+            //     exclude: ["BusinessId"],
+            //     include: [
+            //         [
+            //             Sequelize.literal(`(
+            //                 SELECT AVG(rate)
+            //                 FROM Reviews AS review
+            //                 WHERE
+            //                     productId = Product.id
+            //             )`),
+            //             'rating'
+            //         ],
+            //         [
+            //             Sequelize.literal(`(
+            //                 SELECT count(*)
+            //                 FROM Reviews AS review
+            //                 WHERE
+            //                     productId = Product.id
+            //             )`),
+            //             'ratingCount'
+            //         ]
+            //     ],
+            // },
+            // include: {
+            //     model:ProductImage,
+            //     required: true,
+            //     order: [
+            //         ['createdAt', 'ASC']
+            //     ],
+            // }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res, error)
     }
