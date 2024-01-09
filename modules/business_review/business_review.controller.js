@@ -1,6 +1,8 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {BusinessReview,User,Business} = require("../../models");
+const {BusinessReview,User,Business,Sequelize} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const businessreview = require("../../models/businessreview");
+const { where } = require("sequelize");
 
 const createBusinessReview = async(req,res)=>{
     try {
@@ -130,7 +132,69 @@ const getAllBusinessReviews = async(req, res) =>{
     }
 }
 
+const getReviewersStatus = async(req, res) =>{
+    try {
+        const uuid = req.params.uuid
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await User.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            distinct:true,
+            where:{role:"customer"},
+            include:{
+                model: Business,
+                where:{uuid},
+                required: true
+            },
+            include:{
+                model: BusinessReview,
+                required: true
+            },
+            attributes:{
+                // exclude:["BusinessId"],
+                
+                // program: title,type,
+                // programrequirement: name,programid
+                // return program + programrequirement
+                // programapplication: userid,programid,status(wait/reje/acce)
+                // programappliccationdocument: programapplicationid,filelink,filename
+                // programapplicationreview: programapplicationid,status,userid,feedback
+
+                include: [
+                    [
+                            // SELECT userId
+                        Sequelize.literal(`(
+                            SELECT count(*)
+                            FROM BusinessReviews AS businessReview
+                            WHERE
+                                userId = User.id
+                        )`),
+                        'status'
+                    ],
+                    // [
+                    //     Sequelize.literal(`(
+                    //         SELECT count(*)
+                    //         FROM Reviews AS review
+                    //         WHERE
+                    //             productId = Product.id
+                    //     )`),
+                    //     'ratingCount'
+                    // ]
+                ],
+            }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 
 module.exports = {
-    createBusinessReview,updateBusinessReview,deleteBusinessReview,getUserBusinessReview,getAllBusinessReviews
+    createBusinessReview,updateBusinessReview,deleteBusinessReview,getUserBusinessReview,getAllBusinessReviews,getReviewersStatus
 }
