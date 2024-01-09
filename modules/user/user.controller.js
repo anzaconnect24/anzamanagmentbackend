@@ -351,7 +351,19 @@ const loginUser = async (req, res) => {
         errorResponse(res,error)
     }
   }
+  const getReviewers = async(req,res)=>{
+    try {
+        const response = await User.findAll({
+          where:{
+            role: "Reviewer"
+          }
+        })
 
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
   const getAllSellers = async(req,res)=>{
     try {
         let {page,limit} = req.query
@@ -557,6 +569,7 @@ const getUserDetails = async(req,res)=>{
     getHash,
     updateUser,
     deleteUser,
+    getReviewers,
     sendMessage,
     sendPasswordLink,
     passwordReset,

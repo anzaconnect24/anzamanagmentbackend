@@ -3,7 +3,7 @@ const { validateJWT } = require("../../utils/validateJWT")
 const { createBusinessReview, updateBusinessReview, deleteBusinessReview, getUserBusinessReview, getAllBusinessReviews } = require('./business_review.controller');
 
 const router = Router()
-router.post("/",validateJWT,createBusinessReview)
+router.post("/",createBusinessReview)
 router.get('/user',validateJWT,getUserBusinessReview)
 router.get('/',validateJWT,getAllBusinessReviews)
 router.patch('/:uuid',validateJWT,updateBusinessReview)

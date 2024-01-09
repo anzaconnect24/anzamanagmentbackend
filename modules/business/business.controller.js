@@ -62,17 +62,20 @@ const getUserBusiness = async(req,res)=>{
 const updateBusiness = async(req,res)=>{
     try {
         const uuid = req.params.uuid
-        const {status} = req.body
+        // const user = req.user
+        const {status,feedbackMessage} = req.body
         const business = await Business.findOne({
             where:{
                 uuid
             }
         });
-        //find user
-        const user = await User.findOne({
-            where:{id:business.userId}
-        })
-        sendEmail(req, res, user, status)
+    //  if(feedbackMessage){
+    //     const user = await User.findOne({
+    //         where:{id:user.id}
+    //     })
+    //     sendEmail(req, res, user, feedbackMessage)
+    //  }
+        
         const response = await business.update(req.body)
         successResponse(res,response)
     } catch (error) {
@@ -146,7 +149,22 @@ const getAllBusiness = async(req, res) =>{
     }
 }
 
-const getSellersApplications = async(req, res) =>{
+const findBusiness = async(req, res) =>{
+    try {
+        const {uuid}  = req.params
+        const response = await Business.findOne({
+            where:{
+                uuid
+            },
+            include:[User]
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getWaitingBusinesses = async(req, res) =>{
     try {
         const response = await Business.findAll({
             where:{
@@ -160,7 +178,36 @@ const getSellersApplications = async(req, res) =>{
     }
 }
 
+const getApprovedBusinesses = async(req, res) =>{
+    try {
+        const response = await Business.findAll({
+            where:{
+                status:"accepted"
+            },
+            include: [User,BusinessSector]
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getRejectedBusinesses = async(req, res) =>{
+    try {
+        const response = await Business.findAll({
+            where:{
+                status:"rejected"
+            },
+            include: [User,BusinessSector]
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+
 
 module.exports = {
-    createBusiness,updateBusiness,getCategories,deleteBusiness,getUserBusiness,getAllBusiness,getSellersApplications
+    createBusiness,updateBusiness,getApprovedBusinesses,getRejectedBusinesses, getCategories,findBusiness, deleteBusiness,getUserBusiness,getAllBusiness,getWaitingBusinesses
 }

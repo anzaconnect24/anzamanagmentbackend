@@ -5,45 +5,27 @@ const { sendEmail } = require("../../utils/send_email");
 const createBusinessReview = async(req,res)=>{
     try {
         const {
-            name,
-            description,
+            user_uuid,
             business_uuid,
         } = req.body;
         
-        const user = req.user
-        const BusinessReview = await BusinessReview.findOne({
+        const user = await User.findOne({
             where:{
-                userId:user.id
+                uuid:user_uuid
             }
         })
-        if (BusinessReview) {
-            res.status(403).json({
-            status: false,
-            message: "BusinessReview already created1!"
-            });
-        }else{
-            const business = await Business.findOne({
-                where:{
-                    uuid:business_uuid
-                }
-            })
-            if (business) {
-                const response = await BusinessReview.create({
-                    ...req.body,
-                    // name,
-                    userId:user.id,
-                    businessId:business.id,
-                    // description,
-                })
-                successResponse(res,response)
-                
-            } else {
-                res.status(403).json({
-                    status: false,
-                    message: "business not found!"
-                });
+     
+        const business = await Business.findOne({
+            where:{
+               uuid:business_uuid
             }
-        }
+        })
+
+
+      await BusinessReview.create({
+        userId:user.id,
+        businessId:business.id
+      })
     } catch (error) {
         errorResponse(res,error)
     }
