@@ -3,7 +3,7 @@
     "username": "root",
     "password": "",
     "database": "anzamanagement",
-    "host": "127.0.0.1",
+    "host": "localhost",
     "dialect": "mysql"
   },
   "test": {
