@@ -277,10 +277,9 @@ const getReviewersStatus = async(req, res) =>{
                 // exclude:["BusinessId"],
                 include: [
                     [
-                        // SELECT userId
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM ProgramApplicationReviews AS programApplicationReview
+                            FROM ProgramApplications AS ProgramApplication
                             WHERE
                                 userId = User.id
                         )`),
