@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       ProgramApplication.hasMany(models.ProgramApplicationReview, { onDelete: 'cascade'})
       ProgramApplication.hasMany(models.ProgramApplicationDocument, { onDelete: 'cascade'})
+      ProgramApplication.belongsTo(models.User)
+      ProgramApplication.belongsTo(models.Program)
     }
   }
   ProgramApplication.init({

@@ -170,6 +170,10 @@ const getWaitingProgramApplications = async(req, res) =>{
             limit: limit, //leta ngapi
             // distinct:true,
             where:{status:'waiting'},
+            include:[
+                User,
+                Program
+            ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -190,6 +194,10 @@ const getAcceptedProgramApplications = async(req, res) =>{
             limit: limit, //leta ngapi
             // distinct:true,
             where:{status:'accepted'},
+            include:[
+                User,
+                Program
+            ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -210,6 +218,10 @@ const getRejectedProgramApplications = async(req, res) =>{
             limit: limit, //leta ngapi
             // distinct:true,
             where:{status:'rejected'},
+            include:[
+                User,
+                Program
+            ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -224,10 +236,14 @@ const getProgramApplicationDetails = async(req, res) =>{
 
         const response = await ProgramApplication.findOne({
             where:{uuid},
-            include:{
-                model: ProgramRequirement,
-                // required: true,
-            }
+            attributes:{
+                exclude:['userId','programId'],
+            },
+            include:[
+                ProgramApplicationDocument,
+                User,
+                Program
+            ]
         })
         successResponse(res, response)
     } catch (error) {
