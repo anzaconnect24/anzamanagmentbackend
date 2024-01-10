@@ -5,7 +5,7 @@ const { createProgramApplication, updateProgramApplication, deleteProgramApplica
 getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,postProgramApplicationDocument } = require('./program_application.controller');
 
 const router = Router()
-router.post("/",createProgramApplication)
+router.post("/",validateJWT,createProgramApplication)
 router.post("/document/:uuid",upload.single('file'),validateJWT,postProgramApplicationDocument)
 router.get('/user',validateJWT,getUserProgramApplication)
 // business UUID

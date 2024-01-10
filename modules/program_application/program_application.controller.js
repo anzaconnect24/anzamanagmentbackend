@@ -36,12 +36,12 @@ const postProgramApplicationDocument = async (req, res) => {
       fileLink = await getUrl(req);
     }
 
-    const program_application = await User.ProgramApplication({
+    const program_application = await ProgramApplication.findOne({
       where: {
         uuid:program_application_uuid
       }
     });
-    const program_requirement = await User.ProgramRequirement({
+    const program_requirement = await ProgramRequirement.findOne({
       where: {
         uuid:program_requirement_uuid
       }
