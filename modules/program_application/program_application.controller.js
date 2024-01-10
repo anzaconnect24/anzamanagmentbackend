@@ -265,24 +265,16 @@ const getReviewersStatus = async(req, res) =>{
             distinct:true,
             where:{role:"customer"},
             include:{
-                model: Business,
+                model: ProgramApplication,
                 where:{uuid},
                 required: true
             },
-            include:{
-                model: ProgramApplication,
-                // required: true
-            },
+            // include:{
+            //     model: ProgramApplication,
+            //     // required: true
+            // },
             attributes:{
                 // exclude:["BusinessId"],
-
-                // ProgramApplication: title,type,
-                // ProgramRequirement: name,ProgramApplicationid
-                // return ProgramApplication + ProgramRequirement
-                // ProgramApplicationapplication: userid,ProgramApplicationid,status(wait/reje/acce)
-                // ProgramApplicationappliccationdocument: ProgramApplicationapplicationid,filelink,filename
-                // ProgramApplicationapplicationreview: ProgramApplicationapplicationid,status,userid,feedback
-
                 include: [
                     [
                         // SELECT userId
