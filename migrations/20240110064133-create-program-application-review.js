@@ -9,8 +9,25 @@ module.exports = {
         primaryKey: true,
         type: DataTypes.INTEGER
       },
-      name: {
-        type: DataTypes.STRING
+      uuid:{
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4
+      },
+      programApplicationId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      status: {
+        type: DataTypes.ENUM('waiting', 'rejected','accepted'),
+        allowNull:false
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      feedback: {
+        type: DataTypes.STRING,
+        allowNull:false
       },
       createdAt: {
         allowNull: false,

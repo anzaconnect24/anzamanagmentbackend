@@ -2,6 +2,7 @@ const { errorResponse, successResponse } = require("../../utils/responses")
 const {Program,User,Business,Sequelize,ProgramRequirement} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const programrequirement = require("../../models/programrequirement");
+const { where } = require("sequelize");
 
 const createProgram = async(req,res)=>{
     try {
@@ -103,6 +104,71 @@ const getAllPrograms = async(req, res) =>{
     }
 }
 
+const getBfaPrograms = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Program.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            // distinct:true,
+            where:{type:'bfa'},
+            include:{
+                model: ProgramRequirement,
+                // required: true,
+            }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getIraPrograms = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Program.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            // distinct:true,
+            where:{type:'ira'},
+            include:{
+                model: ProgramRequirement,
+                // required: true,
+            }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getProgramDetails = async(req, res) =>{
+    try {
+        const uuid = req.params.uuid
+
+        const response = await Program.findOne({
+            where:{uuid},
+            include:{
+                model: ProgramRequirement,
+                // required: true,
+            }
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 const getReviewersStatus = async(req, res) =>{
     try {
         const uuid = req.params.uuid
@@ -158,5 +224,5 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus
+    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,getBfaPrograms,getIraPrograms,getProgramDetails
 }

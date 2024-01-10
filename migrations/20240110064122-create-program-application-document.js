@@ -9,8 +9,21 @@ module.exports = {
         primaryKey: true,
         type: DataTypes.INTEGER
       },
-      name: {
-        type: DataTypes.STRING
+      uuid:{
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4
+      },
+      programApplicationId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      fileLink: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      fileName: {
+        type: DataTypes.STRING,
+        allowNull:false
       },
       createdAt: {
         allowNull: false,
