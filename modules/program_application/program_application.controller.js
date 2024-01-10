@@ -26,7 +26,7 @@ const createProgramApplication = async(req,res)=>{
 const postProgramApplicationDocument = async (req, res) => {
   try {
     const user = req.user; // Move this line to after getting user object
-    let program_application_uuid = req.params.program_application_uuid;
+    let program_application_uuid = req.params.uuid;
     let fileLink = null;
     let {
       program_requirement_uuid,
