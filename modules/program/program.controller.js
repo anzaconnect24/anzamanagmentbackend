@@ -67,12 +67,27 @@ const deleteProgram = async(req,res)=>{
             name
         } = req.body;
         const uuid = req.params.uuid
-        const Program = await Program.findOne({
+        const program = await program.findOne({
             where:{
                 uuid
             }
         });
         const response = await Program.destroy()
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+
+const deleteProgramRequirement = async(req,res)=>{
+    try {
+        const uuid = req.params.uuid
+        const programRequirement = await ProgramRequirement.findOne({
+            where:{
+                uuid
+            }
+        });
+        const response = await programRequirement.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -224,5 +239,6 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,getBfaPrograms,getIraPrograms,getProgramDetails
+    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,
+    getBfaPrograms,getIraPrograms,getProgramDetails,deleteProgramRequirement
 }

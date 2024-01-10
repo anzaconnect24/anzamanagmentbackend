@@ -14,7 +14,22 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   ProgramApplicationDocument.init({
-    name: DataTypes.STRING
+      uuid:{
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4
+      },
+      programApplicationId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      fileLink: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      fileName: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
   }, {
     sequelize,
     modelName: 'ProgramApplicationDocument',
