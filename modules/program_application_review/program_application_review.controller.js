@@ -1,10 +1,27 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {ProgramApplicationReview,User,Business,Sequelize,ProgramRequirement} = require("../../models");
+const {ProgramApplicationReview,User,Business,Sequelize,ProgramRequirement,ProgramApplication} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const { where } = require("sequelize");
 
 const createProgramApplicationReview = async(req,res)=>{
     try {
-        const response = await ProgramApplicationReview.create({...req.body})
+        let{program_application_id,user_uuid,feedback} = req.body
+        const user = await User.findOne({
+            where:{
+                uuid:user_uuid
+            }
+        })
+        const programApplication = await ProgramApplication.findOne({
+            where:{
+                uuid:program_application_id
+            }
+        })
+
+        const response = await ProgramApplicationReview.create({
+            programApplicationId:programApplication.id,
+            userId:user.id,
+            feedback:feedback,
+        })
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
