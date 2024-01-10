@@ -16,7 +16,6 @@ const createProgramApplicationReview = async(req,res)=>{
                 uuid:program_application_uuid
             }
         })
-        res.status(200).json({"user":user,"prog":programApplication})
 
         const response = await ProgramApplicationReview.create({
             programApplicationId:programApplication.id,
@@ -113,10 +112,10 @@ const getAllProgramApplicationReviews = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            include:{
-                model: ProgramRequirement,
-                // required: true,
-            }
+            // include:{
+            //     model: ProgramRequirement,
+            //     // required: true,
+            // }
 
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
