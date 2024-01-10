@@ -1,10 +1,10 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {BusinessReview,User,Business,Sequelize} = require("../../models");
+const {Program,User,Business,Sequelize} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
-const businessreview = require("../../models/businessreview");
+const Program = require("../../models/program");
 const { where } = require("sequelize");
 
-const createBusinessReview = async(req,res)=>{
+const createProgram = async(req,res)=>{
     try {
         const {
             user_uuid,
@@ -24,7 +24,7 @@ const createBusinessReview = async(req,res)=>{
         })
 
 
-      await BusinessReview.create({
+      await Program.create({
         userId:user.id,
         businessId:business.id
       })
@@ -33,10 +33,10 @@ const createBusinessReview = async(req,res)=>{
     }
 }
 
-const getUserBusinessReview = async(req,res)=>{
+const getUserProgram = async(req,res)=>{
     try {
         const user = req.user
-        const response = await BusinessReview.findOne({
+        const response = await Program.findOne({
             where:{
                 userId:user.id
             },
@@ -51,53 +51,53 @@ const getUserBusinessReview = async(req,res)=>{
     }
 }
 
-const updateBusinessReview = async(req,res)=>{
+const updateProgram = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const BusinessReview = await BusinessReview.findOne({
+        const Program = await Program.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:BusinessReview.userId}
+            where:{id:Program.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await BusinessReview.update(req.body)
+        const response = await Program.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deleteBusinessReview = async(req,res)=>{
+const deleteProgram = async(req,res)=>{
     try {
         let {
             name
         } = req.body;
         const uuid = req.params.uuid
-        const BusinessReview = await BusinessReview.findOne({
+        const Program = await Program.findOne({
             where:{
                 uuid
             }
         });
-        const response = await BusinessReview.destroy()
+        const response = await Program.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const getAllBusinessReviews = async(req, res) =>{
+const getAllPrograms = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await BusinessReview.findAndCountAll({
+        const {count, rows} = await Program.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             distinct:true,
@@ -133,7 +133,7 @@ const getReviewersStatus = async(req, res) =>{
                 required: true
             },
             include:{
-                model: BusinessReview,
+                model: Program,
                 // required: true
             },
             attributes:{
@@ -151,7 +151,7 @@ const getReviewersStatus = async(req, res) =>{
                         // SELECT userId
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM BusinessReviews AS businessReview
+                            FROM Programs AS Program
                             WHERE
                                 userId = User.id
                         )`),
@@ -169,5 +169,5 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createBusinessReview,updateBusinessReview,deleteBusinessReview,getUserBusinessReview,getAllBusinessReviews,getReviewersStatus
+    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus
 }
