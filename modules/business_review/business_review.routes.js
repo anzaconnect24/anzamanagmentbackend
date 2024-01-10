@@ -7,9 +7,9 @@ router.post("/",createBusinessReview)
 router.get('/user',validateJWT,getUserBusinessReview)
 // business UUID
 // ret reviewers,status()
-router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
+router.get('/reviewers/:uuid',getReviewersStatus)
 router.get('/',validateJWT,getAllBusinessReviews)
 router.patch('/:uuid',validateJWT,updateBusinessReview)
-router.delete('/:uuid',validateJWT,deleteBusinessReview)
+router.delete('/:uuid',deleteBusinessReview)
 
 module.exports = router

@@ -74,16 +74,13 @@ const updateBusinessReview = async(req,res)=>{
 
 const deleteBusinessReview = async(req,res)=>{
     try {
-        let {
-            name
-        } = req.body;
-        const uuid = req.params.uuid
-        const BusinessReview = await BusinessReview.findOne({
+        const {uuid} = req.params
+        const businessReview = await BusinessReview.findOne({
             where:{
                 uuid
             }
         });
-        const response = await BusinessReview.destroy()
+        const response = await businessReview.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -126,29 +123,18 @@ const getReviewersStatus = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             distinct:true,
-            where:{role:"customer"},
+            where:{role:"Reviewer"},
             include:{
                 model: Business,
                 where:{uuid},
                 required: true
             },
             include:{
-                model: BusinessReview,
-                required: true
+                model: BusinessReview
             },
             attributes:{
-                // exclude:["BusinessId"],
-                
-                // program: title,type,
-                // programrequirement: name,programid
-                // return program + programrequirement
-                // programapplication: userid,programid,status(wait/reje/acce)
-                // programappliccationdocument: programapplicationid,filelink,filename
-                // programapplicationreview: programapplicationid,status,userid,feedback
-
                 include: [
                     [
-                            // SELECT userId
                         Sequelize.literal(`(
                             SELECT count(*)
                             FROM BusinessReviews AS businessReview
@@ -157,15 +143,6 @@ const getReviewersStatus = async(req, res) =>{
                         )`),
                         'status'
                     ],
-                    // [
-                    //     Sequelize.literal(`(
-                    //         SELECT count(*)
-                    //         FROM Reviews AS review
-                    //         WHERE
-                    //             productId = Product.id
-                    //     )`),
-                    //     'ratingCount'
-                    // ]
                 ],
             }
         })
