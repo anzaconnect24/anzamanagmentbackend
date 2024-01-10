@@ -1,7 +1,7 @@
 const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
 const { createProgramApplicationReview, updateProgramApplicationReview, deleteProgramApplicationReview, getUserProgramApplicationReview, getAllProgramApplicationReviews, getReviewersStatus,
-getBfaProgramApplicationReviews,getIraProgramApplicationReviews,getProgramApplicationReviewDetails,deleteProgramApplicationReviewRequirement } = require('./ProgramApplicationReview.controller');
+getBfaProgramApplicationReviews,getIraProgramApplicationReviews,getProgramApplicationReviewDetails } = require('./program_application_review.controller');
 
 const router = Router()
 router.post("/",createProgramApplicationReview)
@@ -15,6 +15,6 @@ router.get('/ira',validateJWT,getIraProgramApplicationReviews)
 router.get('/:uuid',validateJWT,getProgramApplicationReviewDetails)
 router.patch('/:uuid',validateJWT,updateProgramApplicationReview)
 router.delete('/:uuid',validateJWT,deleteProgramApplicationReview)
-router.delete('ProgramApplicationReview_requirement/:uuid',validateJWT,deleteProgramApplicationReviewRequirement)
+// router.delete('ProgramApplicationReview_requirement/:uuid',validateJWT,deleteProgramApplicationReviewRequirement)
 
 module.exports = router

@@ -4,7 +4,7 @@ const { createProgram, updateProgram, deleteProgram, getUserProgram, getAllProgr
 getBfaPrograms,getIraPrograms,getProgramDetails,deleteProgramRequirement } = require('./program.controller');
 
 const router = Router()
-router.post("/",createProgram)
+router.post("/",validateJWT,createProgram)
 router.get('/user',validateJWT,getUserProgram)
 // business UUID
 // ret reviewers,status()

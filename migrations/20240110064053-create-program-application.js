@@ -23,6 +23,7 @@ module.exports = {
       },
       status: {
         type: DataTypes.ENUM('waiting', 'rejected','accepted'),
+        defaultValue: 'waiting',
         allowNull:false
       },
       createdAt: {

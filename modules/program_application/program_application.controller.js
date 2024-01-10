@@ -1,15 +1,66 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {ProgramApplication,User,Business,Sequelize,ProgramRequirement} = require("../../models");
+const getUrl = require("../../utils/cloudinary_upload");
+const {ProgramApplication,User,Business,Sequelize,ProgramRequirement,Program} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const { where } = require("sequelize");
 
 const createProgramApplication = async(req,res)=>{
     try {
-        const response = await ProgramApplication.create({...req.body})
+        let {program_uuid} = req.body
+        const user = req.user
+        const program = await Program.findOne({
+            where:{uuid:program_uuid}
+        })
+
+        const response = await ProgramApplication.create({
+            userId:user.id,
+            programId:program.id
+        })
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
+
+
+const postProgramApplicationDocument = async (req, res) => {
+  try {
+    const user = req.user; // Move this line to after getting user object
+    let program_application_uuid = req.params.program_application_uuid;
+    let fileLink = null;
+    let {
+      program_requirement_uuid,
+    } = req.body;
+   
+    if (req.file) {
+      fileLink = await getUrl(req);
+    }
+
+    const program_application = await User.ProgramApplication({
+      where: {
+        uuid:program_application_uuid
+      }
+    });
+    const program_requirement = await User.ProgramRequirement({
+      where: {
+        uuid:program_requirement_uuid
+      }
+    });
+
+    const response = await ProgramApplicationDocument.create({
+        programRequirementId:program_requirement.id,
+        fileLink:fileLink,
+        fileName:program_requirement.name,
+        programApplicationId:program_application.id,
+    });
+
+    successResponse(res, response);
+  } catch (error) {
+    console.log(error);
+    errorResponse(res, error);
+  }
+};
+
 
 const getUserProgramApplication = async(req,res)=>{
     try {
@@ -229,5 +280,5 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createProgramApplication,updateProgramApplication,deleteProgramApplication,getUserProgramApplication,getAllProgramApplications,getReviewersStatus,
-    getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,deleteProgramRequirement
+    getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,deleteProgramRequirement,postProgramApplicationDocument
 }

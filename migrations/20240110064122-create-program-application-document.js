@@ -17,6 +17,10 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull:false
       },
+      programRequirementId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
       fileLink: {
         type: DataTypes.STRING,
         allowNull:false

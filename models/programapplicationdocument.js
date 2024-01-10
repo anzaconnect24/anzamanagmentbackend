@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      ProgramApplicationDocument.hasOne(models.ProgramRequirement)
     }
   }
   ProgramApplicationDocument.init({
@@ -19,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.UUIDV4
       },
       programApplicationId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      programRequirementId: {
         type: DataTypes.INTEGER,
         allowNull:false
       },
