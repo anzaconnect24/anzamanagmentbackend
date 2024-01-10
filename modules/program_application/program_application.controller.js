@@ -11,7 +11,6 @@ const createProgramApplication = async(req,res)=>{
         const program = await Program.findOne({
             where:{uuid:program_uuid}
         })
-
         const response = await ProgramApplication.create({
             userId:user.id,
             programId:program.id
@@ -146,10 +145,10 @@ const getAllProgramApplications = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            include:{
-                model: ProgramRequirement,
-                // required: true,
-            }
+            // include:{
+            //     model: ProgramRequirement,
+            //     // required: true,
+            // }
 
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
