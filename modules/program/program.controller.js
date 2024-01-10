@@ -1,33 +1,21 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {Program,User,Business,Sequelize} = require("../../models");
+const {Program,User,Business,Sequelize,ProgramRequirement} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
-const Program = require("../../models/program");
-const { where } = require("sequelize");
+const programrequirement = require("../../models/programrequirement");
 
 const createProgram = async(req,res)=>{
     try {
-        const {
-            user_uuid,
-            business_uuid,
-        } = req.body;
-        
-        const user = await User.findOne({
-            where:{
-                uuid:user_uuid
+        const {title,type,requirements} = req.body
+    // res.status(200).json({"body":type})
+        var response = await Program.create({title:title,type:type})
+        let programrequirements = requirements.map((item)=>{
+            return { 
+                name:item,
+                programId:response.id
             }
         })
-     
-        const business = await Business.findOne({
-            where:{
-               uuid:business_uuid
-            }
-        })
-
-
-      await Program.create({
-        userId:user.id,
-        businessId:business.id
-      })
+        response = await ProgramRequirement.bulkCreate(programrequirements)            
+        successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
@@ -91,6 +79,7 @@ const deleteProgram = async(req,res)=>{
 }
 
 const getAllPrograms = async(req, res) =>{
+    // res.status(200).json({"k":"v"});
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -100,10 +89,10 @@ const getAllPrograms = async(req, res) =>{
         const {count, rows} = await Program.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            distinct:true,
+            // distinct:true,
             include:{
-                model: business,
-                required: true
+                model: ProgramRequirement,
+                // required: true,
             }
 
         })

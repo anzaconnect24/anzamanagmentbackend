@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Program.hasMany(models.ProgramRequirement)
     }
   }
   Program.init({
