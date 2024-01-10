@@ -1,20 +1,20 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {ProgramApplicationReview,User,Business,Sequelize,ProgramRequirement} = require("../../models");
+const {ProgramApplication,User,Business,Sequelize,ProgramRequirement} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
-const createProgramApplicationReview = async(req,res)=>{
+const createProgramApplication = async(req,res)=>{
     try {
-        const response = await ProgramApplicationReview.create({...req.body})
+        const response = await ProgramApplication.create({...req.body})
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const getUserProgramApplicationReview = async(req,res)=>{
+const getUserProgramApplication = async(req,res)=>{
     try {
         const user = req.user
-        const response = await ProgramApplicationReview.findOne({
+        const response = await ProgramApplication.findOne({
             where:{
                 userId:user.id
             },
@@ -29,39 +29,39 @@ const getUserProgramApplicationReview = async(req,res)=>{
     }
 }
 
-const updateProgramApplicationReview = async(req,res)=>{
+const updateProgramApplication = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const ProgramApplicationReview = await ProgramApplicationReview.findOne({
+        const ProgramApplication = await ProgramApplication.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:ProgramApplicationReview.userId}
+            where:{id:ProgramApplication.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await ProgramApplicationReview.update(req.body)
+        const response = await ProgramApplication.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deleteProgramApplicationReview = async(req,res)=>{
+const deleteProgramApplication = async(req,res)=>{
     try {
         let {
             name
         } = req.body;
         const uuid = req.params.uuid
-        const ProgramApplicationReview = await ProgramApplicationReview.findOne({
+        const ProgramApplication = await ProgramApplication.findOne({
             where:{
                 uuid
             }
         });
-        const response = await ProgramApplicationReview.destroy()
+        const response = await ProgramApplication.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -83,7 +83,7 @@ const deleteProgramRequirement = async(req,res)=>{
     }
 }
 
-const getAllProgramApplicationReviews = async(req, res) =>{
+const getAllProgramApplications = async(req, res) =>{
     // res.status(200).json({"k":"v"});
     try {
         let {page,limit} = req.query
@@ -91,7 +91,7 @@ const getAllProgramApplicationReviews = async(req, res) =>{
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplicationReview.findAndCountAll({
+        const {count, rows} = await ProgramApplication.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -108,14 +108,14 @@ const getAllProgramApplicationReviews = async(req, res) =>{
     }
 }
 
-const getBfaProgramApplicationReviews = async(req, res) =>{
+const getBfaProgramApplications = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplicationReview.findAndCountAll({
+        const {count, rows} = await ProgramApplication.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -132,14 +132,14 @@ const getBfaProgramApplicationReviews = async(req, res) =>{
     }
 }
 
-const getIraProgramApplicationReviews = async(req, res) =>{
+const getIraProgramApplications = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplicationReview.findAndCountAll({
+        const {count, rows} = await ProgramApplication.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -156,11 +156,11 @@ const getIraProgramApplicationReviews = async(req, res) =>{
     }
 }
 
-const getProgramApplicationReviewDetails = async(req, res) =>{
+const getProgramApplicationDetails = async(req, res) =>{
     try {
         const uuid = req.params.uuid
 
-        const response = await ProgramApplicationReview.findOne({
+        const response = await ProgramApplication.findOne({
             where:{uuid},
             include:{
                 model: ProgramRequirement,
@@ -192,25 +192,25 @@ const getReviewersStatus = async(req, res) =>{
                 required: true
             },
             include:{
-                model: ProgramApplicationReview,
+                model: ProgramApplication,
                 // required: true
             },
             attributes:{
                 // exclude:["BusinessId"],
 
-                // ProgramApplicationReview: title,type,
-                // ProgramRequirement: name,ProgramApplicationReviewid
-                // return ProgramApplicationReview + ProgramRequirement
-                // ProgramApplicationReviewapplication: userid,ProgramApplicationReviewid,status(wait/reje/acce)
-                // ProgramApplicationReviewappliccationdocument: ProgramApplicationReviewapplicationid,filelink,filename
-                // ProgramApplicationReviewapplicationreview: ProgramApplicationReviewapplicationid,status,userid,feedback
+                // ProgramApplication: title,type,
+                // ProgramRequirement: name,ProgramApplicationid
+                // return ProgramApplication + ProgramRequirement
+                // ProgramApplicationapplication: userid,ProgramApplicationid,status(wait/reje/acce)
+                // ProgramApplicationappliccationdocument: ProgramApplicationapplicationid,filelink,filename
+                // ProgramApplicationapplicationreview: ProgramApplicationapplicationid,status,userid,feedback
 
                 include: [
                     [
                         // SELECT userId
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM ProgramApplicationReviews AS ProgramApplicationReview
+                            FROM ProgramApplications AS ProgramApplication
                             WHERE
                                 userId = User.id
                         )`),
@@ -228,6 +228,6 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createProgramApplicationReview,updateProgramApplicationReview,deleteProgramApplicationReview,getUserProgramApplicationReview,getAllProgramApplicationReviews,getReviewersStatus,
-    getBfaProgramApplicationReviews,getIraProgramApplicationReviews,getProgramApplicationReviewDetails,deleteProgramRequirement
+    createProgramApplication,updateProgramApplication,deleteProgramApplication,getUserProgramApplication,getAllProgramApplications,getReviewersStatus,
+    getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,deleteProgramRequirement
 }

@@ -11,6 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      ProgramApplication.hasMany(models.ProgramApplicationReview, { onDelete: 'cascade'})
+      ProgramApplication.hasMany(models.ProgramApplicationDocument, { onDelete: 'cascade'})
     }
   }
   ProgramApplication.init({
