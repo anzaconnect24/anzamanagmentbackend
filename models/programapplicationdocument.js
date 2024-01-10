@@ -11,7 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      ProgramApplicationDocument.hasOne(models.ProgramRequirement)
+      ProgramApplicationDocument.belongsTo(models.ProgramRequirement)
+      ProgramApplicationDocument.belongsTo(models.ProgramApplication)
     }
   }
   ProgramApplicationDocument.init({

@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       ProgramRequirement.belongsTo(models.Program)
-      ProgramRequirement.hasOne(models.ProgramApplicationDocument)
+      // ProgramRequirement.hasOne(models.ProgramApplicationDocument)
     }
   }
   ProgramRequirement.init({

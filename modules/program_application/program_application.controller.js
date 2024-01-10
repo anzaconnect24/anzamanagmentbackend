@@ -1,6 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {ProgramApplication,User,Business,Sequelize,ProgramRequirement,Program} = require("../../models");
+const {ProgramApplication,User,Business,Sequelize,ProgramRequirement,Program,ProgramApplicationDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
