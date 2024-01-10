@@ -1,20 +1,20 @@
 const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
-const { createProgramReview, updateProgramReview, deleteProgramReview, getUserProgramReview, getAllProgramReviews, getReviewersStatus,
-getBfaProgramReviews,getIraProgramReviews,getProgramReviewDetails,deleteProgramReviewRequirement } = require('./ProgramReview.controller');
+const { createProgramApplicationReview, updateProgramApplicationReview, deleteProgramApplicationReview, getUserProgramApplicationReview, getAllProgramApplicationReviews, getReviewersStatus,
+getBfaProgramApplicationReviews,getIraProgramApplicationReviews,getProgramApplicationReviewDetails,deleteProgramApplicationReviewRequirement } = require('./ProgramApplicationReview.controller');
 
 const router = Router()
-router.post("/",createProgramReview)
-router.get('/user',validateJWT,getUserProgramReview)
+router.post("/",createProgramApplicationReview)
+router.get('/user',validateJWT,getUserProgramApplicationReview)
 // business UUID
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
-router.get('/',validateJWT,getAllProgramReviews)
-router.get('/bfa',validateJWT,getBfaProgramReviews)
-router.get('/ira',validateJWT,getIraProgramReviews)
-router.get('/:uuid',validateJWT,getProgramReviewDetails)
-router.patch('/:uuid',validateJWT,updateProgramReview)
-router.delete('/:uuid',validateJWT,deleteProgramReview)
-router.delete('ProgramReview_requirement/:uuid',validateJWT,deleteProgramReviewRequirement)
+router.get('/',validateJWT,getAllProgramApplicationReviews)
+router.get('/bfa',validateJWT,getBfaProgramApplicationReviews)
+router.get('/ira',validateJWT,getIraProgramApplicationReviews)
+router.get('/:uuid',validateJWT,getProgramApplicationReviewDetails)
+router.patch('/:uuid',validateJWT,updateProgramApplicationReview)
+router.delete('/:uuid',validateJWT,deleteProgramApplicationReview)
+router.delete('ProgramApplicationReview_requirement/:uuid',validateJWT,deleteProgramApplicationReviewRequirement)
 
 module.exports = router

@@ -5,7 +5,7 @@ const { sendEmail } = require("../../utils/send_email");
 const createProgram = async(req,res)=>{
     try {
         const {title,type,description,requirements} = req.body
-    // res.status(200).json({"body":type})
+        // res.status(200).json({"body":type})
         var response = await Program.create({title:title,type:type,description:description})
         let programrequirements = requirements.map((item)=>{
             return { 
@@ -125,6 +125,7 @@ const getBfaPrograms = async(req, res) =>{
         const offset = (page-1)*limit
 
         const {count, rows} = await Program.findAndCountAll({
+            order:[['createdAt', 'DESC']],
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -149,6 +150,7 @@ const getIraPrograms = async(req, res) =>{
         const offset = (page-1)*limit
 
         const {count, rows} = await Program.findAndCountAll({
+            order:[['createdAt', 'DESC']],
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
