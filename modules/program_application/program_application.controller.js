@@ -158,7 +158,7 @@ const getAllProgramApplications = async(req, res) =>{
     }
 }
 
-const getBfaProgramApplications = async(req, res) =>{
+const getWaitingProgramApplications = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -169,7 +169,7 @@ const getBfaProgramApplications = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            where:{type:'bfa'},
+            where:{status:'waiting'},
             include:{
                 model: ProgramRequirement,
                 // required: true,
@@ -182,7 +182,7 @@ const getBfaProgramApplications = async(req, res) =>{
     }
 }
 
-const getIraProgramApplications = async(req, res) =>{
+const getAcceptedProgramApplications = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -193,7 +193,31 @@ const getIraProgramApplications = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            where:{type:'ira'},
+            where:{status:'accepted'},
+            include:{
+                model: ProgramRequirement,
+                // required: true,
+            }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getRejectedProgramApplications = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await ProgramApplication.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            // distinct:true,
+            where:{status:'rejected'},
             include:{
                 model: ProgramRequirement,
                 // required: true,
@@ -279,5 +303,6 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createProgramApplication,updateProgramApplication,deleteProgramApplication,getUserProgramApplication,getAllProgramApplications,getReviewersStatus,
-    getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,deleteProgramRequirement,postProgramApplicationDocument
+    getWaitingProgramApplications,getAcceptedProgramApplications,getRejectedProgramApplications,getProgramApplicationDetails,deleteProgramRequirement,postProgramApplicationDocument,
+    
 }

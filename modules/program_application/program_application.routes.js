@@ -2,7 +2,7 @@ const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
 const upload = require("../../utils/upload");
 const { createProgramApplication, updateProgramApplication, deleteProgramApplication, getUserProgramApplication, getAllProgramApplications, getReviewersStatus,
-getBfaProgramApplications,getIraProgramApplications,getProgramApplicationDetails,postProgramApplicationDocument } = require('./program_application.controller');
+getWaitingProgramApplications,getAcceptedProgramApplications,getRejectedProgramApplications,getProgramApplicationDetails,postProgramApplicationDocument } = require('./program_application.controller');
 
 const router = Router()
 router.post("/",validateJWT,createProgramApplication)
@@ -12,8 +12,9 @@ router.get('/user',validateJWT,getUserProgramApplication)
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
 router.get('/',validateJWT,getAllProgramApplications)
-router.get('/bfa',validateJWT,getBfaProgramApplications)
-router.get('/ira',validateJWT,getIraProgramApplications)
+router.get('/waiting',validateJWT,getWaitingProgramApplications)
+router.get('/accepted',validateJWT,getAcceptedProgramApplications)
+router.get('/rejected',validateJWT,getRejectedProgramApplications)
 router.get('/:uuid',validateJWT,getProgramApplicationDetails)
 router.patch('/:uuid',validateJWT,updateProgramApplication)
 router.delete('/:uuid',validateJWT,deleteProgramApplication)
