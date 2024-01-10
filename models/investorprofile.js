@@ -11,10 +11,42 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      InvestorProfile.belongsTo(models.User)
     }
   }
   InvestorProfile.init({
-    name: DataTypes.STRING
+      uuid:{
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull:false
+      },
+      investor: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      sector: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      geography: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      average: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      structure: {
+        type: DataTypes.ENUM('equity', 'debt','mezzanine'),
+        allowNull:false
+      },
   }, {
     sequelize,
     modelName: 'InvestorProfile',
