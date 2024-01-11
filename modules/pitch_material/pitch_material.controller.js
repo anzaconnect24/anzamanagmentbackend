@@ -75,10 +75,7 @@ const getUserPitchMaterial = async(req,res)=>{
             where:{
                 userId:user.id
             },
-            include:{
-                model: User,
-                required: true
-            }
+            
         })
         successResponse(res,response)
     } catch (error) {
@@ -125,20 +122,7 @@ const deletePitchMaterial = async(req,res)=>{
     }
 }
 
-const deleteProgramRequirement = async(req,res)=>{
-    try {
-        const uuid = req.params.uuid
-        const ProgramRequirement = await ProgramRequirement.findOne({
-            where:{
-                uuid
-            }
-        });
-        const response = await ProgramRequirement.destroy()
-        successResponse(res,response)
-    } catch (error) {
-        errorResponse(res,error)
-    }
-}
+
 
 const getAllPitchMaterials = async(req, res) =>{
     // res.status(200).json({"k":"v"});
@@ -171,7 +155,6 @@ const getVideoPitchMaterials = async(req, res) =>{
         const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            // distinct:true,
             where:{type:'video'},
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -191,95 +174,7 @@ const getDocumentPitchMaterials = async(req, res) =>{
         const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            // distinct:true,
             where:{type:'document'},
-        })
-        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-        successResponse(res, {count, data:rows, page, totalPages})
-    } catch (error) {
-        errorResponse(res, error)
-    }
-}
-
-const getRejectedPitchMaterials = async(req, res) =>{
-    try {
-        let {page,limit} = req.query
-        page = parseInt(page)
-        limit = parseInt(limit)
-        const offset = (page-1)*limit
-
-        const {count, rows} = await PitchMaterial.findAndCountAll({
-            offset: offset, //ruka ngapi
-            limit: limit, //leta ngapi
-            // distinct:true,
-            where:{status:'rejected'},
-            include:[
-                User,
-                Program
-            ]
-        })
-        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-        successResponse(res, {count, data:rows, page, totalPages})
-    } catch (error) {
-        errorResponse(res, error)
-    }
-}
-
-const getPitchMaterialDetails = async(req, res) =>{
-    try {
-        const uuid = req.params.uuid
-
-        const response = await PitchMaterial.findOne({
-            where:{uuid},
-            attributes:{
-                exclude:['userId','programId'],
-            },
-            include:[
-                User,
-            ]
-        })
-        successResponse(res, response)
-    } catch (error) {
-        errorResponse(res, error)
-    }
-}
-
-const getReviewersStatus = async(req, res) =>{
-    try {
-        const uuid = req.params.uuid
-        let {page,limit} = req.query
-        page = parseInt(page)
-        limit = parseInt(limit)
-        const offset = (page-1)*limit
-
-        const {count, rows} = await User.findAndCountAll({
-            offset: offset, //ruka ngapi
-            limit: limit, //leta ngapi
-            distinct:true,
-            where:{role:"Reviewer"},
-            include:{
-                model: PitchMaterial,
-                where:{uuid},
-                required: true
-            },
-            // include:{
-            //     model: PitchMaterial,
-            //     // required: true
-            // },
-            attributes:{
-                // exclude:["BusinessId"],
-                include: [
-                    [
-                        Sequelize.literal(`(
-                            SELECT count(*)
-                            FROM PitchMaterialReview AS PitchMaterialReview
-                            WHERE
-                                userId = User.id
-                        )`),
-                        'status'
-                    ],
-                ],
-            }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -290,7 +185,7 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,getReviewersStatus,
-    getVideoPitchMaterials,getDocumentPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,deleteProgramRequirement,postPitchMaterialDocument,
+    createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,
+    getVideoPitchMaterials,getDocumentPitchMaterials,postPitchMaterialDocument,
     
 }
