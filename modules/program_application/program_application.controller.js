@@ -279,7 +279,7 @@ const getReviewersStatus = async(req, res) =>{
                     [
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM ProgramApplicationReview AS programApplicationReview
+                            FROM ProgramApplicationReviews AS programApplicationReview
                             WHERE
                                 userId = User.id
                         )`),
