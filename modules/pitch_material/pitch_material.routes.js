@@ -2,7 +2,7 @@ const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
 const upload = require("../../utils/upload");
 const { createPitchMaterial, updatePitchMaterial, deletePitchMaterial, getUserPitchMaterial, getAllPitchMaterials, getReviewersStatus,
-getWaitingPitchMaterials,getAcceptedPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,postPitchMaterialDocument } = require('./pitch_material.controller');
+getVideoPitchMaterials,getDocumentPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,postPitchMaterialDocument } = require('./pitch_material.controller');
 
 const router = Router()
 router.post("/",upload.single('file'),validateJWT,createPitchMaterial)
@@ -12,8 +12,8 @@ router.get('/user',validateJWT,getUserPitchMaterial)
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
 router.get('/',validateJWT,getAllPitchMaterials)
-router.get('/waiting',validateJWT,getWaitingPitchMaterials)
-router.get('/accepted',validateJWT,getAcceptedPitchMaterials)
+router.get('/video',validateJWT,getVideoPitchMaterials)
+router.get('/document',validateJWT,getDocumentPitchMaterials)
 router.get('/rejected',validateJWT,getRejectedPitchMaterials)
 router.get('/:uuid',validateJWT,getPitchMaterialDetails)
 router.patch('/:uuid',validateJWT,updatePitchMaterial)

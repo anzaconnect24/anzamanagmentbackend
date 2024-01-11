@@ -161,7 +161,7 @@ const getAllPitchMaterials = async(req, res) =>{
     }
 }
 
-const getWaitingPitchMaterials = async(req, res) =>{
+const getVideoPitchMaterials = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -172,7 +172,7 @@ const getWaitingPitchMaterials = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            where:{status:'waiting'},
+            where:{type:'video'},
             include:[
                 User,
                 Program
@@ -185,7 +185,7 @@ const getWaitingPitchMaterials = async(req, res) =>{
     }
 }
 
-const getAcceptedPitchMaterials = async(req, res) =>{
+const getDocumentPitchMaterials = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -196,7 +196,7 @@ const getAcceptedPitchMaterials = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            where:{status:'accepted'},
+            where:{type:'document'},
             include:[
                 User,
                 Program
@@ -299,6 +299,6 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,getReviewersStatus,
-    getWaitingPitchMaterials,getAcceptedPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,deleteProgramRequirement,postPitchMaterialDocument,
+    getVideoPitchMaterials,getDocumentPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,deleteProgramRequirement,postPitchMaterialDocument,
     
 }
