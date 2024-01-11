@@ -7,7 +7,7 @@ const {getAllUsers,getAllCustomers,getAllSellers,getAllAdmins,getUserCounts } = 
 router.get("/customers",validateJWT,getAllCustomers)
 router.get("/sellers",validateJWT,getAllSellers)
 router.get("/admins",validateJWT,getAllAdmins)
-router.get("/counts",validateJWT,getUserCounts)
+router.get("/dashboard",validateJWT,getUserCounts)
 router.get("/",validateJWT,getAllUsers)
 
 module.exports = router

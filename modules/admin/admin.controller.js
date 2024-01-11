@@ -1,4 +1,4 @@
-const { User,Business,Product,Payment } = require("../../models");
+const { User,Business,Program,ProgramApplication,ProgramUpdate } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op} = require("sequelize");
@@ -87,9 +87,9 @@ const {Op} = require("sequelize");
             role: "customer"
           }
         })
-        const sellers = await User.count({
+        const reviewers = await User.count({
           where:{
-            role: "seller"
+            role: "Reviewer"
           }
         })
         const admins = await User.count({
@@ -97,16 +97,22 @@ const {Op} = require("sequelize");
             role: "admin"
           }
         })
-        const revenue = await Payment.sum('amount')
+        // const revenue = await Payment.sum('amount')
 
-        const products = await Product.count({})
+        // const products = await Product.count({})
 
-        const applications = await Business.count({
+        const business = await Business.count({
           where:{
             status:"waiting"
           }
         })
-        successResponse(res,{customers:customers, sellers:sellers, admins:admins, revenue: revenue==null?0:revenue, products:products, applications:applications  })
+        const program = await Program.count({})
+        const programapplication = await ProgramApplication.count({})
+        const programupdate = await ProgramUpdate.count({})
+
+        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, 
+        // revenue: revenue==null?0:revenue, products:products, 
+        business:business,program:program,programapplication:programapplication,programupdate:programupdate,  })
     } catch (error) {
         errorResponse(res,error)
     }
