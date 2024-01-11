@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Program extends Model {
+  class ProgramUpdate extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,21 +11,19 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Program.hasMany(models.ProgramRequirement, { onDelete: 'cascade'})
-      Program.hasMany(models.ProgramUpdate, { onDelete: 'cascade'})
-      // Program.hasMany(models.ProgramApplication, { onDelete: 'cascade'})
+      ProgramUpdate.belongsTo(models.Program)
     }
   }
-  Program.init({
+  ProgramUpdate.init({
       uuid:{
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4
       },
-      title: {
-        type: DataTypes.STRING,
+      programId: {
+        type: DataTypes.INTEGER,
         allowNull:false
       },
-      type: {
+      title: {
         type: DataTypes.STRING,
         allowNull:false
       },
@@ -33,9 +31,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull:false
       },
+      image: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
   }, {
     sequelize,
-    modelName: 'Program',
+    modelName: 'ProgramUpdate',
   });
-  return Program;
+  return ProgramUpdate;
 };
