@@ -173,10 +173,6 @@ const getVideoPitchMaterials = async(req, res) =>{
             limit: limit, //leta ngapi
             // distinct:true,
             where:{type:'video'},
-            include:[
-                User,
-                Program
-            ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -197,10 +193,6 @@ const getDocumentPitchMaterials = async(req, res) =>{
             limit: limit, //leta ngapi
             // distinct:true,
             where:{type:'document'},
-            include:[
-                User,
-                Program
-            ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
