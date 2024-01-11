@@ -6,23 +6,21 @@ const { where } = require("sequelize");
 
 const createProgramUpdate = async(req,res)=>{
     try {
-        let {program_uuid,title,description} = req.body
-        let image = null;
         const user = req.user
-        // res.status(200).json({"A":program_uuid})
-        // res.json({"body":req.body})
+        let image = null;
+        let {program_uuid,title,description} = req.body
+        const program = await Program.findOne({
+            where:{uuid:program_uuid}
+        })
         
         if (req.file) {
             image = await getUrl(req);
         }
-        const program = await Program.findOne({
-            where:{uuid:program_uuid}
-        })
         const response = await ProgramUpdate.create({
             programId:program.id,
             title:title,
             description:description,
-            imag:image
+            image:image
         })
         successResponse(res,response)
     } catch (error) {

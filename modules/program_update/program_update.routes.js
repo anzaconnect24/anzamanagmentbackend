@@ -5,7 +5,7 @@ const { createProgramUpdate, updateProgramUpdate, deleteProgramUpdate, getUserPr
 getWaitingProgramUpdates,getAcceptedProgramUpdates,getRejectedProgramUpdates,getProgramUpdateDetails,postProgramUpdateDocument } = require('./program_update.controller');
 
 const router = Router()
-router.post("/",validateJWT,createProgramUpdate)
+router.post("/",upload.single('file'),validateJWT,createProgramUpdate)
 router.post("/document/:uuid",upload.single('file'),validateJWT,postProgramUpdateDocument)
 router.get('/user',validateJWT,getUserProgramUpdate)
 // business UUID
