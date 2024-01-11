@@ -186,6 +186,21 @@ const registerUser = async (req, res) => {
       console.log(error);
     }
 };
+const updateMyInfo = async (req, res) => {
+  try {
+    const user = req.user 
+    const userDetails = await User.findOne({
+      where: {
+        uuid:user.uuid
+      }
+    });
+    const response = await userDetails.update(req.body);
+    successResponse(res, response);
+  } catch (error) {
+    console.log(error);
+    errorResponse(res, error);
+  }
+};
 
 const updateUser = async (req, res) => {
   try {
@@ -567,6 +582,7 @@ const getUserDetails = async(req,res)=>{
     registerUser,
     loginUser,
     getHash,
+    updateMyInfo,
     updateUser,
     deleteUser,
     getReviewers,
