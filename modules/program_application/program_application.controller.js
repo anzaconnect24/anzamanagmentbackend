@@ -145,10 +145,13 @@ const getAllProgramApplications = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            // include:{
-            //     model: ProgramRequirement,
-            //     // required: true,
-            // }
+            attributes:{
+                exclude:['UserId','ProgramId']
+            },
+            include:{
+                model: ProgramApplicationDocument,
+                // required: true,
+            }
 
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -267,7 +270,7 @@ const getReviewersStatus = async(req, res) =>{
             include:{
                 model: ProgramApplication,
                 where:{uuid},
-                required: true
+                // required: true
             },
             // include:{
             //     model: ProgramApplication,
@@ -279,7 +282,7 @@ const getReviewersStatus = async(req, res) =>{
                     [
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM ProgramApplicationReview AS programApplicationReview
+                            FROM ProgramApplicationReviews AS programApplicationReview
                             WHERE
                                 userId = User.id
                         )`),
