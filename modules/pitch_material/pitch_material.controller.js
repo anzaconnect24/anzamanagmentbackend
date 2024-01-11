@@ -1,10 +1,10 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {PeachMaterial,User,Business,Sequelize,ProgramRequirement,Program,PeachMaterialDocument} = require("../../models");
+const {PitchMaterial,User,Business,Sequelize,ProgramRequirement,Program,PitchMaterialDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
-const createPeachMaterial = async(req,res)=>{
+const createPitchMaterial = async(req,res)=>{
     try {
         const user = req.user
         let link = null;
@@ -16,7 +16,7 @@ const createPeachMaterial = async(req,res)=>{
         if (req.file) {
             link = await getUrl(req);
         }
-        const response = await PeachMaterial.create({
+        const response = await PitchMaterial.create({
             fileName:fileName,
             type:type,
             description:description,
@@ -29,7 +29,7 @@ const createPeachMaterial = async(req,res)=>{
 }
 
 
-const postPeachMaterialDocument = async (req, res) => {
+const postPitchMaterialDocument = async (req, res) => {
   try {
     const user = req.user; // Move this line to after getting user object
     let program_application_uuid = req.params.uuid;
@@ -42,7 +42,7 @@ const postPeachMaterialDocument = async (req, res) => {
       fileLink = await getUrl(req);
     }
 
-    const program_application = await PeachMaterial.findOne({
+    const program_application = await PitchMaterial.findOne({
       where: {
         uuid:program_application_uuid
       }
@@ -53,11 +53,11 @@ const postPeachMaterialDocument = async (req, res) => {
       }
     });
 
-    const response = await PeachMaterialDocument.create({
+    const response = await PitchMaterialDocument.create({
         programRequirementId:program_requirement.id,
         fileLink:fileLink,
         fileName:program_requirement.name,
-        PeachMaterialId:program_application.id,
+        PitchMaterialId:program_application.id,
     });
 
     successResponse(res, response);
@@ -68,10 +68,10 @@ const postPeachMaterialDocument = async (req, res) => {
 };
 
 
-const getUserPeachMaterial = async(req,res)=>{
+const getUserPitchMaterial = async(req,res)=>{
     try {
         const user = req.user
-        const response = await PeachMaterial.findOne({
+        const response = await PitchMaterial.findOne({
             where:{
                 userId:user.id
             },
@@ -86,39 +86,39 @@ const getUserPeachMaterial = async(req,res)=>{
     }
 }
 
-const updatePeachMaterial = async(req,res)=>{
+const updatePitchMaterial = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const PeachMaterial = await PeachMaterial.findOne({
+        const PitchMaterial = await PitchMaterial.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:PeachMaterial.userId}
+            where:{id:PitchMaterial.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await PeachMaterial.update(req.body)
+        const response = await PitchMaterial.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deletePeachMaterial = async(req,res)=>{
+const deletePitchMaterial = async(req,res)=>{
     try {
         let {
             name
         } = req.body;
         const uuid = req.params.uuid
-        const peachMaterial = await PeachMaterial.findOne({
+        const pitchMaterial = await PitchMaterial.findOne({
             where:{
                 uuid
             }
         });
-        const response = await peachMaterial.destroy()
+        const response = await pitchMaterial.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -140,7 +140,7 @@ const deleteProgramRequirement = async(req,res)=>{
     }
 }
 
-const getAllPeachMaterials = async(req, res) =>{
+const getAllPitchMaterials = async(req, res) =>{
     // res.status(200).json({"k":"v"});
     try {
         let {page,limit} = req.query
@@ -148,7 +148,7 @@ const getAllPeachMaterials = async(req, res) =>{
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await PeachMaterial.findAndCountAll({
+        const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -161,14 +161,14 @@ const getAllPeachMaterials = async(req, res) =>{
     }
 }
 
-const getWaitingPeachMaterials = async(req, res) =>{
+const getWaitingPitchMaterials = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await PeachMaterial.findAndCountAll({
+        const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -185,14 +185,14 @@ const getWaitingPeachMaterials = async(req, res) =>{
     }
 }
 
-const getAcceptedPeachMaterials = async(req, res) =>{
+const getAcceptedPitchMaterials = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await PeachMaterial.findAndCountAll({
+        const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -209,14 +209,14 @@ const getAcceptedPeachMaterials = async(req, res) =>{
     }
 }
 
-const getRejectedPeachMaterials = async(req, res) =>{
+const getRejectedPitchMaterials = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await PeachMaterial.findAndCountAll({
+        const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -233,11 +233,11 @@ const getRejectedPeachMaterials = async(req, res) =>{
     }
 }
 
-const getPeachMaterialDetails = async(req, res) =>{
+const getPitchMaterialDetails = async(req, res) =>{
     try {
         const uuid = req.params.uuid
 
-        const response = await PeachMaterial.findOne({
+        const response = await PitchMaterial.findOne({
             where:{uuid},
             attributes:{
                 exclude:['userId','programId'],
@@ -266,12 +266,12 @@ const getReviewersStatus = async(req, res) =>{
             distinct:true,
             where:{role:"Reviewer"},
             include:{
-                model: PeachMaterial,
+                model: PitchMaterial,
                 where:{uuid},
                 required: true
             },
             // include:{
-            //     model: PeachMaterial,
+            //     model: PitchMaterial,
             //     // required: true
             // },
             attributes:{
@@ -280,7 +280,7 @@ const getReviewersStatus = async(req, res) =>{
                     [
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM PeachMaterialReview AS PeachMaterialReview
+                            FROM PitchMaterialReview AS PitchMaterialReview
                             WHERE
                                 userId = User.id
                         )`),
@@ -298,7 +298,7 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createPeachMaterial,updatePeachMaterial,deletePeachMaterial,getUserPeachMaterial,getAllPeachMaterials,getReviewersStatus,
-    getWaitingPeachMaterials,getAcceptedPeachMaterials,getRejectedPeachMaterials,getPeachMaterialDetails,deleteProgramRequirement,postPeachMaterialDocument,
+    createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,getReviewersStatus,
+    getWaitingPitchMaterials,getAcceptedPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,deleteProgramRequirement,postPitchMaterialDocument,
     
 }

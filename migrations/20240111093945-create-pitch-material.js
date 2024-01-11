@@ -2,7 +2,7 @@
 /** @type {import('DataTypes-cli').Migration} */
 module.exports = {
   async up(queryInterface, DataTypes) {
-    await queryInterface.createTable('PeachMaterials', {
+    await queryInterface.createTable('PitchMaterials', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -40,6 +40,6 @@ module.exports = {
     });
   },
   async down(queryInterface, DataTypes) {
-    await queryInterface.dropTable('PeachMaterials');
+    await queryInterface.dropTable('PitchMaterials');
   }
 };

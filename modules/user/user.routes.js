@@ -4,13 +4,15 @@ const router = Router()
 const upload = require("../../utils/upload");
 const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,  sendPasswordLink, passwordReset, sendMessage, getAllUsers, getUserDetails, 
     getAllCustomers,getAllSellers,getAllAdmins,getUserCounts,getMyDetails,getUsersByRole, 
-    getReviewers} = require("./user.controller");
+    getReviewers,
+    updateMyInfo} = require("./user.controller");
 
 router.post("/register", registerUser)
 router.post("/message",validateJWT,sendMessage)
 router.post("/sms",validateJWT,pushSMS)
 router.post("/reset-password",sendPasswordLink)
 router.patch("/password/:uuid",passwordReset)
+router.patch("/me",validateJWT,updateMyInfo)
 router.patch("/:uuid",upload.single('file'),validateJWT,updateUser)
 router.delete("/:uuid",validateJWT,deleteUser)
 router.post("/login",loginUser)

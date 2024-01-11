@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class PeachMaterial extends Model {
+  class PitchMaterial extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  PeachMaterial.init({
+  PitchMaterial.init({
       uuid:{
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4
@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       },
   }, {
     sequelize,
-    modelName: 'PeachMaterial',
+    modelName: 'PitchMaterial',
   });
-  return PeachMaterial;
+  return PitchMaterial;
 };
