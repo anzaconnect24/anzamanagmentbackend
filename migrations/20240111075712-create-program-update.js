@@ -2,7 +2,7 @@
 /** @type {import('DataTypes-cli').Migration} */
 module.exports = {
   async up(queryInterface, DataTypes) {
-    await queryInterface.createTable('InvestorProfiles', {
+    await queryInterface.createTable('ProgramUpdates', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,32 +13,20 @@ module.exports = {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4
       },
-      userId: {
+      programId: {
         type: DataTypes.INTEGER,
         allowNull:false
       },
-      investor: {
+      title: {
         type: DataTypes.STRING,
         allowNull:false
       },
-      name: {
+      description: {
         type: DataTypes.STRING,
         allowNull:false
       },
-      sector: {
+      image: {
         type: DataTypes.STRING,
-        allowNull:false
-      },
-      geography: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      average: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      structure: {
-        type: DataTypes.ENUM('equity', 'debt','mezzanine'),
         allowNull:false
       },
       createdAt: {
@@ -52,6 +40,6 @@ module.exports = {
     });
   },
   async down(queryInterface, DataTypes) {
-    await queryInterface.dropTable('InvestorProfiles');
+    await queryInterface.dropTable('ProgramUpdates');
   }
 };

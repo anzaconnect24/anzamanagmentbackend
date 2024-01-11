@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Program.hasMany(models.ProgramRequirement, { onDelete: 'cascade'})
+      Program.hasMany(models.ProgramUpdate, { onDelete: 'cascade'})
       // Program.hasMany(models.ProgramApplication, { onDelete: 'cascade'})
     }
   }

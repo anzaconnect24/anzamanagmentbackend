@@ -14,6 +14,8 @@ const BusinessReviewRoutes =  require("./modules/business_review/business_review
 const ProgramRoutes =  require("./modules/program/program.routes")
 const ProgramApplicationRoutes =  require("./modules/program_application/program_application.routes")
 const ProgramApplicationReviewRoutes =  require("./modules/program_application_review/program_application_review.routes")
+const InvestorProfileRoutes =  require("./modules/investor_profile/investor_profile.routes")
+const ProgramUpdateRoutes =  require("./modules/program_update/program_update.routes")
 // ********************
 const ProductRoutes =  require("./modules/product/product.routes")
 const WishlistRoutes =  require("./modules/wishlist/wishlist.routes")
@@ -52,6 +54,8 @@ app.use("/business_review",BusinessReviewRoutes)
 app.use("/program",ProgramRoutes)
 app.use("/program_application",ProgramApplicationRoutes)
 app.use("/program_application_review",ProgramApplicationReviewRoutes)
+app.use("/investor_profile",InvestorProfileRoutes)
+app.use("/program_update",ProgramUpdateRoutes)
 // *************
 app.use("/product",ProductRoutes)
 app.use("/order",OrderRoutes)

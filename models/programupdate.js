@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class InvestorProfile extends Model {
+  class ProgramUpdate extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,45 +11,33 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      InvestorProfile.belongsTo(models.User)
+      ProgramUpdate.belongsTo(models.Program)
     }
   }
-  InvestorProfile.init({
+  ProgramUpdate.init({
       uuid:{
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4
       },
-      userId: {
+      programId: {
         type: DataTypes.INTEGER,
         allowNull:false
       },
-      investor: {
+      title: {
         type: DataTypes.STRING,
         allowNull:false
       },
-      name: {
+      description: {
         type: DataTypes.STRING,
         allowNull:false
       },
-      sector: {
+      image: {
         type: DataTypes.STRING,
-        allowNull:false
-      },
-      geography: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      average: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      structure: {
-        type: DataTypes.ENUM('equity', 'debt','mezzanine'),
         allowNull:false
       },
   }, {
     sequelize,
-    modelName: 'InvestorProfile',
+    modelName: 'ProgramUpdate',
   });
-  return InvestorProfile;
+  return ProgramUpdate;
 };

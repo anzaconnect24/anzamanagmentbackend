@@ -1,19 +1,25 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {ProgramApplication,User,Business,Sequelize,ProgramRequirement,Program,ProgramApplicationDocument} = require("../../models");
+const {InvestorProfile,User,Business,Sequelize,ProgramRequirement,Program,InvestorProfileDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
-const createProgramApplication = async(req,res)=>{
+const createInvestorProfile = async(req,res)=>{
     try {
-        let {program_uuid} = req.body
+        let {investor,name,sector,geography,average,structure} = req.body
         const user = req.user
-        const program = await Program.findOne({
-            where:{uuid:program_uuid}
-        })
-        const response = await ProgramApplication.create({
+        // const program = await Program.findOne({
+        //     where:{uuid:program_uuid}
+        // })
+        const response = await InvestorProfile.create({
             userId:user.id,
-            programId:program.id
+            // programId:program.id,
+            investor:investor,
+            name:name,
+            sector:sector,
+            geography:geography,
+            average:average,
+            structure:structure
         })
         successResponse(res,response)
     } catch (error) {
@@ -22,7 +28,7 @@ const createProgramApplication = async(req,res)=>{
 }
 
 
-const postProgramApplicationDocument = async (req, res) => {
+const postInvestorProfileDocument = async (req, res) => {
   try {
     const user = req.user; // Move this line to after getting user object
     let program_application_uuid = req.params.uuid;
@@ -35,7 +41,7 @@ const postProgramApplicationDocument = async (req, res) => {
       fileLink = await getUrl(req);
     }
 
-    const program_application = await ProgramApplication.findOne({
+    const program_application = await InvestorProfile.findOne({
       where: {
         uuid:program_application_uuid
       }
@@ -46,11 +52,11 @@ const postProgramApplicationDocument = async (req, res) => {
       }
     });
 
-    const response = await ProgramApplicationDocument.create({
+    const response = await InvestorProfileDocument.create({
         programRequirementId:program_requirement.id,
         fileLink:fileLink,
         fileName:program_requirement.name,
-        programApplicationId:program_application.id,
+        InvestorProfileId:program_application.id,
     });
 
     successResponse(res, response);
@@ -61,15 +67,15 @@ const postProgramApplicationDocument = async (req, res) => {
 };
 
 
-const getUserProgramApplication = async(req,res)=>{
+const getUserInvestorProfile = async(req,res)=>{
     try {
         const user = req.user
-        const response = await ProgramApplication.findOne({
+        const response = await InvestorProfile.findOne({
             where:{
                 userId:user.id
             },
             include:{
-                model: business,
+                model: User,
                 required: true
             }
         })
@@ -79,39 +85,39 @@ const getUserProgramApplication = async(req,res)=>{
     }
 }
 
-const updateProgramApplication = async(req,res)=>{
+const updateInvestorProfile = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const ProgramApplication = await ProgramApplication.findOne({
+        const InvestorProfile = await InvestorProfile.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:ProgramApplication.userId}
+            where:{id:InvestorProfile.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await ProgramApplication.update(req.body)
+        const response = await InvestorProfile.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deleteProgramApplication = async(req,res)=>{
+const deleteInvestorProfile = async(req,res)=>{
     try {
         let {
             name
         } = req.body;
         const uuid = req.params.uuid
-        const ProgramApplication = await ProgramApplication.findOne({
+        const investorProfile = await InvestorProfile.findOne({
             where:{
                 uuid
             }
         });
-        const response = await ProgramApplication.destroy()
+        const response = await investorProfile.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -133,7 +139,7 @@ const deleteProgramRequirement = async(req,res)=>{
     }
 }
 
-const getAllProgramApplications = async(req, res) =>{
+const getAllInvestorProfiles = async(req, res) =>{
     // res.status(200).json({"k":"v"});
     try {
         let {page,limit} = req.query
@@ -141,14 +147,14 @@ const getAllProgramApplications = async(req, res) =>{
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplication.findAndCountAll({
+        const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
-            // include:{
-            //     model: ProgramRequirement,
-            //     // required: true,
-            // }
+            include:{
+                model: User,
+                // required: true,
+            }
 
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -158,14 +164,14 @@ const getAllProgramApplications = async(req, res) =>{
     }
 }
 
-const getWaitingProgramApplications = async(req, res) =>{
+const getWaitingInvestorProfiles = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplication.findAndCountAll({
+        const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -182,14 +188,14 @@ const getWaitingProgramApplications = async(req, res) =>{
     }
 }
 
-const getAcceptedProgramApplications = async(req, res) =>{
+const getAcceptedInvestorProfiles = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplication.findAndCountAll({
+        const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -206,14 +212,14 @@ const getAcceptedProgramApplications = async(req, res) =>{
     }
 }
 
-const getRejectedProgramApplications = async(req, res) =>{
+const getRejectedInvestorProfiles = async(req, res) =>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await ProgramApplication.findAndCountAll({
+        const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             // distinct:true,
@@ -230,19 +236,17 @@ const getRejectedProgramApplications = async(req, res) =>{
     }
 }
 
-const getProgramApplicationDetails = async(req, res) =>{
+const getInvestorProfileDetails = async(req, res) =>{
     try {
         const uuid = req.params.uuid
 
-        const response = await ProgramApplication.findOne({
+        const response = await InvestorProfile.findOne({
             where:{uuid},
             attributes:{
                 exclude:['userId','programId'],
             },
             include:[
-                ProgramApplicationDocument,
                 User,
-                Program
             ]
         })
         successResponse(res, response)
@@ -265,12 +269,12 @@ const getReviewersStatus = async(req, res) =>{
             distinct:true,
             where:{role:"Reviewer"},
             include:{
-                model: ProgramApplication,
+                model: InvestorProfile,
                 where:{uuid},
                 required: true
             },
             // include:{
-            //     model: ProgramApplication,
+            //     model: InvestorProfile,
             //     // required: true
             // },
             attributes:{
@@ -279,7 +283,7 @@ const getReviewersStatus = async(req, res) =>{
                     [
                         Sequelize.literal(`(
                             SELECT count(*)
-                            FROM ProgramApplicationReview AS programApplicationReview
+                            FROM InvestorProfileReview AS InvestorProfileReview
                             WHERE
                                 userId = User.id
                         )`),
@@ -297,7 +301,7 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createProgramApplication,updateProgramApplication,deleteProgramApplication,getUserProgramApplication,getAllProgramApplications,getReviewersStatus,
-    getWaitingProgramApplications,getAcceptedProgramApplications,getRejectedProgramApplications,getProgramApplicationDetails,deleteProgramRequirement,postProgramApplicationDocument,
+    createInvestorProfile,updateInvestorProfile,deleteInvestorProfile,getUserInvestorProfile,getAllInvestorProfiles,getReviewersStatus,
+    getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,deleteProgramRequirement,postInvestorProfileDocument,
     
 }
