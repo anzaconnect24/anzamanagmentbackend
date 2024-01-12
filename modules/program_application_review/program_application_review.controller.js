@@ -5,7 +5,7 @@ const { where } = require("sequelize");
 
 const createProgramApplicationReview = async(req,res)=>{
     try {
-        let{program_application_uuid,user_uuid,feedback} = req.body
+        let{program_application_uuid,user_uuid} = req.body
         const user = await User.findOne({
             where:{
                 uuid:user_uuid
@@ -20,7 +20,6 @@ const createProgramApplicationReview = async(req,res)=>{
         const response = await ProgramApplicationReview.create({
             programApplicationId:programApplication.id,
             userId:user.id,
-            feedback:feedback,
         })
         successResponse(res,response)
     } catch (error) {
