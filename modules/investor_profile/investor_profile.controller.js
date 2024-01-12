@@ -1,25 +1,24 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {InvestorProfile,User,Business,Sequelize,ProgramRequirement,Program,InvestorProfileDocument} = require("../../models");
+const {InvestorProfile,User,BusinessSector, Business,Sequelize,ProgramRequirement,Program,InvestorProfileDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
 const createInvestorProfile = async(req,res)=>{
     try {
-        let {investor,name,sector,geography,average,structure} = req.body
+        let {company,role,sector,geography,ticketSize,structure} = req.body
         const user = req.user
-        // const program = await Program.findOne({
-        //     where:{uuid:program_uuid}
-        // })
+        const sectorData = await BusinessSector.findOne({
+            where:{uuid:sector}
+        })
         const response = await InvestorProfile.create({
             userId:user.id,
-            // programId:program.id,
-            investor:investor,
-            name:name,
-            sector:sector,
-            geography:geography,
-            average:average,
-            structure:structure
+            role,
+            company,
+            sectorId:sectorData.id,
+            ticketSize,
+            geography,
+            structure
         })
         successResponse(res,response)
     } catch (error) {

@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4
     },
+    activated:{
+      type: DataTypes.BOOLEAN,
+      defaultValue:false
+    },
     email: {
       type: DataTypes.STRING, 
       allowNull:false 

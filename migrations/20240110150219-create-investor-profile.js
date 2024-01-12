@@ -17,15 +17,15 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull:false
       },
-      investor: {
+      company: {
         type: DataTypes.STRING,
+        allowNull:true
+      },
+      sectorId: {
+        type: DataTypes.INTEGER,
         allowNull:false
       },
-      name: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      sector: {
+      role:{
         type: DataTypes.STRING,
         allowNull:false
       },
@@ -33,7 +33,7 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull:false
       },
-      average: {
+      ticketSize: {
         type: DataTypes.STRING,
         allowNull:false
       },

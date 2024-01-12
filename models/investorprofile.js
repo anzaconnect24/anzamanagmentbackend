@@ -23,23 +23,23 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull:false
       },
-      investor: {
+      company: {
+        type: DataTypes.STRING,
+        allowNull:true
+      },
+      role:{
         type: DataTypes.STRING,
         allowNull:false
       },
-      name: {
-        type: DataTypes.STRING,
-        allowNull:false
-      },
-      sector: {
-        type: DataTypes.STRING,
+      sectorId: {
+        type: DataTypes.INTEGER,
         allowNull:false
       },
       geography: {
         type: DataTypes.STRING,
         allowNull:false
       },
-      average: {
+      ticketSize: {
         type: DataTypes.STRING,
         allowNull:false
       },

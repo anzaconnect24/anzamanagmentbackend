@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": "",
-    "database": "anzamanagement",
-    "host": "localhost",
+    "username": "u290081935_anza",
+    "password": "Anza@2023",
+    "database": "u290081935_anzamanagement",
+    "host": "srv1004.hstgr.io",
     "dialect": "mysql"
   },
   "test": {
