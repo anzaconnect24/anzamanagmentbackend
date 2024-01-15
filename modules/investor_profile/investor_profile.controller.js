@@ -88,17 +88,17 @@ const updateInvestorProfile = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const InvestorProfile = await InvestorProfile.findOne({
+        const investorProfile = await InvestorProfile.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:InvestorProfile.userId}
+            where:{id:investorProfile.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await InvestorProfile.update(req.body)
+        const response = await investorProfile.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
