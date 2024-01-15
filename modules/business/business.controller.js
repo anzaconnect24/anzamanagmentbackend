@@ -254,6 +254,27 @@ const getApprovedBusinesses = async(req, res) =>{
     }
 }
 
+const getInvestorBusinesses = async(req, res) =>{
+    try {
+        const response = await Business.findAll({
+            where:{
+                status:"accepted"
+            },
+            // include: [
+            //     User,
+            //     {
+            //         model:BusinessSector,
+            //         where:{
+            //             BusinessSectorId:
+            //         }
+            //     }]
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 const getRejectedBusinesses = async(req, res) =>{
     try {
         const response = await Business.findAll({
@@ -271,5 +292,6 @@ const getRejectedBusinesses = async(req, res) =>{
 
 
 module.exports = {
-    createBusiness,updateBusiness,getApprovedBusinesses,getRejectedBusinesses,getWaitingBusinesses, getCategories,findBusiness, deleteBusiness,getUserBusiness,getAllBusiness,getWaitingBusinesses
+    createBusiness,updateBusiness,getApprovedBusinesses,getRejectedBusinesses,getWaitingBusinesses, getCategories,findBusiness, 
+    deleteBusiness,getUserBusiness,getAllBusiness,getWaitingBusinesses,getInvestorBusinesses
 }
