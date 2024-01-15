@@ -105,17 +105,17 @@ const updateProgramApplication = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const ProgramApplication = await ProgramApplication.findOne({
+        const programApplication = await ProgramApplication.findOne({
             where:{
                 uuid
             }
         });
         //find user
         const user = await User.findOne({
-            where:{id:ProgramApplication.userId}
+            where:{id:programApplication.userId}
         })
         sendEmail(req, res, user, status)
-        const response = await ProgramApplication.update(req.body)
+        const response = await programApplication.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)

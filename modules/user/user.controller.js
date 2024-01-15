@@ -399,7 +399,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
-          include:[Business,],
+          include:[Business],
           where:{
             role: "Enterprenuer"
           }
