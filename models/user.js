@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       User.hasMany(models.UserRole, { onDelete: 'cascade'})
       User.hasMany(models.UserPermission, { onDelete: 'cascade'})
-      User.hasMany(models.Business, { onDelete: 'cascade'})
+      User.hasOne(models.Business, { onDelete: 'cascade'})
       User.hasOne(models.BusinessReview, { onDelete: 'cascade'})
       User.hasMany(models.ProgramApplication, { onDelete: 'cascade'})
       User.hasOne(models.InvestorProfile, { onDelete: 'cascade'})
