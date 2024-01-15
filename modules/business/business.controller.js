@@ -218,7 +218,7 @@ const findBusiness = async(req, res) =>{
             where:{
                 uuid
             },
-            include:[User]
+            include:[User,BusinessSector]
         })
         successResponse(res, response)
     } catch (error) {

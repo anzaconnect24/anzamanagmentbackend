@@ -13,14 +13,14 @@ const createProgramUpdate = async(req,res)=>{
             where:{uuid:program_uuid}
         })
         
-        if (req.file) {
-            image = await getUrl(req);
-        }
+        // if (req.file) {
+        //     image = await getUrl(req);
+        // }
         const response = await ProgramUpdate.create({
             programId:program.id,
             title:title,
             description:description,
-            image:image
+            // image:image
         })
         successResponse(res,response)
     } catch (error) {
@@ -142,19 +142,27 @@ const deleteProgramRequirement = async(req,res)=>{
 
 const getAllProgramUpdates = async(req, res) =>{
     // res.status(200).json({"k":"v"});
+
+    const uuid = req.params.uuid;
+
+    const program  = await Program.findOne({
+        where:{
+            uuid
+        }
+    })
     try {
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            // distinct:true,
+            where:{
+               programId:program.id
+            },
             include:{
                 model: Program,
-                // required: true,
             }
 
         })

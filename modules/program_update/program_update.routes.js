@@ -5,13 +5,13 @@ const { createProgramUpdate, updateProgramUpdate, deleteProgramUpdate, getUserPr
 getWaitingProgramUpdates,getAcceptedProgramUpdates,getRejectedProgramUpdates,getProgramUpdateDetails,postProgramUpdateDocument } = require('./program_update.controller');
 
 const router = Router()
-router.post("/",upload.single('file'),validateJWT,createProgramUpdate)
+router.post("/",validateJWT,createProgramUpdate)
 router.post("/document/:uuid",upload.single('file'),validateJWT,postProgramUpdateDocument)
 router.get('/user',validateJWT,getUserProgramUpdate)
 // business UUID
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
-router.get('/',validateJWT,getAllProgramUpdates)
+router.get('/program/:uuid',validateJWT,getAllProgramUpdates)
 router.get('/waiting',validateJWT,getWaitingProgramUpdates)
 router.get('/accepted',validateJWT,getAcceptedProgramUpdates)
 router.get('/rejected',validateJWT,getRejectedProgramUpdates)

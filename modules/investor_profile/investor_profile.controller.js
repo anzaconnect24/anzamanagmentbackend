@@ -15,7 +15,7 @@ const createInvestorProfile = async(req,res)=>{
             userId:user.id,
             role,
             company,
-            sectorId:sectorData.id,
+            BusinessSectorId:sectorData.id,
             ticketSize,
             geography,
             structure
@@ -238,7 +238,6 @@ const getRejectedInvestorProfiles = async(req, res) =>{
 const getInvestorProfileDetails = async(req, res) =>{
     try {
         const uuid = req.params.uuid
-
         const response = await InvestorProfile.findOne({
             where:{uuid},
             attributes:{

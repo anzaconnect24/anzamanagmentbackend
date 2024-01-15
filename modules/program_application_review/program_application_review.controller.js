@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {ProgramApplicationReview,User,Business,Sequelize,ProgramRequirement,ProgramApplication} = require("../../models");
+const {ProgramApplicationReview,User,Program,Business,Sequelize,ProgramRequirement,ProgramApplication} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
@@ -20,6 +20,7 @@ const createProgramApplicationReview = async(req,res)=>{
         const response = await ProgramApplicationReview.create({
             programApplicationId:programApplication.id,
             userId:user.id,
+            feedback:""
         })
         successResponse(res,response)
     } catch (error) {
@@ -68,16 +69,14 @@ const updateProgramApplicationReview = async(req,res)=>{
 
 const deleteProgramApplicationReview = async(req,res)=>{
     try {
-        let {
-            name
-        } = req.body;
+    
         const uuid = req.params.uuid
-        const ProgramApplicationReview = await ProgramApplicationReview.findOne({
+        const programApplicationReview = await ProgramApplicationReview.findOne({
             where:{
                 uuid
             }
         });
-        const response = await ProgramApplicationReview.destroy()
+        const response = await programApplicationReview.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -106,16 +105,17 @@ const getAllProgramApplicationReviews = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-
+        const user = req.user;
         const {count, rows} = await ProgramApplicationReview.findAndCountAll({
             offset: offset, //ruka ngapi
-            limit: limit, //leta ngapi
-            // distinct:true,
-            // include:{
-            //     model: ProgramRequirement,
-            //     // required: true,
-            // }
-
+            limit: limit,
+            where:{
+                userId:user.id
+            },
+            include:[{
+                model:ProgramApplication,
+                include:[Program,User]
+            }]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
@@ -200,17 +200,14 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            distinct:true,
+            
             where:{role:"customer"},
             include:{
                 model: Business,
                 where:{uuid},
                 required: true
             },
-            include:{
-                model: ProgramApplicationReview,
-                // required: true
-            },
+           
             attributes:{
                 // exclude:["BusinessId"],
 

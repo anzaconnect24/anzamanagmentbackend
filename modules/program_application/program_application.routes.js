@@ -7,7 +7,7 @@ getWaitingProgramApplications,getAcceptedProgramApplications,getRejectedProgramA
 const router = Router()
 router.post("/",validateJWT,createProgramApplication)
 router.post("/document/:uuid",upload.single('file'),validateJWT,postProgramApplicationDocument)
-router.get('/user',validateJWT,getUserProgramApplication)
+router.get('/user/:uuid',validateJWT,getUserProgramApplication)
 // business UUID
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)

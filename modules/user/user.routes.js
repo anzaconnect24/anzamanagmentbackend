@@ -2,10 +2,15 @@ const {Router} = require("express")
 const { validateJWT } = require("../../utils/validateJWT")
 const router = Router()
 const upload = require("../../utils/upload");
-const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,  sendPasswordLink, passwordReset, sendMessage, getAllUsers, getUserDetails, 
-    getAllCustomers,getAllSellers,getAllAdmins,getUserCounts,getMyDetails,getUsersByRole, 
+const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,  
+    sendPasswordLink, passwordReset, sendMessage, getUserDetails, 
+    getUserCounts,getMyDetails,getUsersByRole, 
     getReviewers,
-    updateMyInfo} = require("./user.controller");
+    updateMyInfo,
+    getInvestors,
+    getAdmins,
+    getUsers,
+    getEnterprenuers} = require("./user.controller");
 
 router.post("/register", registerUser)
 router.post("/message",validateJWT,sendMessage)
@@ -16,14 +21,14 @@ router.patch("/me",validateJWT,updateMyInfo)
 router.patch("/:uuid",upload.single('file'),validateJWT,updateUser)
 router.delete("/:uuid",validateJWT,deleteUser)
 router.post("/login",loginUser)
-router.get("/customers",validateJWT,getAllCustomers)
-router.get("/sellers",validateJWT,getAllSellers)
-router.get("/admins",validateJWT,getAllAdmins)
-router.get("/reviewer",validateJWT,getReviewers)
 router.get("/counts",validateJWT,getUserCounts)
 router.get("/me",validateJWT,getMyDetails)
+router.get("/investors",validateJWT,getInvestors)
+router.get("/admins",validateJWT,getAdmins)
+router.get("/reviewers",validateJWT,getReviewers)
+router.get("/enterprenuers",validateJWT,getEnterprenuers)
+router.get("/",validateJWT,getUsers)
 router.get("/:uuid",validateJWT,getUserDetails)
-router.get("/",validateJWT,getAllUsers)
 router.get("/role/:uuid",validateJWT,getUsersByRole)
 
 module.exports = router

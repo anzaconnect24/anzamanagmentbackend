@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       InvestorProfile.belongsTo(models.User)
+      InvestorProfile.belongsTo(models.BusinessSector)
     }
   }
   InvestorProfile.init({
@@ -31,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull:false
       },
-      sectorId: {
+      BusinessSectorId: {
         type: DataTypes.INTEGER,
         allowNull:false
       },

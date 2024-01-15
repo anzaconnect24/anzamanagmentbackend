@@ -24,10 +24,11 @@ const createBusinessReview = async(req,res)=>{
         })
 
 
-      await BusinessReview.create({
+   const response =   await BusinessReview.create({
         userId:user.id,
         businessId:business.id
       })
+      successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
@@ -41,7 +42,7 @@ const getUserBusinessReview = async(req,res)=>{
                 userId:user.id
             },
             include:{
-                model: business,
+                model: Business,
                 required: true
             }
         })
@@ -89,23 +90,16 @@ const deleteBusinessReview = async(req,res)=>{
 
 const getAllBusinessReviews = async(req, res) =>{
     try {
-        let {page,limit} = req.query
-        page = parseInt(page)
-        limit = parseInt(limit)
-        const offset = (page-1)*limit
-
-        const {count, rows} = await BusinessReview.findAndCountAll({
-            offset: offset, //ruka ngapi
-            limit: limit, //leta ngapi
-            distinct:true,
+        const user = req.user
+        const response = await BusinessReview.findAll({
+            where:{
+                userId:user.id
+            },
             include:{
-                model: business,
-                required: true
+                model: Business
             }
-
         })
-        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-        successResponse(res, {count, data:rows, page, totalPages})
+        successResponse(res,response)
     } catch (error) {
         errorResponse(res, error)
     }
