@@ -263,6 +263,7 @@ const getMyProfileDetails = async(req, res) =>{
             },
             include:[
                 User,
+                BusinessSector
             ]
         })
         successResponse(res, response)
