@@ -256,8 +256,17 @@ const getApprovedBusinesses = async(req, res) =>{
 
 const getInvestorBusinesses = async(req, res) =>{
     try {
+        
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
         let user = req.user
-        const response = await Business.findAll({
+        
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
             where:{
                 status:"accepted"
             },
@@ -275,7 +284,8 @@ const getInvestorBusinesses = async(req, res) =>{
                     required:true,
                 }]
         })
-        successResponse(res, response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res, error)
     }
