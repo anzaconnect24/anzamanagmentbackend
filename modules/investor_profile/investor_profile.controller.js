@@ -253,6 +253,24 @@ const getInvestorProfileDetails = async(req, res) =>{
     }
 }
 
+const getMyProfileDetails = async(req, res) =>{
+    try {
+        const user = req.user
+        const response = await InvestorProfile.findOne({
+            where:{userId:user.id},
+            attributes:{
+                exclude:['userId','programId'],
+            },
+            include:[
+                User,
+            ]
+        })
+        successResponse(res, response)
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 const getReviewersStatus = async(req, res) =>{
     try {
         const uuid = req.params.uuid
@@ -300,6 +318,7 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createInvestorProfile,updateInvestorProfile,deleteInvestorProfile,getUserInvestorProfile,getAllInvestorProfiles,getReviewersStatus,
-    getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,deleteProgramRequirement,postInvestorProfileDocument,
+    getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,deleteProgramRequirement,
+    postInvestorProfileDocument,getMyProfileDetails
     
 }

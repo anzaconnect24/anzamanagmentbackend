@@ -2,7 +2,7 @@ const {Router} = require('express')
 const { validateJWT } = require("../../utils/validateJWT")
 const upload = require("../../utils/upload");
 const { createInvestorProfile, updateInvestorProfile, deleteInvestorProfile, getUserInvestorProfile, getAllInvestorProfiles, getReviewersStatus,
-getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,postInvestorProfileDocument } = require('./investor_profile.controller');
+getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,postInvestorProfileDocument,getMyProfileDetails } = require('./investor_profile.controller');
 
 const router = Router()
 router.post("/",validateJWT,createInvestorProfile)
@@ -16,6 +16,7 @@ router.get('/waiting',validateJWT,getWaitingInvestorProfiles)
 router.get('/accepted',validateJWT,getAcceptedInvestorProfiles)
 router.get('/rejected',validateJWT,getRejectedInvestorProfiles)
 router.get('/:uuid',validateJWT,getInvestorProfileDetails)
+router.get('/me',validateJWT,getMyProfileDetails)
 router.patch('/:uuid',validateJWT,updateInvestorProfile)
 router.delete('/:uuid',validateJWT,deleteInvestorProfile)
 // router.delete('InvestorProfile_requirement/:uuid',validateJWT,deleteInvestorProfileRequirement)
