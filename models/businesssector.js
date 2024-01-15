@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       BusinessSector.hasMany(models.Business, { onDelete: 'cascade'});
+      BusinessSector.hasMany(models.InvestorProfile)
       // define association here
     }
   }

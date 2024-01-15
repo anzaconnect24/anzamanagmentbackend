@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      BusinessReview.belongsTo(models.Business)
       // BusinessReview.hasOne(models.User);
     }
   }

@@ -1,8 +1,8 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {ProgramApplication,User,Business,Sequelize,ProgramRequirement,Program,ProgramApplicationDocument} = require("../../models");
+const {ProgramApplication,ProgramApplicationReview, User,Business,Sequelize,ProgramRequirement,Program,ProgramApplicationDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
-const { where } = require("sequelize");
+const { where,Op } = require("sequelize");
 
 const createProgramApplication = async(req,res)=>{
     try {
@@ -63,15 +63,37 @@ const postProgramApplicationDocument = async (req, res) => {
 
 const getUserProgramApplication = async(req,res)=>{
     try {
+        const uuid = req.params.uuid
         const user = req.user
-        const response = await ProgramApplication.findOne({
+        const program = await Program.findOne({
             where:{
-                userId:user.id
-            },
-            include:{
-                model: business,
-                required: true
+                uuid
             }
+        })
+        const response = await ProgramApplication.findOne({
+            [Op.and]:[{
+                where:{
+                    userId:user.id,
+
+                },
+               where: {
+                programId:program.uuid
+                }
+            }],
+            attributes:{
+                exclude:["UserId","ProgramId","userId","programId"]
+            },
+           include:[{
+            model:ProgramApplicationDocument
+           },{
+            model:Program,
+            include:[ProgramRequirement]
+           },
+           {
+            model:User,
+            
+           }
+        ]
         })
         successResponse(res,response)
     } catch (error) {
@@ -245,7 +267,10 @@ const getProgramApplicationDetails = async(req, res) =>{
             include:[
                 ProgramApplicationDocument,
                 User,
-                Program
+                {
+                    model:Program,
+                    include:[ProgramRequirement]
+                }
             ]
         })
         successResponse(res, response)
@@ -261,17 +286,28 @@ const getReviewersStatus = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-
+        const programApplication = await ProgramApplication.findOne({
+            where:{
+                uuid
+            }
+        })
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            distinct:true,
+            
             where:{role:"Reviewer"},
-            include:{
-                model: ProgramApplication,
-                where:{uuid},
-                // required: true
-            },
+            include:[{
+                model:ProgramApplicationReview,
+                where:{
+                    programApplicationId:programApplication.id
+                },
+                required:false
+            }],
+            // include:{
+            //     model: ProgramApplication,
+            //     where:{uuid},
+            //     // required: true
+            // },
             // include:{
             //     model: ProgramApplication,
             //     // required: true

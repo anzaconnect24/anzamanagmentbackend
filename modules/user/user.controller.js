@@ -1,4 +1,4 @@
-const { User,Business,Product,Role } = require("../../models");
+const { User,Business,InvestorProfile,BusinessSector, Product,Role } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
@@ -293,23 +293,7 @@ const loginUser = async (req, res) => {
   }
 };
 
-  const getAllUsers = async(req,res)=>{
-    try {
-      let {page,limit} = req.query
-      page = parseInt(page)
-      limit = parseInt(limit)
-      const offset = (page-1)*limit
 
-      const {count, rows} = await User.findAndCountAll({
-        offset: offset, //ruka ngapi
-        limit: limit, //leta ngapi
-      })
-      const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-      successResponse(res,{count, data:rows, page, totalPages})
-    } catch (error) {
-        errorResponse(res,error)
-    }
-  }
 
   const getUsersByRole = async(req,res)=>{
     try {
@@ -345,7 +329,25 @@ const loginUser = async (req, res) => {
   }
 
 
-  const getAllCustomers = async(req,res)=>{
+  const getUsers = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi     
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
+  
+  const getReviewers = async(req,res)=>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -356,30 +358,17 @@ const loginUser = async (req, res) => {
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
           include:[Business,],
-          where:{
-            role: "customer"
-          }
-        })
-        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-        successResponse(res,{count, data:rows, page, totalPages})
-    } catch (error) {
-        errorResponse(res,error)
-    }
-  }
-  const getReviewers = async(req,res)=>{
-    try {
-        const response = await User.findAll({
           where:{
             role: "Reviewer"
           }
         })
-
-        successResponse(res,response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res,error)
     }
   }
-  const getAllSellers = async(req,res)=>{
+  const getInvestors = async(req,res)=>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -391,7 +380,28 @@ const loginUser = async (req, res) => {
           limit: limit, //leta ngapi
           include:[Business,],
           where:{
-            role: "seller"
+            role: "Investor"
+          }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
+  const getEnterprenuers = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
+          include:[Business,],
+          where:{
+            role: "Enterprenuer"
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -401,7 +411,7 @@ const loginUser = async (req, res) => {
     }
   }
 
-  const getAllAdmins = async(req,res)=>{
+  const getAdmins = async(req,res)=>{
     try {
         let {page,limit} = req.query
         page = parseInt(page)
@@ -413,7 +423,7 @@ const loginUser = async (req, res) => {
           limit: limit, //leta ngapi
           include:[Business,],
           where:{
-            role: "admin"
+            role: "Admin"
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -474,6 +484,10 @@ const getUserDetails = async(req,res)=>{
             where:{
                 uuid
             },
+            include:[{
+              model:InvestorProfile,
+              include:[BusinessSector]
+            }]
         });
         successResponse(res,user)
     } catch (error) {
@@ -481,94 +495,7 @@ const getUserDetails = async(req,res)=>{
     }
 }
  
-//   const getAllUsers = async(req,res)=>{
-//     try {
-//       const response = await User.findAll({include:[School],where:{
-//         role:{
-//           [Op.ne]:"Alumni"
-//         }
-//       }})
-//      successResponse(res,response)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
-//   const allUsers = async(req,res)=>{
-//     try {
-//       const response = await User.findAll({include:[School]})
-//      successResponse(res,response)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
-//   const getAllAlumni = async(req,res)=>{
-//     try {
-//       const response = await User.findAll({include:[School],
-//         where:{
-//         role:{
-//           [Op.eq]:"Alumni"
-//         }
-//       }})
-//      successResponse(res,response)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
-//   const getUserFullInformation = async (req,res)=>{
-//     try {
-//       const uuid = req.params.uuid;
-//       const user = await User.findOne({
-//         where:{
-//           uuid
-//         },
-//         attributes:{
-//           exclude:['schoolId']
-//         },
-//         include:[School,Gallery]
-//       })
-//       successResponse(res,user)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
-//   const getSchoolAlumni = async(req,res)=>{
-//     try {
-//       const school_uuid = req.params.uuid;
 
-//       const school = await School.findOne({
-//         where:{
-//           uuid:school_uuid
-//         }
-//       })
-//       const response = await User.findAll({
-//       where:{
-//         [Op.and]:[
-//           {
-//             schoolId:school.id
-//           },
-//           {
-//             role:"Alumni"
-//           }
-//         ]
-//       }})
-//      successResponse(res,response)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
-//   const getHeadmasters = async(req,res)=>{
-//     try {
-     
-//       const response = await User.findAll({
-//       where:
-//           {
-//             role:"Moderator"
-//       }})
-//      successResponse(res,response)
-//     } catch (error) {
-//       errorResponse(res,error)
-//     }
-//   }
 
   const getHash = async(req,res)=>{
     try {
@@ -591,10 +518,11 @@ const getUserDetails = async(req,res)=>{
     passwordReset,
     pushSMS,
     getUserDetails,
-    getAllUsers,
-    getAllCustomers,
-    getAllSellers,
-    getAllAdmins,
+    getUsers,
+    getAdmins,
+    getReviewers,
+    getEnterprenuers,
+    getInvestors,
     getUserCounts,
     getMyDetails,
     getUsersByRole
