@@ -105,6 +105,21 @@ const updateInvestorProfile = async(req,res)=>{
     }
 }
 
+const updateMyProfile = async(req,res)=>{
+    try {
+        const user = req.user
+        const investorProfile = await InvestorProfile.findOne({
+            where:{
+                userId:user.id
+            }
+        });
+        const response = await investorProfile.update(req.body)
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+
 const deleteInvestorProfile = async(req,res)=>{
     try {
         let {
@@ -320,6 +335,6 @@ const getReviewersStatus = async(req, res) =>{
 module.exports = {
     createInvestorProfile,updateInvestorProfile,deleteInvestorProfile,getUserInvestorProfile,getAllInvestorProfiles,getReviewersStatus,
     getWaitingInvestorProfiles,getAcceptedInvestorProfiles,getRejectedInvestorProfiles,getInvestorProfileDetails,deleteProgramRequirement,
-    postInvestorProfileDocument,getMyProfileDetails
+    postInvestorProfileDocument,getMyProfileDetails,updateMyProfile
     
 }
