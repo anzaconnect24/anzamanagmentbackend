@@ -193,12 +193,6 @@ const updateMyInfo = async (req, res) => {
       where: {
         uuid:user.uuid
       },
-      include:{
-        model: InvestorProfile,
-        include:{
-          model: BusinessSector
-        }
-      }
     });
     const response = await userDetails.update(req.body);
     successResponse(res, response);
@@ -476,7 +470,15 @@ const getMyDetails = async(req,res)=>{
   try {
       const response = await User.findOne({
         where:{id:user.id},
-        include:[Business]
+        include:[
+          Business,
+          {
+            model: InvestorProfile,
+            include:{
+              model: BusinessSector
+            }
+          }
+        ]
       })
       successResponse(res,response)
   } catch (error) {
