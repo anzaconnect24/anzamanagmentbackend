@@ -50,11 +50,11 @@ module.exports = (sequelize, DataTypes) => {
        allowNull:false
      },
      problem: {
-       type: DataTypes.STRING,
+       type: DataTypes.TEXT,
        allowNull:false
      },
      solution: {
-       type: DataTypes.STRING,
+       type: DataTypes.TEXT,
        allowNull:false
      },
     registration:{
@@ -62,11 +62,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull:true
     },
     team:{
-      type: DataTypes.STRING, 
+      type: DataTypes.TEXT, 
       allowNull:true
     },
     traction:{
-      type: DataTypes.STRING, 
+      type: DataTypes.TEXT, 
       allowNull:true 
     },
     status:{
