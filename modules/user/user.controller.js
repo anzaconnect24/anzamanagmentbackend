@@ -192,6 +192,12 @@ const updateMyInfo = async (req, res) => {
     const userDetails = await User.findOne({
       where: {
         uuid:user.uuid
+      },
+      include:{
+        model: InvestorProfile,
+        include:{
+          model: BusinessSector
+        }
       }
     });
     const response = await userDetails.update(req.body);
