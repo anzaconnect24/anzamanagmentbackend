@@ -256,18 +256,24 @@ const getApprovedBusinesses = async(req, res) =>{
 
 const getInvestorBusinesses = async(req, res) =>{
     try {
+        let user = req.user
         const response = await Business.findAll({
             where:{
                 status:"accepted"
             },
-            // include: [
-            //     User,
-            //     {
-            //         model:BusinessSector,
-            //         where:{
-            //             BusinessSectorId:
-            //         }
-            //     }]
+            include: [
+                User,
+                {
+                    model:BusinessSector,
+                    incude:{
+                        model: InvestorProfile,
+                        where:{
+                            userId:user.id
+                        },
+                        required: true
+                    },
+                    required:true,
+                }]
         })
         successResponse(res, response)
     } catch (error) {
