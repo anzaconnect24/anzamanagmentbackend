@@ -21,6 +21,10 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull:false
       },
+      feedback: {
+        type: DataTypes.TEXT,
+        allowNull:true
+      },
       status: {
         type: DataTypes.ENUM('waiting', 'rejected','accepted'),
         defaultValue: 'waiting',

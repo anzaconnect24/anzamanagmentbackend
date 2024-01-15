@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull:false
       },
+      feedback: {
+        type: DataTypes.TEXT,
+        allowNull:true
+      },
       status: {
         type: DataTypes.ENUM('waiting', 'rejected','accepted'),
         defaultValue: 'waiting',
