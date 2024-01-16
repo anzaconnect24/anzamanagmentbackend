@@ -320,7 +320,7 @@ const getReviewersStatus = async(req, res) =>{
                             SELECT *
                             FROM ProgramApplicationReviews AS programApplicationReview
                             WHERE
-                                userId = User.id
+                                userId = User.id AND programApplicationId = '${programApplication.id}'
                         )`),
                         'status'
                     ],
