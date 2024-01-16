@@ -82,6 +82,8 @@ const {Op, where} = require("sequelize");
 
   const getUserCounts = async(req,res)=>{
     try {
+        const totalUsers = await User.count({})
+
         const customers = await User.count({
           where:{
             role: "customer"
@@ -108,16 +110,26 @@ const {Op, where} = require("sequelize");
         const programupdate = await ProgramUpdate.count({})
         const bfa = await Program.findAll({
           where:{
-            'type':'bfa'
-          }
+            'type':'bfa',
+          },
+          include:[
+            {
+              model: ProgramApplication
+            }
+          ]
         })
         const ira = await Program.findAll({
           where:{
-            'type':'ira'
-          }
+            'type':'ira',
+          },
+          include:[
+            {
+              model: ProgramApplication
+            }
+          ]
         })
 
-        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, business:business, program:program, 
+        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, totalUsers:totalUsers, business:business, program:program, 
         programapplication:programapplication, programupdate:programupdate, bfa:bfa, ira:ira})
     } catch (error) {
         errorResponse(res,error)
