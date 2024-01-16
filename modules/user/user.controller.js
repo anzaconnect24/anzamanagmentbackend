@@ -466,6 +466,7 @@ const loginUser = async (req, res) => {
   }
 
 const getMyDetails = async(req,res)=>{
+  
   const user = req.user
   try {
       const response = await User.findOne({
