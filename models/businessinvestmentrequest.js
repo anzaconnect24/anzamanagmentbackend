@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       BusinessInvestmentRequest.hasMany(models.BusinessInvestmentRequestReview)
       BusinessInvestmentRequest.belongsTo(models.User)
+      BusinessInvestmentRequest.belongsTo(models.Business)
     }
   }
   BusinessInvestmentRequest.init({

@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Business.belongsTo(models.User);
       Business.belongsTo(models.BusinessSector);
-      // Business.hasMany(models.Product, { onDelete: 'cascade'});
+      Business.hasMany(models.BusinessInvestmentRequest, { onDelete: 'cascade'});
     }
   }
   Business.init({

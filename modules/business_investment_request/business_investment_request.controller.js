@@ -174,6 +174,7 @@ const getAllBusinessInvestmentRequests = async(req, res) =>{
                     model:User,
                     include:InvestorProfile
                 },
+                Business
                 
             ]
 
@@ -202,6 +203,7 @@ const getWaitingBusinessInvestmentRequests = async(req, res) =>{
                     model:User,
                     include:InvestorProfile
                 },
+                Business
             ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -228,6 +230,7 @@ const getAcceptedBusinessInvestmentRequests = async(req, res) =>{
                     model:User,
                     include:InvestorProfile
                 },
+                Business
             ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -254,6 +257,7 @@ const getRejectedBusinessInvestmentRequests = async(req, res) =>{
                     model:User,
                     include:InvestorProfile
                 },
+                Business
             ]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -270,7 +274,7 @@ const getBusinessInvestmentRequestDetails = async(req, res) =>{
         const response = await BusinessInvestmentRequest.findOne({
             where:{uuid},
             attributes:{
-                exclude:['userId'],
+                exclude:['userId','businessId'],
             },
             include:[
                 BusinessInvestmentRequestDocument,
@@ -278,6 +282,9 @@ const getBusinessInvestmentRequestDetails = async(req, res) =>{
                     model:User,
                     include:InvestorProfile
                 },
+                {
+                    model:Business,
+                }
             ]
         })
         successResponse(res, response)
