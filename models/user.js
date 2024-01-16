@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasOne(models.InvestorProfile, { onDelete: 'cascade'})
       User.hasOne(models.ProgramApplicationReview)
       User.hasMany(models.BusinessInvestmentRequest, {onDelete: 'cascade'})
-      User.hasMany(models.BusinessInvestmentRequestReview, {onDelete: 'cascade'})
+      User.hasOne(models.BusinessInvestmentRequestReview, {onDelete: 'cascade'})
     }
   }
   User.init({
