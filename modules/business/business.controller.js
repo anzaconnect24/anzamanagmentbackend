@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {Business,User,BusinessSector,InvestorProfile} = require("../../models");
+const {Business,User,BusinessSector,InvestorProfile,Sequelize} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
 const createBusiness = async(req,res)=>{
@@ -261,6 +261,7 @@ const getInvestorBusinesses = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
+        let accepted = "accepted"
 
         let user = req.user
         
@@ -282,7 +283,21 @@ const getInvestorBusinesses = async(req, res) =>{
                         required: true
                     },
                     required:true,
-                }]
+                }
+            ],
+            attributes:{
+                include: [
+                    [
+                        Sequelize.literal(`EXISTS(
+                            SELECT *
+                            FROM BusinessInvestmentRequests AS businessInvestmentRequest
+                            WHERE
+                                status = '${accepted}'
+                        )`),
+                        'invested'
+                    ],
+                ],
+            },
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
