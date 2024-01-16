@@ -123,7 +123,8 @@ const {Op, where} = require("sequelize");
         const totalProgram = await Program.count({})
         const totalProgramapplication = await ProgramApplication.count({})
         const totalProgramupdate = await ProgramUpdate.count({})
-        const bfa = await Program.findAll({
+        const bfa = await Program.findOne({
+          order:[['id','DESC']],
           where:{
             'type':'bfa',
           },
@@ -133,7 +134,8 @@ const {Op, where} = require("sequelize");
             }
           ]
         })
-        const ira = await Program.findAll({
+        const ira = await Program.findOne({
+          order:[['id','DESC']],
           where:{
             'type':'ira',
           },
