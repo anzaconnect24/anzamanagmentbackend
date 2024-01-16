@@ -207,7 +207,7 @@ const getReviewersStatus = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             
-            where:{role:"customer"},
+            where:{role:"Reviewer"},
             include:{
                 model: BusinessInvestmentRequest,
                 where:{uuid},
