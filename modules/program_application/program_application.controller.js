@@ -301,7 +301,7 @@ const getReviewersStatus = async(req, res) =>{
                 where:{
                     programApplicationId:programApplication.id
                 },
-                required:true
+                required:false
             }],
             // include:{
             //     model: ProgramApplication,
