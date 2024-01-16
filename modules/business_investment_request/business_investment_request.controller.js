@@ -304,7 +304,7 @@ const getReviewersStatus = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-        const BusinessInvestmentRequest = await BusinessInvestmentRequest.findOne({
+        const businessInvestmentRequest = await BusinessInvestmentRequest.findOne({
             where:{
                 uuid
             }
@@ -317,7 +317,7 @@ const getReviewersStatus = async(req, res) =>{
             include:[{
                 model:BusinessInvestmentRequestReview,
                 where:{
-                    BusinessInvestmentRequestId:BusinessInvestmentRequest.id
+                    businessInvestmentRequestId:businessInvestmentRequest.id
                 },
                 required:false
             }],
@@ -327,7 +327,7 @@ const getReviewersStatus = async(req, res) =>{
                     [
                         Sequelize.literal(`EXISTS(
                             SELECT *
-                            FROM BusinessInvestmentRequestReviews AS BusinessInvestmentRequestReview
+                            FROM BusinessInvestmentRequestReviews AS businessInvestmentRequestReview
                             WHERE
                                 userId = User.id
                         )`),
