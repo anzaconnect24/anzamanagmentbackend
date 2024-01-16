@@ -161,6 +161,7 @@ const getAllBusinessInvestmentRequests = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
+        const user = req.user
 
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
@@ -168,6 +169,9 @@ const getAllBusinessInvestmentRequests = async(req, res) =>{
             // distinct:true,
             attributes:{
                 exclude:['UserId']
+            },
+            where:{
+                userId:user.id
             },
             include:[
                 {
