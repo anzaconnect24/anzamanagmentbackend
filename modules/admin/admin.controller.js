@@ -84,7 +84,7 @@ const {Op, where} = require("sequelize");
     try {
         const totalUsers = await User.count({})
 
-        const enterprenuer = await User.count({
+        const enterprenuers = await User.count({
           where:{
             role: "Enterprenuer"
           }
@@ -144,7 +144,7 @@ const {Op, where} = require("sequelize");
           ]
         })
 
-        successResponse(res,{enterprenuer:enterprenuer, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, 
         totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira})
     } catch (error) {
