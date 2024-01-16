@@ -91,7 +91,7 @@ const {Op, where} = require("sequelize");
         })
         const investors = await User.count({
           where:{
-            role: "Investors"
+            role: "Investor"
           }
         })
         const reviewers = await User.count({
