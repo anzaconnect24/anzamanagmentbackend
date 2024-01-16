@@ -301,7 +301,7 @@ const getReviewersStatus = async(req, res) =>{
                 where:{
                     programApplicationId:programApplication.id
                 },
-                required:false
+                required:true
             }],
             // include:{
             //     model: ProgramApplication,
@@ -316,8 +316,8 @@ const getReviewersStatus = async(req, res) =>{
                 // exclude:["BusinessId"],
                 include: [
                     [
-                        Sequelize.literal(`(
-                            SELECT count(*)
+                        Sequelize.literal(`EXISTS(
+                            SELECT *
                             FROM ProgramApplicationReviews AS programApplicationReview
                             WHERE
                                 userId = User.id
