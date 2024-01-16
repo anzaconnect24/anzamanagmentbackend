@@ -319,7 +319,7 @@ const getReviewersStatus = async(req, res) =>{
                         Sequelize.literal(`EXISTS(
                             SELECT *
                             FROM ProgramApplicationReviews AS programApplicationReview
-                            WHERE
+                            WHER
                                 userId = User.id AND programApplicationId = '${programApplication.id}'
                         )`),
                         'status'

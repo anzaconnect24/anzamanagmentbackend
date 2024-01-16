@@ -138,7 +138,7 @@ const {Op, where} = require("sequelize");
               [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
             ],
           },
-          group: ['month']
+          // group: ['month']
         })
 
         const ira = await ProgramApplication.findAll({
@@ -155,7 +155,7 @@ const {Op, where} = require("sequelize");
               [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
             ],
           },
-          group: ['month']
+          // group: ['month']
         })
 
         successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
