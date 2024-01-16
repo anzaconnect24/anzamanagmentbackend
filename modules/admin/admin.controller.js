@@ -1,7 +1,7 @@
 const { User,Business,Program,ProgramApplication,ProgramUpdate } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
-const {Op} = require("sequelize");
+const {Op, where} = require("sequelize");
 
 
   const getAllUsers = async(req,res)=>{
@@ -97,9 +97,6 @@ const {Op} = require("sequelize");
             role: "admin"
           }
         })
-        // const revenue = await Payment.sum('amount')
-
-        // const products = await Product.count({})
 
         const business = await Business.count({
           where:{
@@ -109,10 +106,19 @@ const {Op} = require("sequelize");
         const program = await Program.count({})
         const programapplication = await ProgramApplication.count({})
         const programupdate = await ProgramUpdate.count({})
+        const bfa = await Program.findAll({
+          where:{
+            'type':'bfa'
+          }
+        })
+        const ira = await Program.findAll({
+          where:{
+            'type':'ira'
+          }
+        })
 
-        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, 
-        // revenue: revenue==null?0:revenue, products:products, 
-        business:business,program:program,programapplication:programapplication,programupdate:programupdate,  })
+        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, business:business, program:program, 
+        programapplication:programapplication, programupdate:programupdate, bfa:bfa, ira:ira})
     } catch (error) {
         errorResponse(res,error)
     }
