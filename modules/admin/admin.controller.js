@@ -131,17 +131,12 @@ const {Op, where} = require("sequelize");
               where:{
                 type:'bfa'
               },
-              // attributes: {
-              //   exclude:['createdAt'],
-              // }
             }
           ],
           attributes: {
-            exclude:['ProgramId','UserId'],
             include: [
-                    [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
+              [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
             ],
-            // exclude:['createdAt'],
           },
           group: ['month']
         })
@@ -153,17 +148,12 @@ const {Op, where} = require("sequelize");
               where:{
                 type:'ira'
               },
-              attributes: {
-                exclude:['createdAt'],
-              }
             }
           ],
           attributes: {
-            exclude:['ProgramId','UserId'],
             include: [
               [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
             ],
-            // exclude:['createdAt'],
           },
           group: ['month']
         })
