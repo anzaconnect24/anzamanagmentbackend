@@ -1,4 +1,4 @@
-const { User,Business,Program,ProgramApplication,ProgramUpdate } = require("../../models");
+const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op, where} = require("sequelize");
@@ -123,27 +123,49 @@ const {Op, where} = require("sequelize");
         const totalProgram = await Program.count({})
         const totalProgramapplication = await ProgramApplication.count({})
         const totalProgramupdate = await ProgramUpdate.count({})
-        const bfa = await Program.findOne({
-          order:[['id','DESC']],
-          where:{
-            'type':'bfa',
-          },
+
+        const bfa = await ProgramApplication.findAll({
           include:[
             {
-              model: ProgramApplication
+              model: Program,
+              where:{
+                type:'bfa'
+              },
+              // attributes: {
+              //   exclude:['createdAt'],
+              // }
             }
-          ]
+          ],
+          attributes: {
+            exclude:['ProgramId','UserId'],
+            include: [
+                    [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
+            ],
+            // exclude:['createdAt'],
+          },
+          group: ['month']
         })
-        const ira = await Program.findOne({
-          order:[['id','DESC']],
-          where:{
-            'type':'ira',
-          },
+
+        const ira = await ProgramApplication.findAll({
           include:[
             {
-              model: ProgramApplication
+              model: Program,
+              where:{
+                type:'ira'
+              },
+              attributes: {
+                exclude:['createdAt'],
+              }
             }
-          ]
+          ],
+          attributes: {
+            exclude:['ProgramId','UserId'],
+            include: [
+              [Sequelize.fn("MONTH", Sequelize.col("ProgramApplication.createdAt")), "month"],
+            ],
+            // exclude:['createdAt'],
+          },
+          group: ['month']
         })
 
         successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
