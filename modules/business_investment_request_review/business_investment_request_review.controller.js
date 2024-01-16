@@ -209,27 +209,19 @@ const getReviewersStatus = async(req, res) =>{
             
             where:{role:"customer"},
             include:{
-                model: Business,
+                model: BusinessInvestmentRequest,
                 where:{uuid},
-                required: true
+                // required: true
             },
            
             attributes:{
                 // exclude:["BusinessId"],
-
-                // BusinessInvestmentRequestReview: title,type,
-                // ProgramRequirement: name,BusinessInvestmentRequestReviewid
-                // return BusinessInvestmentRequestReview + ProgramRequirement
-                // BusinessInvestmentRequestReviewapplication: userid,BusinessInvestmentRequestReviewid,status(wait/reje/acce)
-                // BusinessInvestmentRequestReviewappliccationdocument: BusinessInvestmentRequestReviewapplicationid,filelink,filename
-                // BusinessInvestmentRequestReviewapplicationreview: BusinessInvestmentRequestReviewapplicationid,status,userid,feedback
-
                 include: [
                     [
                         // SELECT userId
                         Sequelize.literal(`EXISTS(
                             SELECT *
-                            FROM BusinessInvestmentRequestReviews AS BusinessInvestmentRequestReview
+                            FROM BusinessInvestmentRequestReviews AS businessInvestmentRequestReview
                             WHERE
                                 userId = User.id
                         )`),
