@@ -100,14 +100,24 @@ const {Op, where} = require("sequelize");
           }
         })
 
-        const business = await Business.count({
+        const pendingBusiness = await Business.count({
           where:{
             status:"waiting"
           }
         })
-        const program = await Program.count({})
-        const programapplication = await ProgramApplication.count({})
-        const programupdate = await ProgramUpdate.count({})
+        const pendingUser = await User.count({
+          where:{
+            activated:false
+          }
+        })
+        const pendingProgramApplication = await ProgramApplication.count({
+          where:{
+            status:"waiting"
+          }
+        })
+        const totalProgram = await Program.count({})
+        const totalProgramapplication = await ProgramApplication.count({})
+        const totalProgramupdate = await ProgramUpdate.count({})
         const bfa = await Program.findAll({
           where:{
             'type':'bfa',
@@ -129,8 +139,9 @@ const {Op, where} = require("sequelize");
           ]
         })
 
-        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, totalUsers:totalUsers, business:business, program:program, 
-        programapplication:programapplication, programupdate:programupdate, bfa:bfa, ira:ira})
+        successResponse(res,{customers:customers, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, 
+        totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira})
     } catch (error) {
         errorResponse(res,error)
     }
