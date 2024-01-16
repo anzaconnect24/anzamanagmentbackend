@@ -113,9 +113,12 @@ const getAllBusinessInvestmentRequestReviews = async(req, res) =>{
             },
             include:[{
                 model:BusinessInvestmentRequest,
-                include:{
-                    model:User
-                }
+                include:[
+                    Business,
+                    {
+                        model:User
+                    }
+                ]
             }]
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
