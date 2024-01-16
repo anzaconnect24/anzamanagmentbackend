@@ -101,7 +101,7 @@ const {Op, where} = require("sequelize");
         })
         const admins = await User.count({
           where:{
-            role: "admin"
+            role: "Admin"
           }
         })
 
