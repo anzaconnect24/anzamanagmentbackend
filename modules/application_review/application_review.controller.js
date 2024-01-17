@@ -35,6 +35,7 @@ const createApplicationReview = async(req,res)=>{
                     applicationId:application.id,
                     // description,
                 })
+                sendEmail(req, res, user, 'assigned_application')
                 successResponse(res,response)
                 
             } else {

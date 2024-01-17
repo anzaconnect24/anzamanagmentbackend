@@ -16,7 +16,7 @@ const createBusinessInvestmentRequestReview = async(req,res)=>{
                 uuid:business_investment_request_uuid
             }
         })
-
+        sendEmail(req, res, user, 'assigned_business_investment')
         const response = await BusinessInvestmentRequestReview.create({
             businessInvestmentRequestId:businessInvestmentRequest.id,
             userId:user.id,

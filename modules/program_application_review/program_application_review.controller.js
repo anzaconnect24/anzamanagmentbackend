@@ -22,6 +22,7 @@ const createProgramApplicationReview = async(req,res)=>{
             userId:user.id,
             feedback:""
         })
+        sendEmail(req, res, user, 'assigned_program_application')
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
