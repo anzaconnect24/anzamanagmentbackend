@@ -103,6 +103,7 @@ const getAllUserPermissions = async(req, res) =>{
         const {count, rows} = await UserPermission.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             distinct:true,
 
         })

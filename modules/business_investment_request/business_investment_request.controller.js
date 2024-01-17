@@ -166,6 +166,7 @@ const getAllBusinessInvestmentRequests = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             // distinct:true,
             attributes:{
                 exclude:['UserId']
@@ -200,6 +201,7 @@ const getWaitingBusinessInvestmentRequests = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             // distinct:true,
             where:{status:'waiting'},
             include:[
@@ -227,6 +229,7 @@ const getAcceptedBusinessInvestmentRequests = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             // distinct:true,
             where:{status:'accepted'},
             include:[
@@ -254,6 +257,7 @@ const getRejectedBusinessInvestmentRequests = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             // distinct:true,
             where:{status:'rejected'},
             include:[
@@ -312,6 +316,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             
             where:{role:"Reviewer"},
             include:[{

@@ -150,6 +150,7 @@ const getAllBusiness = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             distinct:true,
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -169,6 +170,7 @@ const getApprovedBusiness = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             distinct:true,
             where:{
                 status: "accepted",
@@ -268,6 +270,7 @@ const getInvestorBusinesses = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             where:{
                 status:"accepted"
             },

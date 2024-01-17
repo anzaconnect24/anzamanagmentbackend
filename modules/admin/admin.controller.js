@@ -24,6 +24,7 @@ const {Op, where} = require("sequelize");
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
+          order:['createdAt','DESC'],
           include:[Business,],
           where:{
             role: "customer"
@@ -46,6 +47,7 @@ const {Op, where} = require("sequelize");
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
+          order:['createdAt','DESC'],
           include:[Business,],
           where:{
             role: "seller"
@@ -68,6 +70,7 @@ const {Op, where} = require("sequelize");
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
+          order:['createdAt','DESC'],
           include:[Business,],
           where:{
             role: "admin"

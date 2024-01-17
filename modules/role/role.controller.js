@@ -95,6 +95,7 @@ const getAllRoles = async(req, res) =>{
         const {count, rows} = await Role.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:['createdAt','DESC'],
             distinct:true,
 
         })
