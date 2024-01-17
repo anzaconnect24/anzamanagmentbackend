@@ -135,7 +135,7 @@ const getAllPitchMaterials = async(req, res) =>{
         const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
 
         })
@@ -156,7 +156,7 @@ const getVideoPitchMaterials = async(req, res) =>{
         const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             where:{type:'video'},
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -176,7 +176,7 @@ const getDocumentPitchMaterials = async(req, res) =>{
         const {count, rows} = await PitchMaterial.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             where:{type:'document'},
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)

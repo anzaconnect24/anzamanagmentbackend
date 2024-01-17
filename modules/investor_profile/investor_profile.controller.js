@@ -164,7 +164,7 @@ const getAllInvestorProfiles = async(req, res) =>{
         const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             include:{
                 model: User,
@@ -189,7 +189,7 @@ const getWaitingInvestorProfiles = async(req, res) =>{
         const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'waiting'},
             include:[
@@ -214,7 +214,7 @@ const getAcceptedInvestorProfiles = async(req, res) =>{
         const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'accepted'},
             include:[
@@ -239,7 +239,7 @@ const getRejectedInvestorProfiles = async(req, res) =>{
         const {count, rows} = await InvestorProfile.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'rejected'},
             include:[
@@ -302,7 +302,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{role:"Reviewer"},
             include:{

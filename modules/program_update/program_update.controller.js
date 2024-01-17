@@ -158,7 +158,7 @@ const getAllProgramUpdates = async(req, res) =>{
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             where:{
                programId:program.id
             },
@@ -184,7 +184,7 @@ const getWaitingProgramUpdates = async(req, res) =>{
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'waiting'},
             include:[
@@ -209,7 +209,7 @@ const getAcceptedProgramUpdates = async(req, res) =>{
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'accepted'},
             include:[
@@ -234,7 +234,7 @@ const getRejectedProgramUpdates = async(req, res) =>{
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{status:'rejected'},
             include:[
@@ -279,7 +279,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{role:"Reviewer"},
             include:{

@@ -313,7 +313,7 @@ const loginUser = async (req, res) => {
       const {count, rows} = await User.findAndCountAll({
         offset: offset, //ruka ngapi
         limit: limit, //leta ngapi
-        order:['createdAt','DESC'],
+        order:[['createdAt','DESC']],
         include:{
           model:UserRole,
           required:true,
@@ -340,7 +340,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi   
-          order:['createdAt','DESC'],  
+          order:[['createdAt','DESC']],  
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res,{count, data:rows, page, totalPages})
@@ -359,7 +359,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
-          order:['createdAt','DESC'],
+          order:[['createdAt','DESC']],
           include:[Business,],
           where:{
             role: "Reviewer"
@@ -381,7 +381,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
-          order:['createdAt','DESC'],
+          order:[['createdAt','DESC']],
           include:[Business,],
           where:{
             role: "Investor"
@@ -403,7 +403,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
-          order:['createdAt','DESC'],
+          order:[['createdAt','DESC']],
           include:[Business],
           where:{
             role: "Enterprenuer"
@@ -426,7 +426,7 @@ const loginUser = async (req, res) => {
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
-          order:['createdAt','DESC'],
+          order:[['createdAt','DESC']],
           include:[Business,],
           where:{
             role: "Admin"

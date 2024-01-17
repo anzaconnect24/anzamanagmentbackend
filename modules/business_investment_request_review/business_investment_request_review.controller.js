@@ -138,7 +138,7 @@ const getBfaBusinessInvestmentRequestReviews = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequestReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'bfa'},
             include:{
@@ -163,7 +163,7 @@ const getIraBusinessInvestmentRequestReviews = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequestReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'ira'},
             include:{
@@ -211,7 +211,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             
             where:{role:"Reviewer"},
             include:{

@@ -116,7 +116,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{role:"Reviewer"},
             include:{

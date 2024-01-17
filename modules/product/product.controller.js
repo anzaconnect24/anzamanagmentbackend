@@ -51,7 +51,7 @@ const getProducts = async(req,res)=>{
         const {count, rows} = await Product.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             include:{
                 model:ProductImage,
@@ -149,7 +149,7 @@ const BusinessProducts = async(req,res)=>{
          const {count, rows} = await Product.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             include:{
                 model:ProductImage,
@@ -203,7 +203,7 @@ const getFeaturedProducts = async(req,res)=>{
             const {count, rows} = await Product.findAndCountAll({
                 offset: offset, //ruka ngapi
                 limit: limit, //leta ngapi
-                order:['createdAt','DESC'],
+                order:[['createdAt','DESC']],
                 distinct:true,
                 where:{
                     isFeatured:true
@@ -304,7 +304,7 @@ const getBusinessSectorProducts = async(req,res)=>{
         const {count, rows} = await Product.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             attributes:{
                 exclude:['BusinessId'],
@@ -461,7 +461,7 @@ const searchProduct = async(req, res) => {
         const {count, rows} = await Product.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
-            order:['createdAt','DESC'],
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{
                 name: { [Op.like]: "%"+itemName+"%" },
