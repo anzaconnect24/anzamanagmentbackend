@@ -91,12 +91,12 @@ const updateBusiness = async(req,res)=>{
 //   var response;
 //       switch (status) {
 //         case "accepted":
-//             subject = 'Your seller application to anza marketplace is accepted'
-//             message = 'Hello '+user.name+',<br>This is to inform you that we have accepted your request to be a seller,<br>You can now start adding your products to Anza marketplace store.'
+//             subject = 'Your seller application to Anza Management System is accepted'
+//             message = 'Hello '+user.name+',<br>This is to inform you that we have accepted your request to be a seller,<br>You can now start adding your products to Anza Management System store.'
 //         response =   await sendMail(user, subject, message, status);
 //           break;
 //         case "rejected":
-//             subject = 'Your seller application to anza marketplace is rejected'
+//             subject = 'Your seller application to Anza Management System is rejected'
 //             message = 'Hello '+user.name+',<br>This is to inform you that we have rejected your request to be a seller,<br>You can contact us for more information through phone: +255 000 000 0000,email: anza@email.com.'
 //         response =   await sendMail(user, subject, message, status);
           

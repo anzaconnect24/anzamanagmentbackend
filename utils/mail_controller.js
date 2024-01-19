@@ -18,7 +18,7 @@ const sendMail = (user,subject,message,status)=>{
     try {
         const templatePath = path.join(__dirname, 'email_template.ejs');
         const emailParams = {
-            from: 'Anza marketplace',
+            from: 'Anza Management System',
             to: user.email,
             subject: subject,
             html:ejs.render(fs.readFileSync(templatePath, 'utf8'), {user:user,subject:subject,message:message,status:status })
@@ -33,7 +33,7 @@ const resetPassword = (user)=>{
   try {
       const templatePath = path.join(__dirname, 'password_reset.ejs');
       const emailParams = {
-          from: 'Anza marketplace',
+          from: 'Anza Management System',
           to: user.email,
           subject: 'Reset password',
           html:ejs.render(fs.readFileSync(templatePath, 'utf8'), { name:user.name,link:user.uuid }),
