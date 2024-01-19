@@ -35,6 +35,7 @@ const createApplicationReview = async(req,res)=>{
                     applicationId:application.id,
                     // description,
                 })
+                sendEmail(req, res, user, 'assigned_application')
                 successResponse(res,response)
                 
             } else {
@@ -116,6 +117,7 @@ const getAllApplicationReviews = async(req, res) =>{
         const {count, rows} = await ApplicationReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
             include:{
                 model: Application,

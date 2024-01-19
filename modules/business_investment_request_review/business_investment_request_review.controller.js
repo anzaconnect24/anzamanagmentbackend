@@ -16,7 +16,7 @@ const createBusinessInvestmentRequestReview = async(req,res)=>{
                 uuid:business_investment_request_uuid
             }
         })
-
+        sendEmail(req, res, user, 'assigned_business_investment')
         const response = await BusinessInvestmentRequestReview.create({
             businessInvestmentRequestId:businessInvestmentRequest.id,
             userId:user.id,
@@ -138,6 +138,7 @@ const getBfaBusinessInvestmentRequestReviews = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequestReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'bfa'},
             include:{
@@ -162,6 +163,7 @@ const getIraBusinessInvestmentRequestReviews = async(req, res) =>{
         const {count, rows} = await BusinessInvestmentRequestReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'ira'},
             include:{
@@ -209,6 +211,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             
             where:{role:"Reviewer"},
             include:{

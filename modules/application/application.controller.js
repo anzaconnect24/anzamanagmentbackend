@@ -97,6 +97,7 @@ const getAllApplications = async(req, res) =>{
         const {count, rows} = await Application.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
 
         })
@@ -117,6 +118,7 @@ const getPendingApplication = async(req, res) =>{
         const {count, rows} = await Application.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{
                 status:'Pending'

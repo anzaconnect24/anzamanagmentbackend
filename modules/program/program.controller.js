@@ -103,6 +103,7 @@ const getAllPrograms = async(req, res) =>{
         const {count, rows} = await Program.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             include:{
                 model: ProgramRequirement,
@@ -129,6 +130,7 @@ const getBfaPrograms = async(req, res) =>{
             order:[['createdAt', 'DESC']],
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'bfa'},
             include:{
@@ -168,6 +170,7 @@ const getIraPrograms = async(req, res) =>{
             order:[['createdAt', 'DESC']],
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'ira'},
             include:{
@@ -225,6 +228,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{role:"customer"},
             include:{

@@ -22,6 +22,7 @@ const createProgramApplicationReview = async(req,res)=>{
             userId:user.id,
             feedback:""
         })
+        sendEmail(req, res, user, 'assigned_program_application')
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -134,6 +135,7 @@ const getBfaProgramApplicationReviews = async(req, res) =>{
         const {count, rows} = await ProgramApplicationReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'bfa'},
             include:{
@@ -158,6 +160,7 @@ const getIraProgramApplicationReviews = async(req, res) =>{
         const {count, rows} = await ProgramApplicationReview.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             // distinct:true,
             where:{type:'ira'},
             include:{
@@ -200,6 +203,7 @@ const getReviewersStatus = async(req, res) =>{
         const {count, rows} = await User.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             
             where:{role:"customer"},
             include:{

@@ -150,6 +150,7 @@ const getAllBusiness = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -169,6 +170,7 @@ const getApprovedBusiness = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             distinct:true,
             where:{
                 status: "accepted",
@@ -231,13 +233,22 @@ const findBusiness = async(req, res) =>{
 
 const getWaitingBusinesses = async(req, res) =>{
     try {
-        const response = await Business.findAll({
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             where:{
                 status:"waiting"
             },
             include: [User,BusinessSector]
         })
-        successResponse(res, response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res, error)
     }
@@ -245,13 +256,22 @@ const getWaitingBusinesses = async(req, res) =>{
 
 const getApprovedBusinesses = async(req, res) =>{
     try {
-        const response = await Business.findAll({
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             where:{
                 status:"accepted"
             },
             include: [User,BusinessSector]
         })
-        successResponse(res, response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res, error)
     }
@@ -271,6 +291,7 @@ const getInvestorBusinesses = async(req, res) =>{
         const {count, rows} = await Business.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             where:{
                 status:"accepted"
             },
@@ -311,13 +332,22 @@ const getInvestorBusinesses = async(req, res) =>{
 
 const getRejectedBusinesses = async(req, res) =>{
     try {
-        const response = await Business.findAll({
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await Business.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
             where:{
                 status:"rejected"
             },
             include: [User,BusinessSector]
         })
-        successResponse(res, response)
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res, error)
     }
