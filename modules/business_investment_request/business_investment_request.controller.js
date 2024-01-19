@@ -16,6 +16,8 @@ const createBusinessInvestmentRequest = async(req,res)=>{
             userId:user.id,
             businessId:business.id
         })
+        admin = await User.findOne({ where: { role:'Admin' } });
+        sendEmail(req, res, admin, 'business_investment_request')
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
