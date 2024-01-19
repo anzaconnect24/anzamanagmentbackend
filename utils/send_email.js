@@ -9,12 +9,12 @@ const sendEmail = async (req, res,user,status) => {
       switch (status) {
         case "accepted":
             subject = 'Your entrepreneur application to Anza Marketplace is accepted'
-            message = 'Hello '+user.name+',<br>This is to inform you that we have accepted your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anza@email.com.'
+            message = 'Hello '+user.name+',<br>This is to inform you that we have accepted your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anzaentrepreneurs@gmail.com.'
             response =   await sendMail(user, subject, message, status);
           break;
         case "rejected":
             subject = 'Your entrepreneur application to Anza Marketplace is rejected'
-            message = 'Hello '+user.name+',<br>This is to inform you that we have rejected your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anza@email.com.'
+            message = 'Hello '+user.name+',<br>This is to inform you that we have rejected your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anzaentrepreneurs@gmail.com.'
             response =   await sendMail(user, subject, message, status);
           break;
         case "order":
@@ -34,22 +34,27 @@ const sendEmail = async (req, res,user,status) => {
           break;
         case "assigned_business_investment":
             subject = 'Assigned to review business investment'
-            message = 'Hello '+user.name+'!,<br>This is to inform you that you have been assigned task to review business investment'
+            message = 'Hello '+user.name+'!,<br>This is to inform you that you have been assigned task to <a href="https://anzamanagementsystem.vercel.app/">review business investment</a>'
             response =   await sendMail(user, subject, message, status);
           break;
         case "assigned_program_application":
             subject = 'Assigned to review program application'
-            message = 'Hello '+user.name+'!,<br>This is to inform you that you have been assigned task to review program application'
+            message = 'Hello '+user.name+'!,<br>This is to inform you that you have been assigned task to <a href="https://anzamanagementsystem.vercel.app/">review program application</a>'
             response =   await sendMail(user, subject, message, status);
           break;
         case "registration":
             subject = 'New user registration'
-            message = 'Hello '+user.name+'!,<br>New user have registered, You need to activate his/her account'
+            message = 'Hello '+user.name+'!,<br>New user have registered, You need to <a href="https://anzamanagementsystem.vercel.app/">activate his/her account</a>'
             response =   await sendMail(user, subject, message, status);
           break;
         case "program_application":
             subject = 'New user program application'
-            message = 'Hello '+user.name+'!,<br>New user have applied for a program, Assign a reviewer for this application'
+            message = 'Hello '+user.name+'!,<br>New user have applied for a program, <a href="https://anzamanagementsystem.vercel.app/">Assign a reviewer for this application</a>'
+            response =   await sendMail(user, subject, message, status);
+          break;
+        case "business_investment_request":
+            subject = 'New business investment request'
+            message = 'Hello '+user.name+'!,<br>An investor has just applied to invest on a business, <a href="https://anzamanagementsystem.vercel.app/">You can take action(accept/reject) here</a>'
             response =   await sendMail(user, subject, message, status);
           break;
         default:
