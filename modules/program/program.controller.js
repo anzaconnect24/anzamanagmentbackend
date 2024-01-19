@@ -165,6 +165,7 @@ const getIraPrograms = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
+        let user = req.user
 
         const {count, rows} = await Program.findAndCountAll({
             order:[['createdAt', 'DESC']],
@@ -176,7 +177,21 @@ const getIraPrograms = async(req, res) =>{
             include:{
                 model: ProgramRequirement,
                 // required: true,
-            }
+            },
+            attributes:{
+                include: [
+                    [
+                        Sequelize.literal(`EXISTS(
+                            SELECT *
+                            FROM ProgramApplications AS programApplication
+                            WHERE
+                                userId = ${user.id} AND
+                                programId = Program.id
+                        )`),
+                        'applied'
+                    ],
+                ],
+            },
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
