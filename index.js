@@ -19,6 +19,8 @@ const BusinessInvestmentRequestReviewRoutes =  require("./modules/business_inves
 const InvestorProfileRoutes =  require("./modules/investor_profile/investor_profile.routes")
 const ProgramUpdateRoutes =  require("./modules/program_update/program_update.routes")
 const PitchMaterialRoutes =  require("./modules/pitch_material/pitch_material.routes")
+const BusinessDocumentRoutes =  require("./modules/business_document/business_document.routes")
+
 // ********************
 const ProductRoutes =  require("./modules/product/product.routes")
 const WishlistRoutes =  require("./modules/wishlist/wishlist.routes")
@@ -62,8 +64,11 @@ app.use("/program_update",ProgramUpdateRoutes)
 app.use("/pitch_material",PitchMaterialRoutes)
 app.use("/business_investment_request",BusinessInvestmentRequestRoutes)
 app.use("/business_investment_request_review",BusinessInvestmentRequestReviewRoutes)
+app.use("/business_document",BusinessDocumentRoutes)
+
 // *************
 app.use("/product",ProductRoutes)
+
 app.use("/order",OrderRoutes)
 app.use("/wishlist",WishlistRoutes)
 app.use("/sector",BusinessSectors)

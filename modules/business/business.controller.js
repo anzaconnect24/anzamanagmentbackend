@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {Business,User,BusinessSector,InvestorProfile,Sequelize} = require("../../models");
+const {Business,User,BusinessSector,InvestorProfile,Sequelize,BusinessDocument} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
 const createBusiness = async(req,res)=>{
@@ -218,7 +218,10 @@ const findBusiness = async(req, res) =>{
             where:{
                 uuid
             },
-            include:[User,BusinessSector]
+            attributes:{
+                exclude:["userId","businessSectorId"]
+            },
+            include:[User,BusinessSector,BusinessDocument]
         })
         successResponse(res, response)
     } catch (error) {
