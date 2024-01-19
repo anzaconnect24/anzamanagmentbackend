@@ -202,7 +202,7 @@ const getWaitingBusinessInvestmentRequests = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
-            // distinct:true,
+            distinct:true,
             where:{status:'waiting'},
             include:[
                 {
