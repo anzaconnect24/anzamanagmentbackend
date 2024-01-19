@@ -8,6 +8,7 @@ const {Op} = require("sequelize");
 const sendSMS = require("../../utils/send_sms");
 const addPrefixToPhoneNumber = require("../../utils/add_number_prefix");
 const { resetPassword, sendMail } = require("../../utils/mail_controller");
+const { sendEmail } = require("../../utils/send_email");
 // const business = require("../../models/business");
 
 
@@ -163,7 +164,9 @@ const registerUser = async (req, res) => {
           email,
           password: hashedPassword,
           role
-        });  
+        }); 
+        admin = await User.findOne({ where: { role:'Admin' } });
+        sendEmail(req, res, admin, 'registration')
         const response = await User.findOne({
           where: {
             email: email

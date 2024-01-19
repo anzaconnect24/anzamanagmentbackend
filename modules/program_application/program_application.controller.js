@@ -15,6 +15,8 @@ const createProgramApplication = async(req,res)=>{
             userId:user.id,
             programId:program.id
         })
+        admin = await User.findOne({ where: { role:'Admin' } });
+        sendEmail(req, res, admin, 'program_application')
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)

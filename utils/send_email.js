@@ -42,6 +42,16 @@ const sendEmail = async (req, res,user,status) => {
             message = 'Hello '+user.name+'!,<br>This is to inform you that you have been assigned task to review program application'
             response =   await sendMail(user, subject, message, status);
           break;
+        case "registration":
+            subject = 'New user registration'
+            message = 'Hello '+user.name+'!,<br>New user have registered, You need to activate his/her account'
+            response =   await sendMail(user, subject, message, status);
+          break;
+        case "program_application":
+            subject = 'New user program application'
+            message = 'Hello '+user.name+'!,<br>New user have applied for a program, Assign a reviewer for this application'
+            response =   await sendMail(user, subject, message, status);
+          break;
         default:
           break;
       }  
