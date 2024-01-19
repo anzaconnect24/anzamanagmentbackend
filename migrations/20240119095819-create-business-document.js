@@ -16,6 +16,10 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull:false
       },
+      link: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
       businessId: {
         type: DataTypes.STRING,
         allowNull:false
