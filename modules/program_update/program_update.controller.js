@@ -154,7 +154,7 @@ const getAllProgramUpdates = async(req, res) =>{
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
-        const offset = (page-1)*limitsi
+        const offset = (page-1)*limit
         const {count, rows} = await ProgramUpdate.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
