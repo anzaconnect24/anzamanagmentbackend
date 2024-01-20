@@ -200,6 +200,8 @@ const getWaitingBusinessInvestmentRequests = async(req, res) =>{
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
+        const response = await BusinessInvestmentRequest.findAll({});
+
         const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
@@ -209,7 +211,7 @@ const getWaitingBusinessInvestmentRequests = async(req, res) =>{
             include:[
                 {
                     model:User,
-                    include:InvestorProfile
+                    // include:[InvestorProfile]
                 },
                 Business
             ]
