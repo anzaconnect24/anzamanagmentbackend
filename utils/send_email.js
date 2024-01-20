@@ -8,17 +8,17 @@ const sendEmail = async (req, res,user,status) => {
       var response;
       switch (status) {
         case "accepted":
-            subject = 'Your entrepreneur application to Anza Marketplace is accepted'
+            subject = 'Your entrepreneur application to Anza Management System is accepted'
             message = 'Hello '+user.name+',<br>This is to inform you that we have accepted your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anzaentrepreneurs@gmail.com.'
             response =   await sendMail(user, subject, message, status);
           break;
         case "rejected":
-            subject = 'Your entrepreneur application to Anza Marketplace is rejected'
+            subject = 'Your entrepreneur application to Anza Management System is rejected'
             message = 'Hello '+user.name+',<br>This is to inform you that we have rejected your request to be an entrepreneur,<br>You can contact us for more information through phone: +255 000 000 0000,email: anzaentrepreneurs@gmail.com.'
             response =   await sendMail(user, subject, message, status);
           break;
         case "order":
-            subject = 'Your order has been placed at Anza Marketplace'
+            subject = 'Your order has been placed at Anza Management System'
             message = 'Hello '+user.name+',<br>This is to inform you that your order has been placed and payment was successful.<br>You can now wait for the delivery of your items.'
             response =   await sendMail(user, subject, message, status);
           break;
