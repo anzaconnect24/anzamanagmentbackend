@@ -302,7 +302,6 @@ const getInvestorBusinesses = async(req, res) =>{
                 User,
                 {
                     model:BusinessSector,
-                    
                     required:true,
                 }
             ],
