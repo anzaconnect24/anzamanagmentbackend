@@ -42,6 +42,14 @@ module.exports = (sequelize, DataTypes) => {
       type:DataTypes.INTEGER,
       allowNull:true
     },
+    lookingForInvestment:{
+      type:DataTypes.BOOLEAN,
+      defaultValue:true,
+    },
+    investmentAmount:{
+      type:DataTypes.INTEGER,
+      allowNull:true,
+    },
     businessSectorId:{
       type: DataTypes.INTEGER, 
       allowNull:false  

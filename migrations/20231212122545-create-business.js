@@ -21,6 +21,14 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull:false
       },
+      lookingForInvestment:{
+        type:DataTypes.BOOLEAN,
+        defaultValue:true,
+      },
+      investmentAmount:{
+        type:DataTypes.INTEGER,
+        allowNull:true,
+      },
       phone:{
         type: DataTypes.STRING,
         allowNull:false
