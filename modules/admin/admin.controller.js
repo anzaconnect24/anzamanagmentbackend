@@ -1,4 +1,4 @@
-const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize } = require("../../models");
+const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op, where} = require("sequelize");
@@ -97,6 +97,16 @@ const {Op, where} = require("sequelize");
             role: "Investor"
           }
         })
+        const videos = await PitchMaterial.count({
+          where:{
+            type: "video"
+          }
+        })
+        const documents = await PitchMaterial.count({
+          where:{
+            type: "document"
+          }
+        })
         const reviewers = await User.count({
           where:{
             role: "Reviewer"
@@ -161,7 +171,7 @@ const {Op, where} = require("sequelize");
           // group: ['month']
         })
 
-        successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        successResponse(res,{enterprenuers:enterprenuers,documents,videos, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, 
         totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira})
     } catch (error) {

@@ -210,7 +210,7 @@ const updateUser = async (req, res) => {
     const uuid = req.params.uuid; // Move this line to after getting user object
     let {
       password,
-     
+      
       ...otherFields // Use object destructuring to collect other fields
     } = req.body;
    
@@ -221,17 +221,22 @@ const updateUser = async (req, res) => {
       delete otherFields.password;
     }
     let image = null;
+    console.log(req.file)
+   
+
+    const user = req.user
+    const userDetails = await User.findOne({
+      where:{
+        id:user.id
+      }
+    })
     if (req.file) {
       image = await getUrl(req);
+    }else{
+      image = userDetails.image
     }
 
-    const user = await User.findOne({
-      where: {
-        uuid
-      }
-    });
-
-    const response = await user.update({
+    const response = await userDetails.update({
       password,
       image,
       ...otherFields 
