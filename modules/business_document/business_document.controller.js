@@ -7,7 +7,9 @@ const createBusinessDocument = async(req,res)=>{
         let link = null;
         let {title,business_uuid} = req.body    
         const business = await Business.findOne({
-            uuid:business_uuid
+            where:{
+                uuid:business_uuid
+            }
         })
         if (req.file) {
             link = await getUrl(req);

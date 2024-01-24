@@ -1,5 +1,7 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {Business,User,BusinessSector,InvestorProfile,Sequelize,BusinessDocument} = require("../../models");
+const {Business,User,BusinessSector,InvestorProfile,Sequelize,BusinessDocument,} = require("../../models");
+const { where,Op } = require("sequelize");
+
 const { sendEmail } = require("../../utils/send_email");
 
 const createBusiness = async(req,res)=>{
@@ -69,13 +71,7 @@ const updateBusiness = async(req,res)=>{
                 uuid
             }
         });
-    //  if(feedbackMessage){
-    //     const user = await User.findOne({
-    //         where:{id:user.id}
-    //     })
-    //     sendEmail(req, res, user, feedbackMessage)
-    //  }
-        
+  
         const response = await business.update(req.body)
         successResponse(res,response)
     } catch (error) {
@@ -292,20 +288,20 @@ const getInvestorBusinesses = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
-            where:{
-                status:"accepted"
-            },
+            
+                [Op.and]:[{
+                    where:{
+                    status:"accepted"
+                },
+                where:{
+                    lookingForInvestment:true
+                }}],
+            
+
             include: [
                 User,
                 {
                     model:BusinessSector,
-                    incude:{
-                        model: InvestorProfile,
-                        where:{
-                            userId:user.id
-                        },
-                        required: true
-                    },
                     required:true,
                 }
             ],

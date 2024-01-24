@@ -38,21 +38,46 @@ const getUserProgram = async(req,res)=>{
     }
 }
 
+const addProgramRequirements = async(req,res)=>{
+    try {
+        const {requirements} = req.body
+        const uuid = req.params.uuid
+        const program = await Program.findOne({
+            where:{
+                uuid
+            }
+        });
+        let programrequirements = requirements.map((item)=>{
+            return { 
+                name:item,
+                programId:program.id
+            }
+        })
+        let response = await ProgramRequirement.bulkCreate(programrequirements)   
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+
 const updateProgram = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const Program = await Program.findOne({
+        const program = await Program.findOne({
             where:{
                 uuid
             }
         });
         //find user
-        const user = await User.findOne({
-            where:{id:Program.userId}
-        })
-        sendEmail(req, res, user, status)
-        const response = await Program.update(req.body)
+     
+        if(status){
+            const user = await User.findOne({
+                where:{id:program.userId}
+            })
+            sendEmail(req, res, user, status)
+        }
+        const response = await program.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -61,16 +86,14 @@ const updateProgram = async(req,res)=>{
 
 const deleteProgram = async(req,res)=>{
     try {
-        let {
-            name
-        } = req.body;
+     
         const uuid = req.params.uuid
-        const program = await program.findOne({
+        const program = await Program.findOne({
             where:{
                 uuid
             }
         });
-        const response = await Program.destroy()
+        const response = await program.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -289,5 +312,5 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,
-    getBfaPrograms,getIraPrograms,getProgramDetails,deleteProgramRequirement
+    getBfaPrograms,getIraPrograms,getProgramDetails,deleteProgramRequirement,addProgramRequirements,
 }
