@@ -193,6 +193,82 @@ const getAllBusinessInvestmentRequests = async(req, res) =>{
     }
 }
 
+const getInvestorWaitingBusinessInvestmentRequests = async(req, res) =>{
+    // res.status(200).json({"k":"v"});
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        const user = req.user
+
+        const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
+            // distinct:true,
+            attributes:{
+                exclude:['UserId']
+            },
+            where:{
+                userId:user.id,
+                status:'waiting'
+            },
+            include:[
+                {
+                    model:User,
+                    include:InvestorProfile
+                },
+                Business
+                
+            ]
+
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
+const getInvestorClosedBusinessInvestmentRequests = async(req, res) =>{
+    // res.status(200).json({"k":"v"});
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        const user = req.user
+
+        const {count, rows} = await BusinessInvestmentRequest.findAndCountAll({
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
+            // distinct:true,
+            attributes:{
+                exclude:['UserId']
+            },
+            where:{
+                userId:user.id,
+                status:'closed'
+            },
+            include:[
+                {
+                    model:User,
+                    include:InvestorProfile
+                },
+                Business
+                
+            ]
+
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
+
 const getWaitingBusinessInvestmentRequests = async(req, res) =>{
     try {
         let {page,limit} = req.query
@@ -355,6 +431,6 @@ const getReviewersStatus = async(req, res) =>{
 
 module.exports = {
     createBusinessInvestmentRequest,updateBusinessInvestmentRequest,deleteBusinessInvestmentRequest,getUserBusinessInvestmentRequest,getAllBusinessInvestmentRequests,getReviewersStatus,
-    getWaitingBusinessInvestmentRequests,getAcceptedBusinessInvestmentRequests,getRejectedBusinessInvestmentRequests,getBusinessInvestmentRequestDetails,deleteProgramRequirement,postBusinessInvestmentRequestDocument,
-    
+    getWaitingBusinessInvestmentRequests,getAcceptedBusinessInvestmentRequests,getRejectedBusinessInvestmentRequests,getBusinessInvestmentRequestDetails,deleteProgramRequirement,
+    postBusinessInvestmentRequestDocument,getInvestorWaitingBusinessInvestmentRequests,getInvestorClosedBusinessInvestmentRequests
 }

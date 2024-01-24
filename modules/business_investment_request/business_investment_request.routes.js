@@ -3,7 +3,8 @@ const { validateJWT } = require("../../utils/validateJWT")
 const upload = require("../../utils/upload");
 const { createBusinessInvestmentRequest, updateBusinessInvestmentRequest, deleteBusinessInvestmentRequest, getUserBusinessInvestmentRequest, 
 getAllBusinessInvestmentRequests, getReviewersStatus, getWaitingBusinessInvestmentRequests,getAcceptedBusinessInvestmentRequests,
-getRejectedBusinessInvestmentRequests,getBusinessInvestmentRequestDetails,postBusinessInvestmentRequestDocument } = require('./business_investment_request.controller');
+getRejectedBusinessInvestmentRequests,getBusinessInvestmentRequestDetails,postBusinessInvestmentRequestDocument,
+getInvestorWaitingBusinessInvestmentRequests,getInvestorClosedBusinessInvestmentRequests } = require('./business_investment_request.controller');
 
 const router = Router()
 router.post("/",validateJWT,createBusinessInvestmentRequest)
@@ -13,6 +14,8 @@ router.get('/user/:uuid',validateJWT,getUserBusinessInvestmentRequest)
 // ret reviewers,status()
 router.get('/reviewers/:uuid',validateJWT,getReviewersStatus)
 router.get('/',validateJWT,getAllBusinessInvestmentRequests)
+router.get('/investor/waiting',validateJWT,getInvestorWaitingBusinessInvestmentRequests)
+router.get('/investor/closed',validateJWT,getInvestorClosedBusinessInvestmentRequests)
 router.get('/waiting',validateJWT,getWaitingBusinessInvestmentRequests)
 router.get('/accepted',validateJWT,getAcceptedBusinessInvestmentRequests)
 router.get('/rejected',validateJWT,getRejectedBusinessInvestmentRequests)

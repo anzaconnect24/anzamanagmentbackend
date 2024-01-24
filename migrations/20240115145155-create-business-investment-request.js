@@ -26,7 +26,7 @@ module.exports = {
         allowNull:true
       },
       status: {
-        type: DataTypes.ENUM('waiting','accepted','rejected'),
+        type: DataTypes.ENUM('waiting','accepted','rejected','closed'),
         defaultValue:"waiting",
         allowNull:false
       },
