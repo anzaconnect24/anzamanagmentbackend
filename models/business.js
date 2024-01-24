@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
       type:DataTypes.INTEGER,
       allowNull:true,
     },
+    investmentCurrency:{
+      type: DataTypes.STRING,
+      allowNull:true
+    },
     businessSectorId:{
       type: DataTypes.INTEGER, 
       allowNull:false  

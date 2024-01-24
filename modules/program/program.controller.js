@@ -181,7 +181,46 @@ const getBfaPrograms = async(req, res) =>{
         errorResponse(res, error)
     }
 }
+const getConsultancePrograms = async(req, res) =>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        let user = req.user
 
+        const {count, rows} = await Program.findAndCountAll({
+            order:[['createdAt', 'DESC']],
+            offset: offset, //ruka ngapi
+            limit: limit, //leta ngapi
+            order:[['createdAt','DESC']],
+            // distinct:true,
+            where:{type:'consultance'},
+            include:{
+                model: ProgramRequirement,
+                // required: true,
+            },
+            attributes:{
+                include: [
+                    [
+                        Sequelize.literal(`EXISTS(
+                            SELECT *
+                            FROM ProgramApplications AS programApplication
+                            WHERE
+                                userId = ${user.id} AND
+                                programId = Program.id
+                        )`),
+                        'applied'
+                    ],
+                ],
+            },
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res, {count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res, error)
+    }
+}
 const getIraPrograms = async(req, res) =>{
     try {
         let {page,limit} = req.query
@@ -311,6 +350,6 @@ const getReviewersStatus = async(req, res) =>{
 
 
 module.exports = {
-    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,
+    createProgram,updateProgram,deleteProgram,getUserProgram,getAllPrograms,getReviewersStatus,getConsultancePrograms,
     getBfaPrograms,getIraPrograms,getProgramDetails,deleteProgramRequirement,addProgramRequirements,
 }
