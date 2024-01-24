@@ -20,6 +20,9 @@ const InvestorProfileRoutes =  require("./modules/investor_profile/investor_prof
 const ProgramUpdateRoutes =  require("./modules/program_update/program_update.routes")
 const PitchMaterialRoutes =  require("./modules/pitch_material/pitch_material.routes")
 const BusinessDocumentRoutes =  require("./modules/business_document/business_document.routes")
+const LogRoutes =  require("./modules/log/log.routes")
+const BusinessInterestRoutes =  require("./modules/business_interest/business_interest.routes")
+const SuccessStoryRoutes =  require("./modules/success_story/success_story.routes")
 
 // ********************
 const ProductRoutes =  require("./modules/product/product.routes")
@@ -65,6 +68,9 @@ app.use("/pitch_material",PitchMaterialRoutes)
 app.use("/business_investment_request",BusinessInvestmentRequestRoutes)
 app.use("/business_investment_request_review",BusinessInvestmentRequestReviewRoutes)
 app.use("/business_document",BusinessDocumentRoutes)
+app.use("/log",LogRoutes)
+app.use("/business_interest",BusinessInterestRoutes)
+app.use("/success_story",SuccessStoryRoutes)
 
 // *************
 app.use("/product",ProductRoutes)

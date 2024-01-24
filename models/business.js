@@ -15,6 +15,8 @@ module.exports = (sequelize, DataTypes) => {
       Business.belongsTo(models.BusinessSector);
       Business.hasMany(models.BusinessDocument);
       Business.hasMany(models.BusinessInvestmentRequest, { onDelete: 'cascade'});
+      Business.hasMany(models.BusinessInterest, { onDelete: 'cascade'});
+      Business.hasMany(models.SuccessStory, { onDelete: 'cascade'});
     }
   }
   Business.init({
