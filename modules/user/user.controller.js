@@ -142,11 +142,7 @@ const registerUser = async (req, res) => {
         password,
         role
       } = req.body;
-      console.log(role)
-      console.log(name)
-      console.log(email)
-      console.log(password)
-      console.log(phone)
+      
 
 
     
