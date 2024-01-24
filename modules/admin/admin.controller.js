@@ -123,6 +123,12 @@ const {Op, where} = require("sequelize");
             status:"waiting"
           }
         })
+
+        const businessLookingForInvestment = await Business.count({
+          where:{
+            lookingForInvestment:true
+          }
+        })
         const pendingUser = await User.count({
           where:{
             activated:false
@@ -171,9 +177,10 @@ const {Op, where} = require("sequelize");
           // group: ['month']
         })
 
-        successResponse(res,{enterprenuers:enterprenuers,documents,videos, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, 
-        totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira})
+        totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira,
+        businessLookingForInvestment:businessLookingForInvestment,})
     } catch (error) {
         errorResponse(res,error)
     }
