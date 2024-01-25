@@ -1,4 +1,4 @@
-const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial } = require("../../models");
+const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial,BusinessInvestmentRequest } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op, where} = require("sequelize");
