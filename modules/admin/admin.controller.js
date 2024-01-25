@@ -1,4 +1,4 @@
-const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial,BusinessInvestmentRequest } = require("../../models");
+const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial,BusinessInvestmentRequest,BusinessInterest } = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op, where} = require("sequelize");
@@ -144,17 +144,23 @@ const {Op, where} = require("sequelize");
         const totalProgramapplication = await ProgramApplication.count({})
         const totalProgramupdate = await ProgramUpdate.count({})
         
-        const investorWaitingBusinessInvestmentRequests = await BusinessInvestmentRequest.findAndCountAll({
+        const investorWaitingBusinessInvestmentRequests = await BusinessInvestmentRequest.count({
             where:{
                 userId:user.id,
                 status:'waiting'
             },
         })
 
-        const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.findAndCountAll({
+        const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.count({
             where:{
                 userId:user.id,
                 status:'closed'
+            },
+        })
+
+        const businessInterest = await BusinessInterest.count({
+            where:{
+                userId:user.id,
             },
         })
 
@@ -195,7 +201,7 @@ const {Op, where} = require("sequelize");
         successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, totalProgram:totalProgram, 
         totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate,businessLookingForInvestment:businessLookingForInvestment,
-        investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,bfa:bfa, ira:ira,
+        investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,businessInterest,bfa:bfa, ira:ira,
         })
     } catch (error) {
         errorResponse(res,error)
