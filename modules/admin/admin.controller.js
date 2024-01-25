@@ -85,6 +85,7 @@ const {Op, where} = require("sequelize");
 
   const getUserCounts = async(req,res)=>{
     try {
+        let user = req.user
         const totalUsers = await User.count({})
 
         const enterprenuers = await User.count({
@@ -142,6 +143,20 @@ const {Op, where} = require("sequelize");
         const totalProgram = await Program.count({})
         const totalProgramapplication = await ProgramApplication.count({})
         const totalProgramupdate = await ProgramUpdate.count({})
+        
+        const investorWaitingBusinessInvestmentRequests = await BusinessInvestmentRequest.findAndCountAll({
+            where:{
+                userId:user.id,
+                status:'waiting'
+            },
+        })
+
+        const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.findAndCountAll({
+            where:{
+                userId:user.id,
+                status:'closed'
+            },
+        })
 
         const bfa = await ProgramApplication.findAll({
           include:[
@@ -178,9 +193,10 @@ const {Op, where} = require("sequelize");
         })
 
         successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
-        pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, 
-        totalProgram:totalProgram, totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate, bfa:bfa, ira:ira,
-        businessLookingForInvestment:businessLookingForInvestment,})
+        pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, totalProgram:totalProgram, 
+        totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate,businessLookingForInvestment:businessLookingForInvestment,
+        investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,bfa:bfa, ira:ira,
+        })
     } catch (error) {
         errorResponse(res,error)
     }
