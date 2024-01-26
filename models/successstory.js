@@ -27,21 +27,21 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull:false
       },
-      restriction: {
+      story: {
         type: DataTypes.TEXT,
         allowNull:false
       },
       videoLink: {
         type: DataTypes.TEXT,
-        allowNull:false
+        allowNull:true
       },
       documentLink: {
         type: DataTypes.TEXT,
-        allowNull:false
+        allowNull:true
       },
       likes: {
         type: DataTypes.INTEGER,
-        allowNull:false
+        defaultValue:0
       },
   }, {
     sequelize,

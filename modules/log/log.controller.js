@@ -80,7 +80,6 @@ const getAllLogs = async(req, res) =>{
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-
         const {count, rows} = await Log.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
