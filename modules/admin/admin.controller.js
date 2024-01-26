@@ -150,13 +150,32 @@ const {Op, where} = require("sequelize");
                 status:'waiting'
             },
         })
-
-        const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.count({
-            where:{
-                userId:user.id,
-                status:'closed'
-            },
+        const business = await Business.findOne({
+          where:{
+            userId:user.id
+          }
         })
+       let closedInvestmentOptions = { userId:user.id,
+        status:'closed'}
+        if(business){
+          closedInvestmentOptions = {
+            businessId:business.id,
+            status:"closed"
+          }
+        }
+        const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.count({
+            where:closedInvestmentOptions
+        })
+        let interestedInvestors ;
+     if(business){
+       interestedInvestors = await BusinessInvestmentRequest.count({
+        where:{
+            businessId:business.id
+        },
+        group:"userId"
+    })
+     }
+        
 
         const businessInterest = await BusinessInterest.count({
             where:{
@@ -198,7 +217,7 @@ const {Op, where} = require("sequelize");
           // group: ['month']
         })
 
-        successResponse(res,{enterprenuers:enterprenuers, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        successResponse(res,{enterprenuers:enterprenuers,interestedInvestors, videos,documents, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, totalProgram:totalProgram, 
         totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate,businessLookingForInvestment:businessLookingForInvestment,
         investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,businessInterest,bfa:bfa, ira:ira,
