@@ -1,5 +1,6 @@
 const express = require('express')
 const bodyParser = require("body-parser");
+const socket = require("socket.io");
 
 const UserRoutes =  require("./modules/user/user.routes")
 const RoleRoutes =  require("./modules/role/role.routes")
@@ -90,6 +91,13 @@ app.use("/subscription",Subscription)
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")
 })
-app.listen(5000,()=>{
+const server = app.listen(5000,()=>{
   console.log("Server started at port 5000")
 })
+
+// Socket setup
+const io = socket(server);
+
+io.on("connection", function (socket) {
+  console.log("Made socket connection");
+});
