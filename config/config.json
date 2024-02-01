@@ -1,12 +1,12 @@
 {
-  "development": {
-    "username": "u290081935_anza",
-    "password": "Anza@2023",
-    "database": "u290081935_anzamanagement",
-    "host": "srv1004.hstgr.io",
+  "developmen": {
+    "username": "root",
+    "password": "",
+    "database": "anzamanagement",
+    "host": "localhost",
     "dialect": "mysql"
   },
-  "developmen": {
+  "development": {
     "username": "u290081935_anza",
     "password": "Anza@2023",
     "database": "u290081935_anzamanagement",

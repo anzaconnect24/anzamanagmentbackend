@@ -29,10 +29,6 @@ module.exports = {
         type:DataTypes.INTEGER,
         allowNull:true,
       },
-      investmentCurrency:{
-        type: DataTypes.STRING,
-        allowNull:true
-      },
       phone:{
         type: DataTypes.STRING,
         allowNull:false
