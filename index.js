@@ -21,10 +21,10 @@ const ProgramUpdateRoutes =  require("./modules/program_update/program_update.ro
 const PitchMaterialRoutes =  require("./modules/pitch_material/pitch_material.routes")
 const BusinessDocumentRoutes =  require("./modules/business_document/business_document.routes")
 const LogRoutes =  require("./modules/log/log.routes")
-const BusinessInterestRoutes =  require("./modules/business_interest/business_interest.routes")
+const InvestmentInterestRoutes =  require("./modules/investment_interest/investment_interest.routes")
 const SuccessStoryRoutes =  require("./modules/success_story/success_story.routes")
-
-// ********************
+const ConversationRoutes = require("./modules/conversation/conversation.routes")
+const MessageRoutes = require("./modules/message/message.routes")
 const ProductRoutes =  require("./modules/product/product.routes")
 const WishlistRoutes =  require("./modules/wishlist/wishlist.routes")
 const OrderRoutes =  require("./modules/order/order.routes")
@@ -57,24 +57,21 @@ app.use("/application",ApplicationRoutes)
 app.use("/application_review",ApplicationReviewRoutes)
 app.use("/attachment",AttachmentRoutes)
 app.use("/business",BusinessRoutes)
-// app.use("/business_sector",BusinessSectorRoutes)
 app.use("/business_review",BusinessReviewRoutes)
 app.use("/program",ProgramRoutes)
 app.use("/program_application",ProgramApplicationRoutes)
 app.use("/program_application_review",ProgramApplicationReviewRoutes)
 app.use("/investor_profile",InvestorProfileRoutes)
 app.use("/program_update",ProgramUpdateRoutes)
+app.use("/conversation",ConversationRoutes)
 app.use("/pitch_material",PitchMaterialRoutes)
 app.use("/business_investment_request",BusinessInvestmentRequestRoutes)
 app.use("/business_investment_request_review",BusinessInvestmentRequestReviewRoutes)
 app.use("/business_document",BusinessDocumentRoutes)
 app.use("/log",LogRoutes)
-app.use("/business_interest",BusinessInterestRoutes)
+app.use("/investment_interest",InvestmentInterestRoutes)
 app.use("/success_story",SuccessStoryRoutes)
-
-// *************
 app.use("/product",ProductRoutes)
-
 app.use("/order",OrderRoutes)
 app.use("/wishlist",WishlistRoutes)
 app.use("/sector",BusinessSectors)
@@ -85,7 +82,6 @@ app.use("/payment",Payments)
 app.use("/admin",Admin)
 app.use("/seller",Seller)
 app.use("/subscription",Subscription)
-// *************
 
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")

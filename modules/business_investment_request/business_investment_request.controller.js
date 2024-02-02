@@ -7,13 +7,19 @@ const { where,Op } = require("sequelize");
 
 const createBusinessInvestmentRequest = async(req,res)=>{
     try {
-        let {business_uuid} = req.body
+       
+        let {business_uuid,currency, investmentAmount,investmentType,dueDiligenceDate,helpFromAnza} = req.body
         const user = req.user
         const business = await Business.findOne({
             where:{uuid:business_uuid}
         })
         const response = await BusinessInvestmentRequest.create({
             userId:user.id,
+            investmentAmount,
+            investmentType,
+            currency,
+            dueDiligenceDate,
+            helpFromAnza,
             businessId:business.id
         })
         admin = await User.findOne({ where: { role:'Admin' } });
@@ -89,9 +95,7 @@ const getUserBusinessInvestmentRequest = async(req,res)=>{
            include:[
             {
                 model: User,
-                include:{
-                    model: InvestorProfile
-                }
+                include:[InvestorProfile]
             },
             Business
            ]
@@ -365,10 +369,9 @@ const getBusinessInvestmentRequestDetails = async(req, res) =>{
                 exclude:['userId','businessId'],
             },
             include:[
-                BusinessInvestmentRequestDocument,
                 {
                     model:User,
-                    include:InvestorProfile
+                    include:[InvestorProfile]
                 },
                 {
                     model:Business,

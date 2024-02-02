@@ -3,6 +3,7 @@ const {Business,User,BusinessSector,InvestorProfile,Sequelize,BusinessDocument,}
 const { where,Op } = require("sequelize");
 
 const { sendEmail } = require("../../utils/send_email");
+const getUrl = require("../../utils/cloudinary_upload");
 
 const createBusiness = async(req,res)=>{
     try {
@@ -15,6 +16,8 @@ const createBusiness = async(req,res)=>{
             phone,
             problem,
             solution,
+            isAlumni,
+            completedProgram,
             team,
             business_sector_uuid,
             traction,
@@ -32,6 +35,8 @@ const createBusiness = async(req,res)=>{
             registration,
             stage,
             name,email,phone,
+            isAlumni,
+            completedProgram,
             problem,
             solution,
             team,
@@ -64,16 +69,36 @@ const getUserBusiness = async(req,res)=>{
 const updateBusiness = async(req,res)=>{
     try {
         const uuid = req.params.uuid
-        // const user = req.user
-        const {status,feedbackMessage} = req.body
-        const business = await Business.findOne({
+        const payload = {...req.body}
+        let document;
+        const {documentName} = req.body
+
+        if(req.file){
+            document = await getUrl(req)
+            if(documentName=="businessPlan"){
+     console.log("Reached here")
+
+               payload.businessPlan = document;
+            }
+            else if(documentName=="marketResearch"){
+                payload.marketResearch = document;
+             }
+        }
+        let business = await Business.findOne({
             where:{
                 uuid
-            }
+            },
+            
         });
   
-        const response = await business.update(req.body)
-        successResponse(res,response)
+         await business.update(payload)
+         business  = await Business.findOne({
+            where:{
+                id:business.id
+            },
+            include:[BusinessDocument]
+        });
+        successResponse(res,business)
     } catch (error) {
         errorResponse(res,error)
     }

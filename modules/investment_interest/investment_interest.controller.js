@@ -1,25 +1,36 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {BusinessInterest,User,Business} = require("../../models");
+const {InvestmentInterest,User,Business} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
-const createBusinessInterest = async(req,res)=>{
+const createInvestmentInterest = async(req,res)=>{
     try {
-        const {business_uuid} = req.body
-        let user = await req.user
+        const {business_uuid,from,user_uuid} = req.body
+        let user ;
         let business = await Business.findOne({
             where:{uuid:business_uuid}
         })
-        var response = await BusinessInterest.create({businessId:business.id,userId:user.id})        
+
+        if(from == "investor"){
+            user = await req.user
+        }
+        else{
+            user = await User.findOne({
+                where:{
+                    uuid:user_uuid
+                }
+            })
+        }
+        var response = await InvestmentInterest.create({businessId:business.id,userId:user.id,from})        
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const getUserBusinessInterest = async(req,res)=>{
+const getUserInvestmentInterest = async(req,res)=>{
     try {
         const user = req.user
-        const response = await BusinessInterest.findOne({
+        const response = await InvestmentInterest.findOne({
             where:{
                 userId:user.id
             },
@@ -35,11 +46,11 @@ const getUserBusinessInterest = async(req,res)=>{
 }
 
 
-const updateBusinessInterest = async(req,res)=>{
+const updateInvestmentInterest = async(req,res)=>{
     try {
         const uuid = req.params.uuid
         const {status} = req.body
-        const BusinessInterest = await BusinessInterest.findOne({
+        const InvestmentInterest = await InvestmentInterest.findOne({
             where:{
                 uuid
             }
@@ -48,27 +59,27 @@ const updateBusinessInterest = async(req,res)=>{
      
         if(status){
             const user = await User.findOne({
-                where:{id:BusinessInterest.userId}
+                where:{id:InvestmentInterest.userId}
             })
             sendEmail(req, res, user, status)
         }
-        const response = await BusinessInterest.update(req.body)
+        const response = await InvestmentInterest.update(req.body)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
     }
 }
 
-const deleteBusinessInterest = async(req,res)=>{
+const deleteInvestmentInterest = async(req,res)=>{
     try {
      
         const uuid = req.params.uuid
-        const businessInterest = await BusinessInterest.findOne({
+        const InvestmentInterest = await InvestmentInterest.findOne({
             where:{
                 uuid
             }
         });
-        const response = await businessInterest.destroy()
+        const response = await InvestmentInterest.destroy()
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -76,7 +87,7 @@ const deleteBusinessInterest = async(req,res)=>{
 }
 
 
-const getAllBusinessInterests = async(req, res) =>{
+const getAllInvestmentInterests = async(req, res) =>{
     // res.status(200).json({"k":"v"});
     try {
         let {page,limit} = req.query
@@ -84,7 +95,7 @@ const getAllBusinessInterests = async(req, res) =>{
         limit = parseInt(limit)
         const offset = (page-1)*limit
 
-        const {count, rows} = await BusinessInterest.findAndCountAll({
+        const {count, rows} = await InvestmentInterest.findAndCountAll({
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
@@ -102,12 +113,12 @@ const getAllBusinessInterests = async(req, res) =>{
     }
 }
 
-const getBusinessInterestDetails = async(req, res) =>{
+const getInvestmentInterestDetails = async(req, res) =>{
     try {
         const uuid = req.params.uuid
         let user = req.user
 
-        const response = await BusinessInterest.findOne({
+        const response = await InvestmentInterest.findOne({
             where:{uuid},
             include:[Business,{
                 model: User,
@@ -122,5 +133,5 @@ const getBusinessInterestDetails = async(req, res) =>{
 
 
 module.exports = {
-    createBusinessInterest,updateBusinessInterest,deleteBusinessInterest,getUserBusinessInterest,getAllBusinessInterests,getBusinessInterestDetails,
+    createInvestmentInterest,updateInvestmentInterest,deleteInvestmentInterest,getUserInvestmentInterest,getAllInvestmentInterests,getInvestmentInterestDetails,
 }

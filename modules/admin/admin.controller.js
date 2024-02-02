@@ -1,4 +1,4 @@
-const { User,Business,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial,BusinessInvestmentRequest,BusinessInterest } = require("../../models");
+const { User,Business,InvestmentInterest,Program,ProgramApplication,ProgramUpdate,Sequelize,PitchMaterial,BusinessInvestmentRequest,} = require("../../models");
 
 const { successResponse, errorResponse } = require("../../utils/responses");
 const {Op, where} = require("sequelize");
@@ -166,23 +166,36 @@ const {Op, where} = require("sequelize");
         const investorClosedBusinessInvestmentRequests = await BusinessInvestmentRequest.count({
             where:closedInvestmentOptions
         })
-        let interestedInvestors ;
-     if(business){
-       interestedInvestors = await BusinessInvestmentRequest.count({
-        where:{
-            businessId:business.id
-        },
-        group:"userId"
-    })
-     }
-        
-
-        const businessInterest = await BusinessInterest.count({
-            where:{
-                userId:user.id,
-            },
-        })
-
+      
+     let investorsInterested
+     let myInvestors
+      if(business){
+          investorsInterested = await InvestmentInterest.count({
+          where:{
+              businessId:business.id,
+              from:"investor"
+          },
+          })
+          myInvestors = await InvestmentInterest.count({
+          where:{
+            businessId:business.id,
+            from:"enterprenuer"
+          },
+          })
+      }   
+        const enterprenuersInterested = await InvestmentInterest.count({
+          where:{
+              userId:user.id,
+              from:"enterprenuer"
+          },
+      })
+        const myEnterprenuers = await InvestmentInterest.count({
+          where:{
+              userId:user.id,
+              from:"investor"
+          },
+      })
+      
         const bfa = await ProgramApplication.findAll({
           include:[
             {
@@ -217,10 +230,10 @@ const {Op, where} = require("sequelize");
           // group: ['month']
         })
 
-        successResponse(res,{enterprenuers:enterprenuers,interestedInvestors, videos,documents, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
+        successResponse(res,{enterprenuers:enterprenuers,myEnterprenuers,myInvestors,investorsInterested,enterprenuersInterested, videos,documents, investors:investors, reviewers:reviewers, admins:admins, totalUsers:totalUsers, 
         pendingBusiness:pendingBusiness, pendingUser:pendingUser, pendingProgramApplication:pendingProgramApplication, totalProgram:totalProgram, 
         totalProgramapplication:totalProgramapplication, totalProgramupdate:totalProgramupdate,businessLookingForInvestment:businessLookingForInvestment,
-        investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,businessInterest,bfa:bfa, ira:ira,
+        investorWaitingBusinessInvestmentRequests,investorClosedBusinessInvestmentRequests,bfa:bfa, ira:ira,
         })
     } catch (error) {
         errorResponse(res,error)

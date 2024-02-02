@@ -21,6 +21,26 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull:false
       },
+      investmentAmount:{
+        type:DataTypes.INTEGER,
+        defaultValue:0
+      },
+      investmentType: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      currency: {
+        type: DataTypes.STRING,
+        allowNull:false
+      },
+      dueDiligenceDate: {
+        type: DataTypes.DATE,
+        allowNull:false
+      },
+      helpFromAnza: {
+        type: DataTypes.TEXT,
+        allowNull:false
+      },
       feedback: {
         type: DataTypes.STRING,
         allowNull:true

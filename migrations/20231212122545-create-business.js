@@ -37,6 +37,7 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull:false
       },
+      
       reviewerId:{
         type:DataTypes.INTEGER,
         allowNull:true

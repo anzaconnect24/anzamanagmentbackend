@@ -1,10 +1,10 @@
-const { User,Business,InvestorProfile,BusinessSector, Product,Role } = require("../../models");
+const { User,Business,InvestorProfile,BusinessSector,BusinessDocument, Product,Role } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
 const { successResponse, errorResponse } = require("../../utils/responses");
 const bcrypt = require('bcrypt')
-const {Op} = require("sequelize");
+const {Op, where} = require("sequelize");
 const sendSMS = require("../../utils/send_sms");
 const addPrefixToPhoneNumber = require("../../utils/add_number_prefix");
 const { resetPassword, sendMail } = require("../../utils/mail_controller");
@@ -351,14 +351,18 @@ const loginUser = async (req, res) => {
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
-
         const {count, rows} = await User.findAndCountAll({
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi   
           order:[['createdAt','DESC']],  
         })
+        const adminCount = await User.count({
+          where:{
+            role:"Admin"
+          }
+        })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
-        successResponse(res,{count, data:rows, page, totalPages})
+        successResponse(res,{count, adminCount, data:rows, page, totalPages})
     } catch (error) {
         errorResponse(res,error)
     }
@@ -493,7 +497,12 @@ const getMyDetails = async(req,res)=>{
       const response = await User.findOne({
         where:{id:user.id},
         include:[
-          Business,
+          {
+            model:Business,
+            include:[{
+              model:BusinessDocument
+            }]
+          },
           {
             model: InvestorProfile,
             include:{

@@ -5,8 +5,8 @@ const createBusinessDocument = async(req,res)=>{
     try {
         const user = req.user
         let link = null;
-        let {title,business_uuid} = req.body    
-        const business = await Business.findOne({
+        let {title,business_uuid,type} = req.body    
+        let business = await Business.findOne({
             where:{
                 uuid:business_uuid
             }
@@ -17,9 +17,16 @@ const createBusinessDocument = async(req,res)=>{
         const response = await BusinessDocument.create({
             title,
             link,
+            type,
             businessId:business.id
         })
-        successResponse(res,response)
+        business  = await Business.findOne({
+            where:{
+                id:business.id
+            },
+            include:[BusinessDocument]
+        });
+        successResponse(res,business)
     } catch (error) {
         errorResponse(res,error)
     }

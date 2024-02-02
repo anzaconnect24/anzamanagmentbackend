@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       Business.belongsTo(models.BusinessSector);
       Business.hasMany(models.BusinessDocument);
       Business.hasMany(models.BusinessInvestmentRequest, { onDelete: 'cascade'});
-      Business.hasMany(models.BusinessInterest, { onDelete: 'cascade'});
+      Business.hasMany(models.InvestmentInterest, { onDelete: 'cascade'});
       Business.hasMany(models.SuccessStory, { onDelete: 'cascade'});
     }
   }
@@ -48,11 +48,27 @@ module.exports = (sequelize, DataTypes) => {
       type:DataTypes.BOOLEAN,
       defaultValue:true,
     },
+    isAlumni:{
+        type:DataTypes.BOOLEAN,
+        defaultValue:false
+    },
+    completedProgram:{
+      type:DataTypes.STRING,
+      allowNull:true
+  },
     investmentAmount:{
       type:DataTypes.INTEGER,
       allowNull:true,
     },
     investmentCurrency:{
+      type: DataTypes.STRING,
+      allowNull:true
+    },
+    businessPlan:{
+      type: DataTypes.STRING,
+      allowNull:true
+    },
+    marketResearch:{
       type: DataTypes.STRING,
       allowNull:true
     },
