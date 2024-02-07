@@ -162,7 +162,7 @@ const registerUser = async (req, res) => {
           role
         }); 
         admin = await User.findOne({ where: { role:'Admin' } });
-        sendEmail(req, res, admin, 'registration')
+        // sendEmail(req, res, admin, 'registration')
         const response = await User.findOne({
           where: {
             email: email
