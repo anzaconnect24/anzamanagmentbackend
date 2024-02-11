@@ -1,4 +1,4 @@
-const { User,Business,InvestorProfile,BusinessSector,BusinessDocument, Product,Role } = require("../../models");
+const { User,Business,InvestorProfile,BusinessSector,BusinessDocument,InvestmentInterest, Product,Role } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
@@ -412,6 +412,76 @@ const loginUser = async (req, res) => {
         errorResponse(res,error)
     }
   }
+
+  const getInterestedInvestors = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        const user = req.user;
+        const business = await Business.findOne({
+          where:{
+            userId:user.id
+          }
+        })
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
+          order:[['createdAt','DESC']],
+          include:[{
+            model:InvestmentInterest,
+            where:{[Op.and]:[{
+              from:"investor"
+            },{
+              businessId:business.id
+            }]}
+          },],
+          where:{
+            role: "Investor"
+          }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
+
+  const getInterestedEnterprenuers = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+        const user = req.user;
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
+          order:[['createdAt','DESC']],
+          include:[{
+            model:InvestmentInterest,
+            where:{[Op.and]:[{
+              from:"enterprenuer"
+            },{
+              userId:user.id
+            }]}
+          },{
+            model:Business,
+            include:[BusinessSector]
+          }],
+          where:{
+            role: "Enterprenuer"
+          }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
+
+
   const getEnterprenuers = async(req,res)=>{
     try {
         let {page,limit} = req.query
@@ -553,6 +623,7 @@ const getUserDetails = async(req,res)=>{
     deleteUser,
     getReviewers,
     sendMessage,
+    getInterestedEnterprenuers,
     sendPasswordLink,
     passwordReset,
     pushSMS,
@@ -563,6 +634,7 @@ const getUserDetails = async(req,res)=>{
     getEnterprenuers,
     getInvestors,
     getUserCounts,
+    getInterestedInvestors,
     getMyDetails,
     getUsersByRole
   }
