@@ -1,4 +1,4 @@
-const { User,Business,InvestorProfile,BusinessSector,BusinessDocument,InvestmentInterest, Product,Role } = require("../../models");
+const { User,Business,PitchMaterialViewer,InvestorProfile,BusinessSector,BusinessDocument,InvestmentInterest, Product,Role,PitchMaterial } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
@@ -133,6 +133,8 @@ const pushSMS = async(req,res)=>{
     errorResponse(res,error)
   }
 }
+
+
 const registerUser = async (req, res) => {
     try {
       const {
@@ -142,10 +144,6 @@ const registerUser = async (req, res) => {
         password,
         role
       } = req.body;
-      
-
-
-    
       const user = await User.findOne({ where: { email } });
       if (user) {
         res.status(403).json({
@@ -162,7 +160,7 @@ const registerUser = async (req, res) => {
           role
         }); 
         admin = await User.findOne({ where: { role:'Admin' } });
-        // sendEmail(req, res, admin, 'registration')
+        sendEmail(req, res, user, 'email_confirmation')
         const response = await User.findOne({
           where: {
             email: email
@@ -185,6 +183,8 @@ const registerUser = async (req, res) => {
       console.log(error);
     }
 };
+
+
 const updateMyInfo = async (req, res) => {
   try {
     const user = req.user 
@@ -527,7 +527,35 @@ const loginUser = async (req, res) => {
         errorResponse(res,error)
     }
   }
+  const getSharedDocuments = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
 
+       
+
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
+          order:[['createdAt','DESC']],
+          include:[{
+            model:PitchMaterialViewer,
+            include:[PitchMaterial]
+          }],
+
+          where:{
+            role: "Admin"
+          }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
   const getUserCounts = async(req,res)=>{
     try {
         const customers = await User.count({
@@ -631,6 +659,7 @@ const getUserDetails = async(req,res)=>{
     getUsers,
     getAdmins,
     getReviewers,
+    getSharedDocuments,
     getEnterprenuers,
     getInvestors,
     getUserCounts,

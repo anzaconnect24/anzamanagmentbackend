@@ -37,6 +37,10 @@ module.exports = {
         type: DataTypes.STRING, 
         allowNull:false  
       },
+      emailConfirmed:{
+        type: DataTypes.BOOLEAN,
+        defaultValue:false
+      },
       activated:{
         type: DataTypes.BOOLEAN,
         defaultValue:false

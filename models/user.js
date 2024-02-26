@@ -22,6 +22,8 @@ module.exports = (sequelize, DataTypes) => {
       User.hasOne(models.BusinessInvestmentRequestReview, {onDelete: 'cascade'})
       User.hasOne(models.Log, {onDelete: 'cascade'})
       User.hasMany(models.InvestmentInterest, {onDelete: 'cascade'})
+      User.hasMany(models.PitchMaterialViewer, {onDelete: 'cascade'})
+
     }
   }
   User.init({
@@ -44,6 +46,10 @@ module.exports = (sequelize, DataTypes) => {
     name: {
       type: DataTypes.STRING, 
       allowNull:false 
+    },
+    emailConfirmed:{
+      type: DataTypes.BOOLEAN,
+      defaultValue:false
     },
     image: {
       type: DataTypes.STRING, 
