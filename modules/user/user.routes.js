@@ -14,7 +14,8 @@ const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,
     getInterestedInvestors,
     getInterestedEnterprenuer,
     getInterestedEnterprenuers,
-    getSharedDocuments} = require("./user.controller");
+    getSharedDocuments,
+    inviteUser} = require("./user.controller");
 
 router.post("/register", registerUser)
 router.post("/message",validateJWT,sendMessage)
@@ -27,6 +28,8 @@ router.patch("/:uuid",validateJWT,updateUser)
 
 router.delete("/:uuid",validateJWT,deleteUser)
 router.post("/login",loginUser)
+router.post("/inviteUser",inviteUser)
+
 router.get("/counts",validateJWT,getUserCounts)
 router.get("/me",validateJWT,getMyDetails)
 router.get("/withSharedDocuments",validateJWT,getSharedDocuments)

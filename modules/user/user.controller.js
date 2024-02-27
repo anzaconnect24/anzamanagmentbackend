@@ -159,7 +159,7 @@ const registerUser = async (req, res) => {
           password: hashedPassword,
           role
         }); 
-        admin = await User.findOne({ where: { role:'Admin' } });
+      //  let admin = await User.findOne({ where: { uuid:user.uuid } });
         sendEmail(req, res, user, 'email_confirmation')
         const response = await User.findOne({
           where: {
@@ -269,6 +269,15 @@ const deleteUser = async(req,res)=>{
     } catch (error) {
         errorResponse(res,error)
     }
+}
+const inviteUser = async(req,res)=>{
+  try {     
+    const user = {email:req.body.email}
+    const response = await sendEmail(req,res,user,"user_invitation")
+      successResponse(res,response)
+  } catch (error) {
+      errorResponse(res,error)
+  }
 }
 
 const loginUser = async (req, res) => {
@@ -655,6 +664,7 @@ const getUserDetails = async(req,res)=>{
     sendPasswordLink,
     passwordReset,
     pushSMS,
+    inviteUser,
     getUserDetails,
     getUsers,
     getAdmins,
