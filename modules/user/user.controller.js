@@ -145,6 +145,7 @@ const registerUser = async (req, res) => {
         role
       } = req.body;
       const user = await User.findOne({ where: { email } });
+      let image = null;
       if (user) {
         res.status(403).json({
           status: false,
@@ -152,13 +153,18 @@ const registerUser = async (req, res) => {
         });
       } else {
         const hashedPassword = bcrypt.hashSync(password, 10);
+        if (req.file) {
+          image = await getUrl(req);
+        }
         const user = await User.create({
           name,
           phone,
           email,
           password: hashedPassword,
-          role
+          role,
+          image
         }); 
+
       //  let admin = await User.findOne({ where: { uuid:user.uuid } });
         sendEmail(req, res, user, 'email_confirmation')
         const response = await User.findOne({

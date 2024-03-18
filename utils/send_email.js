@@ -49,7 +49,7 @@ const sendEmail = async (req, res,user,status) => {
           break;
         case "email_confirmation":
           subject = 'Email confirmation'
-          message = 'Hello '+user.name+`!,<br>Confirm your email by clicking this link, <a href="https://anzamanagementserver.onrender.com/emailConfirmation/${user.uuid}">Confirm email</a>`
+          message = 'Hello '+user.name+`!,<br>Confirm your email by clicking this link, <a href="https://anzamanagementsystem.vercel.app//emailConfirmation/${user.uuid}">Confirm email</a>`
           response =   await sendMail(user, subject, message, status);
         break;
         case "user_invitation":

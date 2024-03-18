@@ -17,7 +17,7 @@ const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,
     getSharedDocuments,
     inviteUser} = require("./user.controller");
 
-router.post("/register", registerUser)
+router.post("/register",upload.single('file'), registerUser)
 router.post("/message",validateJWT,sendMessage)
 router.post("/sms",validateJWT,pushSMS)
 router.post("/reset-password",sendPasswordLink)
