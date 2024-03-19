@@ -407,7 +407,7 @@ const loginUser = async (req, res) => {
   }
   const getInvestors = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -416,9 +416,16 @@ const loginUser = async (req, res) => {
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
           order:[['createdAt','DESC']],
-          include:[Business,],
+           
+          include:[InvestorProfile],
           where:{
-            role: "Investor"
+            [Op.and]:[{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+            },{
+              role: "Investor"
+            }]
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
