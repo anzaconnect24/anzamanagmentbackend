@@ -52,7 +52,27 @@ module.exports = (sequelize, DataTypes) => {
         type:DataTypes.BOOLEAN,
         defaultValue:false
     },
-    completedProgram:{
+        companyProfile:{
+          type:DataTypes.STRING,
+          allowNull:true
+      },
+        facebook:{
+          type:DataTypes.STRING,
+          allowNull:true
+      },
+      instagram:{
+        type:DataTypes.STRING,
+        allowNull:true
+      },
+      linkedin:{
+        type:DataTypes.STRING,
+        allowNull:true
+      },
+      twitter:{
+        type:DataTypes.STRING,
+        allowNull:true
+      },
+      completedProgram:{
       type:DataTypes.STRING,
       allowNull:true
   },
