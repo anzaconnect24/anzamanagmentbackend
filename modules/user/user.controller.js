@@ -421,7 +421,7 @@ const loginUser = async (req, res) => {
           where:{
             [Op.and]:[{
               name:{
-                [Op.like]:"%"+keyword+"%"
+                [Op.like]:"%"+keyword??""+"%"
               }
             },{
               role: "Investor"
