@@ -362,7 +362,7 @@ const loginUser = async (req, res) => {
 
   const getUsers = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -370,6 +370,11 @@ const loginUser = async (req, res) => {
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi   
           order:[['createdAt','DESC']],  
+          where:{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+          }
         })
         const adminCount = await User.count({
           where:{
@@ -506,7 +511,7 @@ const loginUser = async (req, res) => {
 
   const getEnterprenuers = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -517,7 +522,13 @@ const loginUser = async (req, res) => {
           order:[['createdAt','DESC']],
           include:[Business],
           where:{
-            role: "Enterprenuer"
+            [Op.and]:[{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+            },{
+              role: "Enterprenuer"
+            }]
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
