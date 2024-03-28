@@ -83,6 +83,9 @@ const updateBusiness = async(req,res)=>{
             else if(documentName=="marketResearch"){
                 payload.marketResearch = document;
              }
+             else if(documentName=="companyProfile"){
+                payload.companyProfile = document;
+             }
         }
         let business = await Business.findOne({
             where:{

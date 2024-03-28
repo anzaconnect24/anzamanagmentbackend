@@ -47,6 +47,16 @@ const sendEmail = async (req, res,user,status) => {
             message = 'Hello '+user.name+'!,<br>New user have registered, You need to <a href="https://anzamanagementsystem.vercel.app/">activate his/her account</a>'
             response =   await sendMail(user, subject, message, status);
           break;
+        case "email_confirmation":
+          subject = 'Email confirmation'
+          message = 'Hello '+user.name+`!,<br>Confirm your email by clicking this link, <a href="https://anzamanagementsystem.vercel.app//emailConfirmation/${user.uuid}">Confirm email</a>`
+          response =   await sendMail(user, subject, message, status);
+        break;
+        case "user_invitation":
+          subject = 'Invitation to join Anza platform'
+          message = 'Hello'+`!,<br>Join Anza platform to connect with investors and fellow enterprenuers, <a href="https://anzamanagementsystem.vercel.app/">Join now</a>`         
+          response = await sendMail(user, subject, message, status);
+        break;
         case "program_application":
             subject = 'New user program application'
             message = 'Hello '+user.name+'!,<br>New user have applied for a program, <a href="https://anzamanagementsystem.vercel.app/">Assign a reviewer for this application</a>'
@@ -60,8 +70,9 @@ const sendEmail = async (req, res,user,status) => {
         default:
           break;
       }  
-      successResponse(res, response);
+      // successResponse(res, response);
     } catch (error) {
+      return error
       errorResponse(res, error);
     }
 }

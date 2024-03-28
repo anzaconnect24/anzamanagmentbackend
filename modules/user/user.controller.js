@@ -1,4 +1,4 @@
-const { User,Business,InvestorProfile,BusinessSector,BusinessDocument,InvestmentInterest, Product,Role } = require("../../models");
+const { User,Business,PitchMaterialViewer,InvestorProfile,BusinessSector,BusinessDocument,InvestmentInterest, Product,Role,PitchMaterial } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
@@ -133,6 +133,8 @@ const pushSMS = async(req,res)=>{
     errorResponse(res,error)
   }
 }
+
+
 const registerUser = async (req, res) => {
     try {
       const {
@@ -142,11 +144,8 @@ const registerUser = async (req, res) => {
         password,
         role
       } = req.body;
-      
-
-
-    
       const user = await User.findOne({ where: { email } });
+      let image = null;
       if (user) {
         res.status(403).json({
           status: false,
@@ -154,15 +153,20 @@ const registerUser = async (req, res) => {
         });
       } else {
         const hashedPassword = bcrypt.hashSync(password, 10);
+        if (req.file) {
+          image = await getUrl(req);
+        }
         const user = await User.create({
           name,
           phone,
           email,
           password: hashedPassword,
-          role
+          role,
+          image
         }); 
-        admin = await User.findOne({ where: { role:'Admin' } });
-        // sendEmail(req, res, admin, 'registration')
+
+      //  let admin = await User.findOne({ where: { uuid:user.uuid } });
+        sendEmail(req, res, user, 'email_confirmation')
         const response = await User.findOne({
           where: {
             email: email
@@ -185,6 +189,8 @@ const registerUser = async (req, res) => {
       console.log(error);
     }
 };
+
+
 const updateMyInfo = async (req, res) => {
   try {
     const user = req.user 
@@ -270,6 +276,15 @@ const deleteUser = async(req,res)=>{
         errorResponse(res,error)
     }
 }
+const inviteUser = async(req,res)=>{
+  try {     
+    const user = {email:req.body.email}
+    const response = await sendEmail(req,res,user,"user_invitation")
+      successResponse(res,response)
+  } catch (error) {
+      errorResponse(res,error)
+  }
+}
 
 const loginUser = async (req, res) => {
   try {
@@ -347,7 +362,7 @@ const loginUser = async (req, res) => {
 
   const getUsers = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -355,6 +370,11 @@ const loginUser = async (req, res) => {
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi   
           order:[['createdAt','DESC']],  
+          where:{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+          }
         })
         const adminCount = await User.count({
           where:{
@@ -392,7 +412,7 @@ const loginUser = async (req, res) => {
   }
   const getInvestors = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -401,9 +421,16 @@ const loginUser = async (req, res) => {
           offset: offset, //ruka ngapi
           limit: limit, //leta ngapi
           order:[['createdAt','DESC']],
-          include:[Business,],
+           
+          include:[InvestorProfile],
           where:{
-            role: "Investor"
+            [Op.and]:[{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+            },{
+              role: "Investor"
+            }]
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -486,7 +513,7 @@ const loginUser = async (req, res) => {
 
   const getEnterprenuers = async(req,res)=>{
     try {
-        let {page,limit} = req.query
+        let {page,limit,keyword} = req.query
         page = parseInt(page)
         limit = parseInt(limit)
         const offset = (page-1)*limit
@@ -497,7 +524,13 @@ const loginUser = async (req, res) => {
           order:[['createdAt','DESC']],
           include:[Business],
           where:{
-            role: "Enterprenuer"
+            [Op.and]:[{
+              name:{
+                [Op.like]:"%"+keyword+"%"
+              }
+            },{
+              role: "Enterprenuer"
+            }]
           }
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
@@ -529,7 +562,35 @@ const loginUser = async (req, res) => {
         errorResponse(res,error)
     }
   }
+  const getSharedDocuments = async(req,res)=>{
+    try {
+        let {page,limit} = req.query
 
+       
+
+        page = parseInt(page)
+        limit = parseInt(limit)
+        const offset = (page-1)*limit
+
+        const {count, rows} = await User.findAndCountAll({
+          offset: offset, //ruka ngapi
+          limit: limit, //leta ngapi
+          order:[['createdAt','DESC']],
+          include:[{
+            model:PitchMaterialViewer,
+            include:[PitchMaterial]
+          }],
+
+          where:{
+            role: "Admin"
+          }
+        })
+        const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
+        successResponse(res,{count, data:rows, page, totalPages})
+    } catch (error) {
+        errorResponse(res,error)
+    }
+  }
   const getUserCounts = async(req,res)=>{
     try {
         const customers = await User.count({
@@ -629,10 +690,12 @@ const getUserDetails = async(req,res)=>{
     sendPasswordLink,
     passwordReset,
     pushSMS,
+    inviteUser,
     getUserDetails,
     getUsers,
     getAdmins,
     getReviewers,
+    getSharedDocuments,
     getEnterprenuers,
     getInvestors,
     getUserCounts,

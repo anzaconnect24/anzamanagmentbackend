@@ -13,9 +13,11 @@ const { registerUser,  loginUser,  deleteUser, updateUser,  getHash, pushSMS,
     getEnterprenuers,
     getInterestedInvestors,
     getInterestedEnterprenuer,
-    getInterestedEnterprenuers} = require("./user.controller");
+    getInterestedEnterprenuers,
+    getSharedDocuments,
+    inviteUser} = require("./user.controller");
 
-router.post("/register", registerUser)
+router.post("/register",upload.single('file'), registerUser)
 router.post("/message",validateJWT,sendMessage)
 router.post("/sms",validateJWT,pushSMS)
 router.post("/reset-password",sendPasswordLink)
@@ -26,8 +28,12 @@ router.patch("/:uuid",validateJWT,updateUser)
 
 router.delete("/:uuid",validateJWT,deleteUser)
 router.post("/login",loginUser)
+router.post("/inviteUser",inviteUser)
+
 router.get("/counts",validateJWT,getUserCounts)
 router.get("/me",validateJWT,getMyDetails)
+router.get("/withSharedDocuments",validateJWT,getSharedDocuments)
+
 router.get("/investors",validateJWT,getInvestors)
 router.get("/investors/interested",validateJWT,getInterestedInvestors)
 router.get("/enterprenuers/interested",validateJWT,getInterestedEnterprenuers)

@@ -10,6 +10,26 @@ module.exports = {
         type: DataTypes.BOOLEAN,
         defaultValue:false
         }),
+        await queryInterface.addColumn("Businesses","companyProfile",{
+          type: DataTypes.STRING,
+          allowNull:true
+          }),
+        await queryInterface.addColumn("Businesses","facebook",{
+          type: DataTypes.STRING,
+          allowNull:true
+          }),
+        await queryInterface.addColumn("Businesses","twitter",{
+          type: DataTypes.STRING,
+          allowNull:true
+          }),
+        await queryInterface.addColumn("Businesses","instagram",{
+          type: DataTypes.STRING,
+          allowNull:true
+          }),
+        await queryInterface.addColumn("Businesses","linkedin",{
+          type: DataTypes.STRING,
+          allowNull:true
+          }),
         await queryInterface.addColumn("Businesses","completedProgram",{
         type: DataTypes.STRING,
         allowNull:true

@@ -10,24 +10,27 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS,
+    pass: process.env.GMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false, // Add this line
   },
 });
 
 const sendMail = (user,subject,message,status)=>{
-    try {
-        const templatePath = path.join(__dirname, 'email_template.ejs');
-        const emailParams = {
-            from: 'Anza Management System',
-            to: user.email,
-            subject: subject,
-            html:ejs.render(fs.readFileSync(templatePath, 'utf8'), {user:user,subject:subject,message:message,status:status })
-          };
-    const response =    transporter.sendMail(emailParams)
-        return response
-    } catch (error) {
-        console.log(error)
-    }
+  try {
+      const templatePath = path.join(__dirname, 'email_template.ejs');
+      const emailParams = {
+          from: 'Anza Management System',
+          to: user.email,
+          subject: subject,
+          html:ejs.render(fs.readFileSync(templatePath, 'utf8'), {subject:subject,message:message,status:status })
+        };
+  const response = transporter.sendMail(emailParams)
+      return response
+  } catch (error) {
+      console.log(error)
+  }
 }
 const resetPassword = (user)=>{
   try {

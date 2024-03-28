@@ -1,6 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const getUrl = require("../../utils/cloudinary_upload");
-const {PitchMaterial,User,Business,Sequelize,ProgramRequirement,Program,PitchMaterialDocument} = require("../../models");
+const {PitchMaterial,User,Business,Sequelize,ProgramRequirement,Program,PitchMaterialDocument,PitchMaterialViewer} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where } = require("sequelize");
 
@@ -122,6 +122,47 @@ const deletePitchMaterial = async(req,res)=>{
     }
 }
 
+const addPitchMaterialViewer = async(req,res)=>{
+    try {
+        let {
+            user_uuid
+        } = req.body;
+        const uuid = req.params.uuid
+        const user = await User.findOne({
+            where:{
+               uuid:user_uuid
+            }
+        })
+        const pitchMaterial = await PitchMaterial.findOne({
+            where:{
+                uuid
+            }
+        });
+        const response = await PitchMaterialViewer.create({
+            userId:user.id,
+            pitchMaterialId:pitchMaterial.id
+        })
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+const deletePitchMaterialViewer = async(req,res)=>{
+    try {
+      
+        const uuid = req.params.uuid
+        const pitchMaterialViewer = await PitchMaterialViewer.findOne({
+            where:{
+                uuid
+            }
+        });
+        const response = await pitchMaterialViewer.destroy()
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+
 
 
 const getAllPitchMaterials = async(req, res) =>{
@@ -188,7 +229,7 @@ const getDocumentPitchMaterials = async(req, res) =>{
 
 
 module.exports = {
-    createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,
-    getVideoPitchMaterials,getDocumentPitchMaterials,postPitchMaterialDocument,
+    createPitchMaterial,updatePitchMaterial,deletePitchMaterial,getUserPitchMaterial,getAllPitchMaterials,addPitchMaterialViewer,
+    getVideoPitchMaterials,getDocumentPitchMaterials,postPitchMaterialDocument,deletePitchMaterialViewer
     
 }

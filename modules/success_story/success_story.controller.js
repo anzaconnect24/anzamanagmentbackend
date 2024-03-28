@@ -86,7 +86,10 @@ const getAllSuccessStorys = async(req, res) =>{
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
             // distinct:true,
-            include:[Business,]
+            include:[{
+                model:Business,
+                include:[User]
+            },]
 
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)

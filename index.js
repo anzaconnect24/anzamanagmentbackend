@@ -1,6 +1,7 @@
 const express = require('express')
 const bodyParser = require("body-parser");
 const socket = require("socket.io");
+const {User} = require("./models")
 
 const UserRoutes =  require("./modules/user/user.routes")
 const RoleRoutes =  require("./modules/role/role.routes")
@@ -42,7 +43,10 @@ const Seller =  require("./modules/seller/seller.routes")
 const Subscription =  require("./modules/subscription/subscription.routes")
 // ********************
 
-const cors = require('cors')
+const cors = require('cors');
+const { errorResponse, successResponse } = require('./utils/responses');
+const { sendEmail } = require('./utils/send_email');
+const { sendMail } = require('./utils/mail_controller');
 const app = express()
 app.use(cors());
 app.use(express.json());
@@ -83,6 +87,21 @@ app.use("/payment",Payments)
 app.use("/admin",Admin)
 app.use("/seller",Seller)
 app.use("/subscription",Subscription)
+
+// app.post("/sendEmail",async(req,res)=>{
+//   try {
+//     const {email} = req.body
+//     const user = await User.findOne({
+//       where:{
+//         email
+//       }
+//     })
+//     const response = await sendMail(user,"Testing","Hello",true)
+//     successResponse(res,)
+//   } catch (error) {
+//     errorResponse(res,error)
+//   }
+// })
 
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")

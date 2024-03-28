@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      PitchMaterial.hasMany(models.PitchMaterialViewer)
     }
   }
   PitchMaterial.init({
