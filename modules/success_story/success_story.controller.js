@@ -85,12 +85,14 @@ const getAllSuccessStorys = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
-            // distinct:true,
             include:[{
                 model:Business,
-                include:[User]
+                required:true,
+                include:{
+                    model:User,
+                    required:true
+                }
             },]
-
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})
