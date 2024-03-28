@@ -14,7 +14,7 @@ const createSuccessStory = async(req,res)=>{
         let business = await Business.findOne({
             where:{uuid:business_uuid}
         })
-        var response = await SuccessStory.create({businessId:business.id,title,story,image})        
+        var response = await SuccessStory.create({businessId:business.id,title,story,videoLink:image})        
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
