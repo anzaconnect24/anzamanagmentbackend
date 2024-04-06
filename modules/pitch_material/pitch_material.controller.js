@@ -15,7 +15,14 @@ const createPitchMaterial = async(req,res)=>{
         
         if (req.file) {
             link = await getUrl(req);
+            console.log(link)
         }
+        console.log(link)
+        console.log(link)
+        console.log(link)
+        console.log(link)
+        console.log(link)
+
         const response = await PitchMaterial.create({
             fileName:fileName,
             type:type,

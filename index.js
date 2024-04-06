@@ -47,10 +47,11 @@ const cors = require('cors');
 const { errorResponse, successResponse } = require('./utils/responses');
 const { sendEmail } = require('./utils/send_email');
 const { sendMail } = require('./utils/mail_controller');
+
 const app = express()
+app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
-app.use(express.static("files"));
 app.use(bodyParser.text({ type: "/" }));
 
 app.use("/user",UserRoutes)
