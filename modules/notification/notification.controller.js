@@ -5,8 +5,18 @@ const { Op } = require("sequelize");
 
 const createNotification = async(req,res)=>{
     try {
-
-        var response = await Notification.create(req.body)        
+         const {user_uuid,message,to } = req.body;
+         let user;
+         if(user_uuid){
+             user = await User.findOne({
+                where:{
+                    uuid:user_uuid
+                }
+             })
+         }
+        var response = await Notification.create({
+            for:to,message,userId:user_uuid&&user.id
+        })        
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
