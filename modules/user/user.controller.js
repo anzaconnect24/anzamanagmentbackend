@@ -477,6 +477,8 @@ const loginUser = async (req, res) => {
 
   const getInterestedEnterprenuers = async(req,res)=>{
     try {
+      
+      
         let {page,limit} = req.query
         page = parseInt(page)
         limit = parseInt(limit)

@@ -38,22 +38,19 @@ const Promotions =  require("./modules/promotion/promotion.routes")
 const Payments =  require("./modules/payment/payment.routes")
 const Admin =  require("./modules/admin/admin.routes")
 const Seller =  require("./modules/seller/seller.routes")
-// const BusinessSectorRoutes =  require("./modules/business_sector/business_sector.routes")
-
+const NotificationRoutes =  require("./modules/notification/notification.routes")
 const Subscription =  require("./modules/subscription/subscription.routes")
 // ********************
 
 const cors = require('cors');
-const { errorResponse, successResponse } = require('./utils/responses');
-const { sendEmail } = require('./utils/send_email');
-const { sendMail } = require('./utils/mail_controller');
 const app = express()
+app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
-app.use(express.static("files"));
 app.use(bodyParser.text({ type: "/" }));
 
 app.use("/user",UserRoutes)
+app.use("/notification",NotificationRoutes)
 app.use("/role",RoleRoutes)
 app.use("/permission",PermissionRoutes)
 app.use("/user_role",UserRoleRoutes)

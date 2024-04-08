@@ -5,16 +5,16 @@ const getUrl = require("../../utils/cloudinary_upload");
 
 const createSuccessStory = async(req,res)=>{
     try {
-        // let documentLink = null
+        let image = null
         const {title,story,videoLink,business_uuid} = req.body
         let user = await req.user
-        // if (req.file) {
-        //     documentLink = await getUrl(req);
-        // }
+        if (req.file) {
+            image = await getUrl(req);
+        }
         let business = await Business.findOne({
             where:{uuid:business_uuid}
         })
-        var response = await SuccessStory.create({businessId:business.id,title,story,videoLink})        
+        var response = await SuccessStory.create({businessId:business.id,title,story,videoLink:image})        
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)
@@ -85,12 +85,14 @@ const getAllSuccessStorys = async(req, res) =>{
             offset: offset, //ruka ngapi
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
-            // distinct:true,
             include:[{
                 model:Business,
-                include:[User]
+                required:true,
+                include:{
+                    model:User,
+                    required:true
+                }
             },]
-
         })
         const totalPages = (count%limit)>0?parseInt(count/limit)+1:parseInt(count/limit)
         successResponse(res, {count, data:rows, page, totalPages})

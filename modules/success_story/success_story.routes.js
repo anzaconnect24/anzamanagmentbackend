@@ -5,7 +5,7 @@ const { createSuccessStory, updateSuccessStory, deleteSuccessStory, getUserSucce
 getSuccessStoryDetails, } = require('./success_story.controller');
 
 const router = Router()
-router.post("/",validateJWT,createSuccessStory)
+router.post("/",upload.single('file'),createSuccessStory)
 // router.post("/",validateJWT,createSuccessStory)
 router.get('/user',validateJWT,getUserSuccessStory)
 // business UUID
