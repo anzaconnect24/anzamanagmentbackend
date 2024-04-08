@@ -65,4 +65,18 @@ const getUserConversations = async(req,res)=>{
     }
 }
 
-module.exports = {createConversation,getUserConversations}
+const deleteConversation = async(req,res)=>{
+    try {
+        const {uuid} = req.params
+        const conversation = await Conversation.findOne({
+            where:{
+                uuid
+            }
+        })
+        const response = await conversation.destroy()
+        successResponse(res,response)
+    } catch (error) {
+        errorResponse(res,error)
+    }
+}
+module.exports = {createConversation,getUserConversations,deleteConversation}
