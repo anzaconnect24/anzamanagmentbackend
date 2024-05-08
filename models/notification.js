@@ -18,8 +18,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4
     },
-    for: {
-      type: DataTypes.INTEGER,
+    to: {
+      type: DataTypes.STRING,
       allowNull:false
     },
     userId:{
