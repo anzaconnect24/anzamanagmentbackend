@@ -68,6 +68,10 @@ module.exports = (sequelize, DataTypes) => {
         type:DataTypes.STRING,
         allowNull:true
       },
+      sdg:{
+        type:DataTypes.STRING,
+        allowNull:true
+      },
       twitter:{
         type:DataTypes.STRING,
         allowNull:true

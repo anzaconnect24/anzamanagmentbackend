@@ -74,6 +74,50 @@ module.exports = {
         type: DataTypes.ENUM('waiting','rejected','accepted'), 
         defaultValue:"waiting"
       },
+      investmentCurrency:{
+        type: DataTypes.STRING,
+        allowNull:true
+        },
+        isAlumni:{
+        type: DataTypes.BOOLEAN,
+        defaultValue:false
+        },
+        companyProfile:{
+          type: DataTypes.STRING,
+          allowNull:true
+          },
+        facebook:{
+          type: DataTypes.STRING,
+          allowNull:true
+          },
+        twitter:{
+          type: DataTypes.STRING,
+          allowNull:true
+          },
+          sdg:{
+            type: DataTypes.STRING,
+            allowNull:true
+            },
+        instagram:{
+          type: DataTypes.STRING,
+          allowNull:true
+          },
+        linkedin:{
+          type: DataTypes.STRING,
+          allowNull:true
+          },
+        completedProgram:{
+        type: DataTypes.STRING,
+        allowNull:true
+        },
+        businessPlan:{
+          type: DataTypes.STRING,
+          allowNull:true
+        },
+        marketResearch:{
+          type: DataTypes.STRING,
+          allowNull:true
+        },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE
