@@ -4,7 +4,4 @@ node_modules
 /build
 build
 
-files
-/files
-
 .DS_Store
