@@ -172,8 +172,7 @@ const registerUser = async (req, res) => {
             email: email
           }
         });
-        // sendSMS(addPrefixToPhoneNumber(phone),`Thank you for joining Shule Alumni as ${name}. You can now interact with and meet other alumni in the system.`)
-        
+     
         const tokens = generateJwtTokens(response)
         res.status(201).json({
           status: true,

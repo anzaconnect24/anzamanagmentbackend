@@ -1,6 +1,7 @@
 const express = require('express')
 const bodyParser = require("body-parser");
-const socket = require("socket.io");
+const cors = require('cors');
+const app = express();
 const {User} = require("./models")
 
 const UserRoutes =  require("./modules/user/user.routes")
@@ -42,8 +43,7 @@ const NotificationRoutes =  require("./modules/notification/notification.routes"
 const Subscription =  require("./modules/subscription/subscription.routes")
 // ********************
 
-const cors = require('cors');
-const app = express()
+
 app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
@@ -103,13 +103,7 @@ app.use("/subscription",Subscription)
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")
 })
-const server = app.listen(5000,()=>{
+ app.listen(5000,()=>{
   console.log("Server started at port 5000")
 })
 
-// Socket setup
-const io = socket(server);
-
-io.on("connection", function (socket) {
-  console.log("Made socket connection");
-});
