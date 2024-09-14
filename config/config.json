@@ -3,28 +3,28 @@
     "username": "anza",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "http://api.anzaconnect.co.tz",
+    "host": "https://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
   "developmen": {
     "username": "anza",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "http://api.anzaconnect.co.tz",
+    "host": "https://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
   "test": {
     "username": "anza",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "http://api.anzaconnect.co.tz",
+    "host": "https://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
   "production": {
     "username": "anza",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "http://api.anzaconnect.co.tz",
+    "host": "https://api.anzaconnect.co.tz",
     "dialect": "mysql"
   }
 }
