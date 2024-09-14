@@ -1,30 +1,30 @@
 {
-  "developmen": {
-    "username": "u804442986_anza",
+  "development": {
+    "username": "anza",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "http://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
-  "development": {
-    "username": "u804442986_anza",
+  "developmen": {
+    "username": "anza",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "http://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
   "test": {
-    "username": "u804442986_anza",
+    "username": "anza",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "http://api.anzaconnect.co.tz",
     "dialect": "mysql"
   },
   "production": {
-    "username": "u804442986_anza",
+    "username": "anza",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "http://api.anzaconnect.co.tz",
     "dialect": "mysql"
   }
 }

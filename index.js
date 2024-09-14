@@ -1,8 +1,4 @@
-const express = require('express')
-const bodyParser = require("body-parser");
-const cors = require('cors');
-const app = express();
-const {User} = require("./models")
+
 
 const UserRoutes =  require("./modules/user/user.routes")
 const RoleRoutes =  require("./modules/role/role.routes")

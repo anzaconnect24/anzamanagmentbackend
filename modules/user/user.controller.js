@@ -156,6 +156,7 @@ const registerUser = async (req, res) => {
         if (req.file) {
           image = await getUrl(req);
         }
+        
         const user = await User.create({
           name,
           phone,

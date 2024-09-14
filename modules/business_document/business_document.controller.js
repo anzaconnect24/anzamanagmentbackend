@@ -3,7 +3,7 @@ const getUrl = require("../../utils/cloudinary_upload");
 const { errorResponse, successResponse } = require("../../utils/responses");
 const createBusinessDocument = async(req,res)=>{
     try {
-        const user = req.user
+        // const user = req.user
         let link = null;
         let {title,business_uuid,type} = req.body    
         let business = await Business.findOne({
