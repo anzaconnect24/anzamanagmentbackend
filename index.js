@@ -39,6 +39,8 @@ const Admin = require("./modules/admin/admin.routes");
 const Seller = require("./modules/seller/seller.routes");
 const NotificationRoutes = require("./modules/notification/notification.routes");
 const Subscription = require("./modules/subscription/subscription.routes");
+const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
+const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
 // ********************
 const app = express();
 
@@ -58,6 +60,8 @@ app.use("/application_review", ApplicationReviewRoutes);
 app.use("/attachment", AttachmentRoutes);
 app.use("/business", BusinessRoutes);
 app.use("/business_review", BusinessReviewRoutes);
+app.use("/mentor-entreprenuers", MentorEntreprenuerRoutes);
+app.use("/mentor-reports", MentorReportRoutes);
 app.use("/program", ProgramRoutes);
 app.use("/program_application", ProgramApplicationRoutes);
 app.use("/program_application_review", ProgramApplicationReviewRoutes);

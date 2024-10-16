@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "anza",
-    "password": "Anza@2024",
+    "username": "root",
+    "password": "",
     "database": "anza",
-    "host": "127.0.0.1",
+    "host": "localhost",
     "dialect": "mysql"
   },
   "developmen": {
