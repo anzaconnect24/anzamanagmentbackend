@@ -543,14 +543,40 @@ const getEnterprenuers = async (req, res) => {
       offset: offset, //ruka ngapi
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
-      include: [Business],
-      where: {
-        [Op.and]: [
-          {
+      include: [
+        {
+          model: Business,
+          include: [
+            {
+              model: BusinessSector,
+              where: {
+                name: {
+                  [Op.like]: "%" + keyword + "%",
+                },
+              },
+              required: false,
+            },
+          ],
+          where: {
             name: {
               [Op.like]: "%" + keyword + "%",
             },
           },
+          required: false,
+        },
+      ],
+      where: {
+        [Op.and]: [
+          {
+            [Op.or]: [
+              {
+                name: {
+                  [Op.like]: "%" + keyword + "%",
+                },
+              },
+            ],
+          },
+
           {
             role: "Enterprenuer",
           },
@@ -580,20 +606,22 @@ const getMentorEntreprenuers = async (req, res) => {
       offset: offset, //ruka ngapi
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
-      attributes: [
-        [
-          Sequelize.literal(
-            `CASE WHEN EXISTS (SELECT 1 FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\`) THEN 1 ELSE 0 END`
-          ),
-          "isAssigned",
+      attributes: {
+        include: [
+          [
+            Sequelize.literal(
+              `CASE WHEN EXISTS (SELECT 1 FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\`) THEN 1 ELSE 0 END`
+            ),
+            "isAssigned",
+          ],
+          [
+            Sequelize.literal(
+              `(SELECT \`uuid\` FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\` LIMIT 1)`
+            ),
+            "mentorEntreprenuerUUID",
+          ],
         ],
-        [
-          Sequelize.literal(
-            `(SELECT \`uuid\` FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\` LIMIT 1)`
-          ),
-          "mentorEntreprenuerUUID",
-        ],
-      ],
+      },
       where: {
         [Op.and]: [
           {

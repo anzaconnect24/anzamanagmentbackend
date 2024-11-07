@@ -1,5 +1,10 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { MentorEntreprenuer, User } = require("../../models");
+const {
+  MentorEntreprenuer,
+  User,
+  Business,
+  BusinessSector,
+} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
 const createMentorEntreprenuer = async (req, res) => {
@@ -25,16 +30,46 @@ const createMentorEntreprenuer = async (req, res) => {
     errorResponse(res, error);
   }
 };
-
-const deleteMentorEntreprenuer = async (req, res) => {
+const getMentorEntreprenuers = async (req, res) => {
   try {
-    const uuid = req.params.uuid;
-    const MentorEntreprenuer = await MentorEntreprenuer.findOne({
+    const { uuid } = req.params;
+    const mentor = await User.findOne({
       where: {
         uuid,
       },
     });
-    const response = await MentorEntreprenuer.destroy();
+
+    const response = await MentorEntreprenuer.findAll({
+      where: {
+        mentorId: mentor.id,
+      },
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+          include: [
+            {
+              model: Business,
+              include: [BusinessSector],
+            },
+          ],
+        },
+      ],
+    });
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+const deleteMentorEntreprenuer = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const mentorEntreprenuer = await MentorEntreprenuer.findOne({
+      where: {
+        uuid,
+      },
+    });
+    const response = await mentorEntreprenuer.destroy();
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -43,5 +78,6 @@ const deleteMentorEntreprenuer = async (req, res) => {
 
 module.exports = {
   createMentorEntreprenuer,
+  getMentorEntreprenuers,
   deleteMentorEntreprenuer,
 };

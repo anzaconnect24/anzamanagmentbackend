@@ -41,6 +41,7 @@ const NotificationRoutes = require("./modules/notification/notification.routes")
 const Subscription = require("./modules/subscription/subscription.routes");
 const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
 const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
+const StatsRoutes = require("./modules/stats/stats.routes");
 // ********************
 const app = express();
 
@@ -50,6 +51,7 @@ app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
 
 app.use("/user", UserRoutes);
+app.use("/stats", StatsRoutes);
 app.use("/notification", NotificationRoutes);
 app.use("/role", RoleRoutes);
 app.use("/permission", PermissionRoutes);
