@@ -92,6 +92,12 @@ const getEntreprenuerReports = async (req, res) => {
       where: {
         entreprenuerId: entreprenuer.id,
       },
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+        },
+      ],
     });
     successResponse(res, response);
   } catch (error) {
