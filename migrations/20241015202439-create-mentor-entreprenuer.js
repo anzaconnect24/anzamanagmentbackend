@@ -21,6 +21,10 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      approved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,

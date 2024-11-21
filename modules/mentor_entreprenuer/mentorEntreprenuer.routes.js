@@ -6,10 +6,14 @@ const {
   createMentorEntreprenuer,
   deleteMentorEntreprenuer,
   getMentorEntreprenuers,
+  getUnapprovedMentorEntreprenuers,
+  updateMentorEntreprenuer,
 } = require("./mentorEntreprenuer.controllers");
 
 router.post("/", validateJWT, createMentorEntreprenuer);
 router.get("/mentor/:uuid", validateJWT, getMentorEntreprenuers);
+router.get("/unapproved/", validateJWT, getUnapprovedMentorEntreprenuers);
 router.delete("/:uuid", validateJWT, deleteMentorEntreprenuer);
+router.patch("/:uuid", validateJWT, updateMentorEntreprenuer);
 
 module.exports = router;

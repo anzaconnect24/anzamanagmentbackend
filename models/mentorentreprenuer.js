@@ -33,9 +33,23 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      approved: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
     },
     {
       sequelize,
+      defaultScope: {
+        attributes: [
+          "id",
+          "uuid",
+          "mentorId",
+          "approved",
+          "entreprenuerId",
+          "createdAt",
+        ],
+      },
       modelName: "MentorEntreprenuer",
     }
   );

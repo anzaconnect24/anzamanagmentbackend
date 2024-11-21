@@ -549,11 +549,7 @@ const getEnterprenuers = async (req, res) => {
           include: [
             {
               model: BusinessSector,
-              where: {
-                name: {
-                  [Op.like]: "%" + keyword + "%",
-                },
-              },
+
               required: false,
             },
           ],
@@ -562,25 +558,11 @@ const getEnterprenuers = async (req, res) => {
               [Op.like]: "%" + keyword + "%",
             },
           },
-          required: false,
+          required: true,
         },
       ],
       where: {
-        [Op.and]: [
-          {
-            [Op.or]: [
-              {
-                name: {
-                  [Op.like]: "%" + keyword + "%",
-                },
-              },
-            ],
-          },
-
-          {
-            role: "Enterprenuer",
-          },
-        ],
+        role: "Enterprenuer",
       },
     });
     const totalPages =
