@@ -64,6 +64,32 @@ const getMentorEntreprenuers = async (req, res) => {
     errorResponse(res, error);
   }
 };
+const getEntreprenuerMentors = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const entreprenuer = await User.findOne({
+      where: {
+        uuid,
+      },
+    });
+
+    const response = await MentorEntreprenuer.findAll({
+      attributes: ["id", "uuid", "mentorId", "entreprenuerId", "createdAt"],
+      where: {
+        entreprenuerId: entreprenuer.id,
+      },
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+        },
+      ],
+    });
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
 const getUnapprovedMentorEntreprenuers = async (req, res) => {
   try {
     const response = await MentorEntreprenuer.findAll({
@@ -132,6 +158,7 @@ const updateMentorEntreprenuer = async (req, res) => {
 module.exports = {
   createMentorEntreprenuer,
   getMentorEntreprenuers,
+  getEntreprenuerMentors,
   updateMentorEntreprenuer,
   getUnapprovedMentorEntreprenuers,
   deleteMentorEntreprenuer,

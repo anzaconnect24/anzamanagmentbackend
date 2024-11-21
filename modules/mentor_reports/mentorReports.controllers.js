@@ -41,7 +41,7 @@ const getMentorReports = async (req, res) => {
     });
 
     const response = await MentorReport.findAll({
-      order:[["createdAt","DESC"]],
+      order: [["createdAt", "DESC"]],
       where: {
         mentorId: mentor.id,
       },
@@ -61,7 +61,7 @@ const getMentorReports = async (req, res) => {
 const getAllReports = async (req, res) => {
   try {
     const response = await MentorReport.findAll({
-      order:[["createdAt","DESC"]],
+      order: [["createdAt", "DESC"]],
       include: [
         {
           model: User,
@@ -81,14 +81,14 @@ const getAllReports = async (req, res) => {
 };
 const getEntreprenuerReports = async (req, res) => {
   try {
-    const { uuid } = req.body;
+    const { uuid } = req.params;
     const entreprenuer = await User.findOne({
       where: {
         uuid,
       },
     });
     const response = await MentorReport.findAll({
-      order:[["createdAt","DESC"]],
+      order: [["createdAt", "DESC"]],
       where: {
         entreprenuerId: entreprenuer.id,
       },

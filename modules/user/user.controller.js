@@ -20,6 +20,7 @@ const sendSMS = require("../../utils/send_sms");
 const addPrefixToPhoneNumber = require("../../utils/add_number_prefix");
 const { resetPassword, sendMail } = require("../../utils/mail_controller");
 const { sendEmail } = require("../../utils/send_email");
+const business = require("../../models/business");
 // const business = require("../../models/business");
 
 const sendMessage = async (req, res) => {
@@ -605,17 +606,18 @@ const getMentorEntreprenuers = async (req, res) => {
         ],
       },
       where: {
-        [Op.and]: [
-          {
+        role: "Enterprenuer",
+      },
+      include: [
+        {
+          model: Business,
+          where: {
             name: {
               [Op.like]: "%" + keyword + "%",
             },
           },
-          {
-            role: "Enterprenuer",
-          },
-        ],
-      },
+        },
+      ],
     });
     const totalPages =
       count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);

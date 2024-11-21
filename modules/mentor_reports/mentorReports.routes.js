@@ -14,9 +14,9 @@ const upload = require("../../utils/upload");
 
 router.post("/", upload.single("file"), validateJWT, createMentorReport);
 router.get("/mentor/:uuid", validateJWT, getMentorReports);
+router.get("/entreprenuer/:uuid", validateJWT, getEntreprenuerReports);
 router.get("/:uuid", validateJWT, getMentorReport);
 router.get("/", validateJWT, getAllReports);
-router.get("/entreprenuer/:uuid", validateJWT, getEntreprenuerReports);
 router.delete("/:uuid", validateJWT, deleteMentorReport);
 
 module.exports = router;
