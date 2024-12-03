@@ -5,6 +5,11 @@ const app = express();
 const {User} = require("./models")
 
 const UserRoutes =  require("./modules/user/user.routes")
+const CratMarketRoutes = require("./modules/crat_market/crat_market.routes")
+const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.routes")
+const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes")
+const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes")
+const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes")
 const RoleRoutes =  require("./modules/role/role.routes")
 const PermissionRoutes =  require("./modules/permission/permission.routes")
 const UserRoleRoutes =  require("./modules/user_role/user_role.routes")
@@ -84,6 +89,16 @@ app.use("/payment",Payments)
 app.use("/admin",Admin)
 app.use("/seller",Seller)
 app.use("/subscription",Subscription)
+app.use("/crat_market",CratMarketRoutes)
+app.use("/crat_financial",CratFinancialRoutes)
+app.use("/crat_legal",CratLegalRoutes)
+app.use("/crat_operation",CratOperationRoutes)
+app.use("/crat_general",CratGeneralRoutes)
+
+
+
+
+
 
 // app.post("/sendEmail",async(req,res)=>{
 //   try {
@@ -103,7 +118,7 @@ app.use("/subscription",Subscription)
 app.get('/',(req,res)=>{
     res.send("Anza management system API's are okay!")
 })
- app.listen(5000,()=>{
-  console.log("Server started at port 5000")
+ app.listen(5001,()=>{
+  console.log("Server started at port 5001")
 })
 
