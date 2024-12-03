@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
-const {Attachment,Application} = require("../../models");
+const {Attachment,Application, CratMarkets} = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
 
@@ -23,6 +23,9 @@ const createAttachment = async(req,res)=>{
         errorResponse(res,error)
     }
 }
+
+
+
 
 
 const deleteAttachment = async(req,res)=>{
