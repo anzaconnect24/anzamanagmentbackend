@@ -1,32 +1,30 @@
 {
-  "developmen": {
-    "username": "u804442986_anza",
+  "development": {
+    "username": "anza_user",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "139.162.178.79",
     "dialect": "mysql"
   },
-  "development": {
-      "username": "root",
-    "password": "root",
-    "database": "anza_test",
-    "host": "localhost",
-    "port": "8889",
+  "developmen": {
+    "username": "anza_user",
+    "password": "Anza@2024",
+    "database": "anza",
+    "host": "139.162.178.79",
     "dialect": "mysql"
   },
   "test": {
-    "username": "root",
-    "password": "root",
-    "database": "anza_test",
-    "host": "localhost",
-    "port": "8889",
+    "username": "anza_user",
+    "password": "Anza@2024",
+    "database": "anza",
+    "host": "139.162.178.79",
     "dialect": "mysql"
   },
   "production": {
-    "username": "u804442986_anza",
+    "username": "anza_user",
     "password": "Anza@2024",
-    "database": "u804442986_anzamanagement",
-    "host": "srv1566.hstgr.io",
+    "database": "anza",
+    "host": "139.162.178.79",
     "dialect": "mysql"
   }
 }

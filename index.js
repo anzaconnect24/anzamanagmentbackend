@@ -1,8 +1,6 @@
-const express = require('express')
+const express = require("express");
+const cors = require("cors");
 const bodyParser = require("body-parser");
-const cors = require('cors');
-const app = express();
-const {User} = require("./models")
 
 const UserRoutes =  require("./modules/user/user.routes")
 const CratMarketRoutes = require("./modules/crat_market/crat_market.routes")
@@ -47,58 +45,54 @@ const Seller =  require("./modules/seller/seller.routes")
 const NotificationRoutes =  require("./modules/notification/notification.routes")
 const Subscription =  require("./modules/subscription/subscription.routes")
 // ********************
-
+const app = express();
 
 app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
 
-app.use("/user",UserRoutes)
-app.use("/notification",NotificationRoutes)
-app.use("/role",RoleRoutes)
-app.use("/permission",PermissionRoutes)
-app.use("/user_role",UserRoleRoutes)
-app.use("/user_permission",UserPermissionRoutes)
-app.use("/application",ApplicationRoutes)
-app.use("/application_review",ApplicationReviewRoutes)
-app.use("/attachment",AttachmentRoutes)
-app.use("/business",BusinessRoutes)
-app.use("/business_review",BusinessReviewRoutes)
-app.use("/program",ProgramRoutes)
-app.use("/program_application",ProgramApplicationRoutes)
-app.use("/program_application_review",ProgramApplicationReviewRoutes)
-app.use("/investor_profile",InvestorProfileRoutes)
-app.use("/program_update",ProgramUpdateRoutes)
-app.use("/conversation",ConversationRoutes)
-app.use("/pitch_material",PitchMaterialRoutes)
-app.use("/business_investment_request",BusinessInvestmentRequestRoutes)
-app.use("/business_investment_request_review",BusinessInvestmentRequestReviewRoutes)
-app.use("/business_document",BusinessDocumentRoutes)
-app.use("/log",LogRoutes)
-app.use("/investment_interest",InvestmentInterestRoutes)
-app.use("/success_story",SuccessStoryRoutes)
-app.use("/product",ProductRoutes)
-app.use("/order",OrderRoutes)
-app.use("/wishlist",WishlistRoutes)
-app.use("/sector",BusinessSectors)
-app.use("/review",Reviews)
-app.use("/favourite",Favourites)
-app.use("/promotion",Promotions)
-app.use("/payment",Payments)
-app.use("/admin",Admin)
-app.use("/seller",Seller)
-app.use("/subscription",Subscription)
-app.use("/crat_market",CratMarketRoutes)
-app.use("/crat_financial",CratFinancialRoutes)
-app.use("/crat_legal",CratLegalRoutes)
-app.use("/crat_operation",CratOperationRoutes)
-app.use("/crat_general",CratGeneralRoutes)
-
-
-
-
-
+app.use("/user", UserRoutes);
+app.use("/stats", StatsRoutes);
+app.use("/notification", NotificationRoutes);
+app.use("/role", RoleRoutes);
+app.use("/permission", PermissionRoutes);
+app.use("/user_role", UserRoleRoutes);
+app.use("/user_permission", UserPermissionRoutes);
+app.use("/application", ApplicationRoutes);
+app.use("/application_review", ApplicationReviewRoutes);
+app.use("/attachment", AttachmentRoutes);
+app.use("/business", BusinessRoutes);
+app.use("/business_review", BusinessReviewRoutes);
+app.use("/mentor-entreprenuers", MentorEntreprenuerRoutes);
+app.use("/mentor-reports", MentorReportRoutes);
+app.use("/program", ProgramRoutes);
+app.use("/program_application", ProgramApplicationRoutes);
+app.use("/program_application_review", ProgramApplicationReviewRoutes);
+app.use("/investor_profile", InvestorProfileRoutes);
+app.use("/program_update", ProgramUpdateRoutes);
+app.use("/conversation", ConversationRoutes);
+app.use("/pitch_material", PitchMaterialRoutes);
+app.use("/business_investment_request", BusinessInvestmentRequestRoutes);
+app.use(
+  "/business_investment_request_review",
+  BusinessInvestmentRequestReviewRoutes
+);
+app.use("/business_document", BusinessDocumentRoutes);
+app.use("/log", LogRoutes);
+app.use("/investment_interest", InvestmentInterestRoutes);
+app.use("/success_story", SuccessStoryRoutes);
+app.use("/product", ProductRoutes);
+app.use("/order", OrderRoutes);
+app.use("/wishlist", WishlistRoutes);
+app.use("/sector", BusinessSectors);
+app.use("/review", Reviews);
+app.use("/favourite", Favourites);
+app.use("/promotion", Promotions);
+app.use("/payment", Payments);
+app.use("/admin", Admin);
+app.use("/seller", Seller);
+app.use("/subscription", Subscription);
 
 // app.post("/sendEmail",async(req,res)=>{
 //   try {
@@ -115,10 +109,9 @@ app.use("/crat_general",CratGeneralRoutes)
 //   }
 // })
 
-app.get('/',(req,res)=>{
-    res.send("Anza management system API's are okay!")
-})
- app.listen(5001,()=>{
-  console.log("Server started at port 5001")
-})
-
+app.get("/", (req, res) => {
+  res.send("Anza management system API's are okay!");
+});
+app.listen(5000, () => {
+  console.log("Server started at port 5000");
+});

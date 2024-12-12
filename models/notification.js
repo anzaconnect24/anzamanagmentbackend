@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Notification extends Model {
     /**
@@ -10,29 +8,32 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Notification.hasMany(models.NotificationViewer)
+      Notification.hasMany(models.NotificationViewer);
     }
   }
-  Notification.init({
-    uuid:{
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4
+  Notification.init(
+    {
+      uuid: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      to: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      message: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
     },
-    to: {
-      type: DataTypes.STRING,
-      allowNull:true
-    },
-    userId:{
-      type: DataTypes.INTEGER,
-      allowNull:true
-    },
-    message:{
-      type:DataTypes.STRING,
-      allowNull:false
-    },
-  }, {
-    sequelize,
-    modelName: 'Notification',
-  });
+    {
+      sequelize,
+      modelName: "Notification",
+    }
+  );
   return Notification;
 };
