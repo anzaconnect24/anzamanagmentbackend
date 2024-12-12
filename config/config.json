@@ -14,10 +14,10 @@
     "dialect": "mysql"
   },
   "test": {
-    "username": "anza_user",
+    "username": "u804442986_anza",
     "password": "Anza@2024",
-    "database": "anza",
-    "host": "139.162.178.79",
+    "database": "u804442986_anzamanagement",
+    "host": "srv1566.hstgr.io",
     "dialect": "mysql"
   },
   "production": {
