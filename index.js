@@ -8,6 +8,7 @@ const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.rou
 const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes")
 const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes")
 const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes")
+const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes")
 const RoleRoutes =  require("./modules/role/role.routes")
 const PermissionRoutes =  require("./modules/permission/permission.routes")
 const UserRoleRoutes =  require("./modules/user_role/user_role.routes")
@@ -44,6 +45,9 @@ const Admin =  require("./modules/admin/admin.routes")
 const Seller =  require("./modules/seller/seller.routes")
 const NotificationRoutes =  require("./modules/notification/notification.routes")
 const Subscription =  require("./modules/subscription/subscription.routes")
+const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
+const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
+const StatsRoutes = require("./modules/stats/stats.routes");
 // ********************
 const app = express();
 
@@ -93,6 +97,13 @@ app.use("/payment", Payments);
 app.use("/admin", Admin);
 app.use("/seller", Seller);
 app.use("/subscription", Subscription);
+app.use("/crat_market",CratMarketRoutes)
+app.use("/crat_financial",CratFinancialRoutes)
+app.use("/crat_legal",CratLegalRoutes)
+app.use("/crat_operation",CratOperationRoutes)
+app.use("/crat_general",CratGeneralRoutes)
+app.use("/reviewer",CratReviewerRoutes)
+
 
 // app.post("/sendEmail",async(req,res)=>{
 //   try {
