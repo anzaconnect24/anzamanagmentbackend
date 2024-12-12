@@ -6,6 +6,7 @@
 
 const getUrl = async(req)=>{
   const file = req.file
+  console.log('my file', file);
   return `localhost:5001/files/${file.originalname}` 
 }
 

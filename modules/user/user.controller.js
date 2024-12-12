@@ -295,37 +295,50 @@ const inviteUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Ensure the user exists
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      res.status(404).json({
+      return res.status(404).json({
         status: false,
         message: "User does not exist",
       });
+    }
+
+    // Compare passwords
+    if (await bcrypt.compare(password, user.password)) {
+      // Fetch the user including the associated Business
+      const response = await User.findOne({
+        where: { email: email },
+        include: [Business],
+      });
+
+      console.log(response);  // Log the response for debugging
+
+      // Extract versionCount and publishStatus from response
+      const { versionCount, publishStatus } = response.dataValues;
+
+      // Generate JWT tokens
+      const tokens = generateJwtTokens(response);
+
+      // Send the response back with the necessary details
+      res.status(200).json({
+        status: true,
+        tokens,  // Include tokens
+        versionCount,  // Include versionCount
+        publishStatus,  // Include publishStatus
+      });
     } else {
-      if (await bcrypt.compare(password, user.password)) {
-        const response = await User.findOne({
-          where: {
-            email: email,
-          },
-          include: [Business],
-        });
-        const tokens = generateJwtTokens(response);
-        res.status(200).json({
-          status: true,
-          tokens,
-        });
-      } else {
-        res.status(403).json({
-          status: false,
-          message: "Wrong password",
-        });
-      }
+      return res.status(403).json({
+        status: false,
+        message: "Wrong password",
+      });
     }
   } catch (error) {
-    // internalError();
-    errorResponse(res, error);
+    errorResponse(res, error);  // Handle errors
   }
 };
+
 
 const getUsersByRole = async (req, res) => {
   try {

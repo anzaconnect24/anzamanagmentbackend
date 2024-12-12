@@ -1,7 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const {CratLegals,User} = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
-const { sendEmail } = require("../../utils/send_email");
 const path = require('path');
 const fs = require('fs');
 
@@ -53,7 +52,7 @@ const createLegal = async (req, res) => {
             where: {
                 userId: user.id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewed', 'reviewer', 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewer_comment', 'reviewer', 'reviewCount', 'comments']
         });
 
         successResponse(res, response);
@@ -85,7 +84,8 @@ const updateLegallData = async (req, res) => {
               {
                 score: item.score,
                 rating: item.rating,
-                description: item.description
+                description: item.description,
+                comments: item.comments
               },
               {
                 where: {

@@ -53,7 +53,7 @@ const createMarket = async (req, res) => {
             where: {
                 userId: user.id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain','reviewer_comment','attachment', 'score', 'rating', 'reviewCount', 'comments']
         });
 
         successResponse(res, response);
@@ -86,7 +86,8 @@ const updateMarketData = async (req, res) => {
               {
                 score: item.score,
                 rating: item.rating,
-                description: item.description
+                description: item.description,
+                comments: item.comments
               },
               {
                 where: {

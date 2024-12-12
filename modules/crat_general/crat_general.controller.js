@@ -6,6 +6,33 @@ const path = require('path');
 const fs = require('fs');
 
   
+const publishReport = async (req, res) => {
+  console.log('publish triggered');
+  console.log(req.body);
+  const {id} = req.body;
+  try {
+    // Find the user or record to update
+    const user = await User.findOne({ where: { id: id } }); 
+
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Update the status in the database
+    await user.update({ publishStatus: "On review" });
+
+    res.json({
+      success: true,
+      message: "Published Successfully",
+      status: user.publishStatus,
+    });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 const getReportData = async (req, res) => {
   console.log('getting report');
   try {
@@ -190,5 +217,5 @@ const scoreCalculation = async (req, res) => {
 
 
 module.exports = {
-  getReportData, scoreCalculation
+  getReportData, scoreCalculation, publishReport
 }

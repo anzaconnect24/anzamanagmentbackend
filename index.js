@@ -8,6 +8,7 @@ const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.rou
 const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes")
 const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes")
 const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes")
+const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes")
 const RoleRoutes =  require("./modules/role/role.routes")
 const PermissionRoutes =  require("./modules/permission/permission.routes")
 const UserRoleRoutes =  require("./modules/user_role/user_role.routes")
@@ -92,6 +93,7 @@ app.use("/crat_financial",CratFinancialRoutes)
 app.use("/crat_legal",CratLegalRoutes)
 app.use("/crat_operation",CratOperationRoutes)
 app.use("/crat_general",CratGeneralRoutes)
+app.use("/reviewer",CratReviewerRoutes)
 
 
 

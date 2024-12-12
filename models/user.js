@@ -24,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.MentorEntreprenuer, { onDelete: "cascade" });
       User.hasMany(models.InvestmentInterest, { onDelete: "cascade" });
       User.hasMany(models.PitchMaterialViewer, { onDelete: "cascade" });
+
+      User.hasMany(models.CratFinancials, { foreignKey: 'userId' });
+      User.hasMany(models.CratMarkets, { foreignKey: 'userId' });
+      User.hasMany(models.CratOperations, { foreignKey: 'userId' });
+      User.hasMany(models.CratLegals, { foreignKey: 'userId' });
     }
   }
   User.init(
@@ -63,6 +68,18 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      versionCount: {  
+        type: DataTypes.INTEGER,
+        defaultValue: 1, 
+      },
+      publishStatus: {  
+        type: DataTypes.STRING,
+        defaultValue: "Draft", 
+      },
+      reportPdf: {
+        type: DataTypes.STRING,
+        allowNull:false  
       },
     },
     {

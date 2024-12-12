@@ -51,7 +51,7 @@ const createFinancial = async (req, res) => {
             where: {
                 userId: user.id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewed', 'reviewer', 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewer_comment', 'reviewer', 'reviewCount', 'comments']
         });
 
         successResponse(res, response);

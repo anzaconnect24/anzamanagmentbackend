@@ -53,7 +53,7 @@ const createOperation = async (req, res) => {
             where: {
                 userId: user.id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment' , 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain','reviewer_comment', 'score', 'rating', 'attachment' , 'reviewCount', 'comments']
         });
 
         successResponse(res, response);
@@ -85,7 +85,8 @@ const updateOperationData = async (req, res) => {
               {
                 score: item.score,
                 rating: item.rating,
-                description: item.description
+                description: item.description,
+                comments: item.comments
               },
               {
                 where: {
