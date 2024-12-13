@@ -9,9 +9,7 @@ const createFinancial = async (req, res) => {
   console.log('in here 1');
   try {
     const body = req.body;
-    const user = req.user;
-    console.log('this is my body', body);
-    console.log('this is user', user);
+    const id = req.user.id;
 
     // Flatten the nested arrays in the body object
     const allItems = Object.values(body).flat();
@@ -26,7 +24,7 @@ const createFinancial = async (req, res) => {
     const responses = await Promise.all(
       allItems.map(item =>
         CratFinancials.create({
-          userId: user.id,
+          userId: id,
           subDomain: item.subDomain,
           score: item.score,
           rating: item.rating,
@@ -44,14 +42,14 @@ const createFinancial = async (req, res) => {
   const getFinancialData = async (req, res) => {
     console.log('in here 2');
     try {
-        const user = req.user;
+        const id = req.user.id;
 
         // Retrieve the data, including uuid and userId
         const response = await CratFinancials.findAll({
             where: {
-                userId: user.id
+                userId: id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewed', 'reviewer', 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating','reviewer_comment','attachment', 'reviewCount', 'reviewer', 'comments']
         });
 
         successResponse(res, response);
@@ -64,10 +62,8 @@ const updateFinancialData = async (req, res) => {
     console.log('Update API triggered');
     try {
       const body = req.body;
-      const user = req.user;
-  
-      console.log(body['profitability']);
-  
+      const id = req.user.id;
+
       // Ensure body is an object with arrays
       if (typeof body !== 'object' || Array.isArray(body)) {
         return res.status(400).json({ message: 'Invalid data format' });
@@ -86,7 +82,7 @@ const updateFinancialData = async (req, res) => {
               },
               {
                 where: {
-                  userId: user.id,
+                  userId: id,
                   subDomain: item.subDomain,
                 },
               }
@@ -109,7 +105,8 @@ const updateFinancialData = async (req, res) => {
 const createPdfAttachment = async (req, res) => {
   console.log('trying attachment');
   try {
-      const { subDomain, userId } = req.body; // Extract subDomain from the request body
+      const { subDomain } = req.body; // Extract subDomain from the request body
+      const id = req.user.id;
       let attachment = await getUrl(req);
      console.log(req.body)
 
@@ -118,7 +115,7 @@ const createPdfAttachment = async (req, res) => {
       const application = await CratFinancials.findOne({
           where: {
               subDomain,
-              userId: userId
+              userId: id
           }
       });
 
@@ -148,7 +145,8 @@ const createPdfAttachment = async (req, res) => {
 const deletePdfAttachment = async (req, res) => {
   console.log('delete api');
   try {
-    const { subDomain, userId, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
+    const { subDomain, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
+    const id = req.user.id;
 
     console.log(req.body);
 
@@ -156,7 +154,7 @@ const deletePdfAttachment = async (req, res) => {
     const application = await CratFinancials.findOne({
       where: {
         subDomain,
-        userId,
+        id,
       }
     });
 
@@ -181,7 +179,7 @@ const deletePdfAttachment = async (req, res) => {
     // Remove the attachment record from the database
     await CratFinancials.update(
       { attachment: null },
-      { where: { subDomain, userId } }
+      { where: { subDomain, id } }
     );
 
     res.json({ message: 'Attachment deleted successfully' });

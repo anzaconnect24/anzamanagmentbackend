@@ -5,37 +5,63 @@ const { sendEmail } = require("../../utils/send_email");
 const path = require('path');
 const fs = require('fs');
 
-  
+const publishReport = async (req, res) => {
+  console.log('publish triggered');
+  console.log(req.body);
+  const id = req.user.id;
+  try {
+    // Find the user or record to update
+    const user = await User.findOne({ where: { id: id } }); 
+
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Update the status in the database
+    await user.update({ publishStatus: "On review" });
+
+    res.json({
+      success: true,
+      message: "Published Successfully",
+      status: user.publishStatus,
+    });
+  } catch (error) {
+    console.error("Error updating status:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
 const getReportData = async (req, res) => {
   console.log('getting report');
   try {
-      const user = req.user;
+    const id = req.user.id;
 
       // Retrieve the data from all relevant tables
       const financials = await CratFinancials.findAll({
           where: {
-              userId: user.id
+              userId: id
           },
           attributes: ['uuid', 'userId', 'subDomain', 'score'] // Only fetch subDomain, score, userId, and uuid
       });
 
       const markets = await CratMarkets.findAll({
           where: {
-              userId: user.id
+              userId: id
           },
           attributes: ['uuid', 'userId', 'subDomain', 'score'] // Only fetch subDomain, score, userId, and uuid
       });
 
       const operations = await CratOperations.findAll({
           where: {
-              userId: user.id
+              userId: id
           },
           attributes: ['uuid', 'userId', 'subDomain', 'score'] // Only fetch subDomain, score, userId, and uuid
       });
 
       const legals = await CratLegals.findAll({
           where: {
-              userId: user.id
+              userId: id
           },
           attributes: ['uuid', 'userId', 'subDomain', 'score'] // Only fetch subDomain, score, userId, and uuid
       });
@@ -59,30 +85,30 @@ const getReportData = async (req, res) => {
 
 const scoreCalculation = async (req, res) => {
   try {
-    const user = req.user;
+    const id = req.user.id;
 
     // Ensure that userId is available
-    if (!user || !user.id) {
+    if (!id) {
       return errorResponse(res, "User ID is missing");
     }
 
-    console.log(user);
+    console.log(id);
 
     // Retrieve the data from all relevant tables based on userId
     const financials = await CratFinancials.findAll({
-      where: { userId: user.id },
+      where: { userId: id },
       attributes: ['uuid', 'userId', 'subDomain', 'score']
     });
     const markets = await CratMarkets.findAll({
-      where: { userId: user.id },
+      where: { userId: id },
       attributes: ['uuid', 'userId', 'subDomain', 'score']
     });
     const operations = await CratOperations.findAll({
-      where: { userId: user.id },
+      where: { userId: id },
       attributes: ['uuid', 'userId', 'subDomain', 'score']
     });
     const legals = await CratLegals.findAll({
-      where: { userId: user.id },
+      where: { userId: id },
       attributes: ['uuid', 'userId', 'subDomain', 'score']
     });
 
@@ -190,5 +216,5 @@ const scoreCalculation = async (req, res) => {
 
 
 module.exports = {
-  getReportData, scoreCalculation
+  getReportData, scoreCalculation, publishReport
 }

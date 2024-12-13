@@ -314,6 +314,7 @@ const loginUser = async (req, res) => {
         res.status(200).json({
           status: true,
           tokens,
+          
         });
       } else {
         res.status(403).json({

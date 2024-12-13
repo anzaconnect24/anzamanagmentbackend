@@ -7,6 +7,6 @@ const router = Router()
 router.post("/create",validateJWT,createLegal)
 router.get('/data',validateJWT,getLegalData)
  router.post('/update',validateJWT,updateLegallData)
- router.post("/attachment",upload.single('file'), createPdfAttachment)
+ router.post("/attachment",upload.single('file'),validateJWT, createPdfAttachment)
  router.delete("/attachment", validateJWT, deletePdfAttachment); // Add this route
 module.exports = router

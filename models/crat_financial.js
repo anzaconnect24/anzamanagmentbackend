@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM('Yes','No','Maybe'),
         allowNull:false  
       },
-    reviewed : {
+      reviewer_comment : {
       type: DataTypes.TEXT,
       allowNull:true  
     },

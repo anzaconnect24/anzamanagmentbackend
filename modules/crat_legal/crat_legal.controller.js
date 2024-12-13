@@ -9,9 +9,7 @@ const createLegal = async (req, res) => {
   console.log('create legal api');
   try {
     const body = req.body;
-    const user = req.user;
-    console.log('this is my body', body);
-    console.log('this is user', user);
+    const id = req.user.id;
 
     // Flatten the nested arrays in the body object
     const allItems = Object.values(body).flat();
@@ -26,7 +24,7 @@ const createLegal = async (req, res) => {
     const responses = await Promise.all(
       allItems.map(item =>
         CratLegals.create({
-          userId: user.id,
+          userId: id,
           subDomain: item.subDomain,
           score: item.score,
           rating: item.rating,
@@ -44,16 +42,15 @@ const createLegal = async (req, res) => {
   
   
   const getLegalData = async (req, res) => {
-    console.log('in here 2');
     try {
-        const user = req.user;
+        const id = req.user.id;
 
         // Retrieve the data, including uuid and userId
         const response = await CratLegals.findAll({
             where: {
-                userId: user.id
+                userId: id
             },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating', 'attachment', 'reviewed', 'reviewer', 'reviewCount', 'comments']
+            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating','reviewer_comment','reviewCount','attachment', 'reviewer', 'comments']
         });
 
         successResponse(res, response);
@@ -67,7 +64,7 @@ const updateLegallData = async (req, res) => {
     console.log('Update API triggered');
     try {
       const body = req.body;
-      const user = req.user;
+      const id = req.user.id;
   
       console.log(body);
   
@@ -89,7 +86,7 @@ const updateLegallData = async (req, res) => {
               },
               {
                 where: {
-                  userId: user.id,
+                  userId: id,
                   subDomain: item.subDomain,
                 },
               }
@@ -112,7 +109,8 @@ const updateLegallData = async (req, res) => {
 const createPdfAttachment = async (req, res) => {
   console.log('trying attachment');
   try {
-      const { subDomain, userId } = req.body; // Extract subDomain from the request body
+      const { subDomain } = req.body; // Extract subDomain from the request body
+      const id = req.user.id;
       let attachment = await getUrl(req);
      console.log(req.body)
 
@@ -121,7 +119,7 @@ const createPdfAttachment = async (req, res) => {
       const application = await CratLegals.findOne({
           where: {
               subDomain,
-              userId: userId
+              userId: id
           }
       });
 
@@ -138,7 +136,7 @@ const createPdfAttachment = async (req, res) => {
           attachment: attachment,
       }, {
           where: {
-              subDomain // Ensure that only the correct record is updated
+              subDomain 
           }
       });
 
@@ -151,15 +149,16 @@ const createPdfAttachment = async (req, res) => {
 const deletePdfAttachment = async (req, res) => {
   console.log('delete api');
   try {
-    const { subDomain, userId, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
+    const { subDomain, attachment } = req.body; 
+    const id = req.user.id;
 
     console.log(req.body);
 
-    // Find the application by subDomain and userId
+ 
     const application = await CratLegals.findOne({
       where: {
         subDomain,
-        userId,
+        id,
       }
     });
 
@@ -184,7 +183,7 @@ const deletePdfAttachment = async (req, res) => {
     // Remove the attachment record from the database
     await CratLegals.update(
       { attachment: null },
-      { where: { subDomain, userId } }
+      { where: { subDomain, id } }
     );
 
     res.json({ message: 'Attachment deleted successfully' });
