@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const swaggerUi = require("swagger-ui-express");
 
 const UserRoutes =  require("./modules/user/user.routes")
 const CratMarketRoutes = require("./modules/crat_market/crat_market.routes")
@@ -48,61 +49,66 @@ const Subscription =  require("./modules/subscription/subscription.routes")
 const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
 const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
 const StatsRoutes = require("./modules/stats/stats.routes");
+const { usersTag, statsTag, notificationsTag, rolesTag, permissionsTag, userRolesTag, userPermissionsTag, applicationsTag, applicationReviewsTag, attachmentsTag, businessDocumentsTag, businessReviewsTag, mentorEntrepreneursTag, mentorReportsTag, programsTag, programApplicationsTag, programApplicationReviewsTag, investorProfilesTag, programUpdatesTag, conversationsTag, pitchMaterialsTag, businessInvestmentRequestsTag, businessInvestmentRequestReviewsTag, logsTag, investmentInterestsTag, successStoriesTag, productsTag, ordersTag, wishlistsTag, sectorsTag, reviewsTag, favouritesTag, promotionsTag, paymentsTag, adminTag, sellersTag, subscriptionsTag, cratFinancialTag, cratMarketTag, cratLegalTag, cratOperationsTag, cratGeneralTag } = require("./utils/swaggerTags");
+
 // ********************
 const app = express();
 
+const swaggerDocument = require("./swagger-output.json");
 app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.use("/user", UserRoutes);
-app.use("/stats", StatsRoutes);
-app.use("/notification", NotificationRoutes);
-app.use("/role", RoleRoutes);
-app.use("/permission", PermissionRoutes);
-app.use("/user_role", UserRoleRoutes);
-app.use("/user_permission", UserPermissionRoutes);
-app.use("/application", ApplicationRoutes);
-app.use("/application_review", ApplicationReviewRoutes);
-app.use("/attachment", AttachmentRoutes);
-app.use("/business", BusinessRoutes);
-app.use("/business_review", BusinessReviewRoutes);
-app.use("/mentor-entreprenuers", MentorEntreprenuerRoutes);
-app.use("/mentor-reports", MentorReportRoutes);
-app.use("/program", ProgramRoutes);
-app.use("/program_application", ProgramApplicationRoutes);
-app.use("/program_application_review", ProgramApplicationReviewRoutes);
-app.use("/investor_profile", InvestorProfileRoutes);
-app.use("/program_update", ProgramUpdateRoutes);
-app.use("/conversation", ConversationRoutes);
-app.use("/pitch_material", PitchMaterialRoutes);
-app.use("/business_investment_request", BusinessInvestmentRequestRoutes);
+app.use("/user",usersTag, UserRoutes);
+app.use("/stats",statsTag, StatsRoutes);
+app.use("/notification",notificationsTag, NotificationRoutes);
+app.use("/role",rolesTag, RoleRoutes);
+app.use("/permission",permissionsTag, PermissionRoutes);
+app.use("/user_role",userRolesTag, UserRoleRoutes);
+app.use("/user_permission",userPermissionsTag, UserPermissionRoutes);
+app.use("/application",applicationsTag, ApplicationRoutes);
+app.use("/application_review",applicationReviewsTag, ApplicationReviewRoutes);
+app.use("/attachment",attachmentsTag, AttachmentRoutes);
+app.use("/business",businessDocumentsTag, BusinessRoutes);
+app.use("/business_review",businessReviewsTag, BusinessReviewRoutes);
+app.use("/mentor-entreprenuers",mentorEntrepreneursTag, MentorEntreprenuerRoutes);
+app.use("/mentor-reports",mentorReportsTag, MentorReportRoutes);
+app.use("/program",programsTag, ProgramRoutes);
+app.use("/program_application",programApplicationsTag, ProgramApplicationRoutes);
+app.use("/program_application_review",programApplicationReviewsTag, ProgramApplicationReviewRoutes);
+app.use("/investor_profile",investorProfilesTag, InvestorProfileRoutes);
+app.use("/program_update",programUpdatesTag, ProgramUpdateRoutes);
+app.use("/conversation",conversationsTag, ConversationRoutes);
+app.use("/pitch_material",pitchMaterialsTag, PitchMaterialRoutes);
+app.use("/business_investment_request",businessInvestmentRequestsTag, BusinessInvestmentRequestRoutes);
 app.use(
   "/business_investment_request_review",
+  businessInvestmentRequestReviewsTag,
   BusinessInvestmentRequestReviewRoutes
 );
-app.use("/business_document", BusinessDocumentRoutes);
-app.use("/log", LogRoutes);
-app.use("/investment_interest", InvestmentInterestRoutes);
-app.use("/success_story", SuccessStoryRoutes);
-app.use("/product", ProductRoutes);
-app.use("/order", OrderRoutes);
-app.use("/wishlist", WishlistRoutes);
-app.use("/sector", BusinessSectors);
-app.use("/review", Reviews);
-app.use("/favourite", Favourites);
-app.use("/promotion", Promotions);
-app.use("/payment", Payments);
-app.use("/admin", Admin);
-app.use("/seller", Seller);
-app.use("/subscription", Subscription);
-app.use("/crat_market",CratMarketRoutes)
-app.use("/crat_financial",CratFinancialRoutes)
-app.use("/crat_legal",CratLegalRoutes)
-app.use("/crat_operation",CratOperationRoutes)
-app.use("/crat_general",CratGeneralRoutes)
-app.use("/reviewer",CratReviewerRoutes)
+app.use("/business_document",businessDocumentsTag, BusinessDocumentRoutes);
+app.use("/log",logsTag, LogRoutes);
+app.use("/investment_interest",investmentInterestsTag, InvestmentInterestRoutes);
+app.use("/success_story",successStoriesTag, SuccessStoryRoutes);
+app.use("/product",productsTag, ProductRoutes);
+app.use("/order",ordersTag, OrderRoutes);
+app.use("/wishlist",wishlistsTag, WishlistRoutes);
+app.use("/sector",sectorsTag, BusinessSectors);
+app.use("/review",reviewsTag, Reviews);
+app.use("/favourite",favouritesTag, Favourites);
+app.use("/promotion",promotionsTag, Promotions);
+app.use("/payment",paymentsTag, Payments);
+app.use("/admin",adminTag, Admin);
+app.use("/seller",sellersTag, Seller);
+app.use("/subscription",subscriptionsTag, Subscription);
+app.use("/crat_market",cratMarketTag, CratMarketRoutes)
+app.use("/crat_financial",cratFinancialTag, CratFinancialRoutes)
+app.use("/crat_legal",cratLegalTag, CratLegalRoutes)
+app.use("/crat_operation",cratOperationsTag, CratOperationRoutes)
+app.use("/crat_general",cratGeneralTag, CratGeneralRoutes)
+app.use("/reviewer",reviewsTag, CratReviewerRoutes)
 
 
 // app.post("/sendEmail",async(req,res)=>{
