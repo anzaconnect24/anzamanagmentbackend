@@ -22,6 +22,7 @@ module.exports.validateJWT = async (req, res, next) => {
     try {
       // Decrypt and verify the token
       const decoded = jwt.verify(token, process.env.ACCESS_TOKEN);
+      console.log('this is the decode id:', decoded);
 
       // Extract the id from the decoded token
       const userId = decoded.id; // Assuming the user object has an 'id' field
