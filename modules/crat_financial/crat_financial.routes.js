@@ -8,5 +8,5 @@ router.post("/create",validateJWT,createFinancial)
 router.get('/data',validateJWT,getFinancialData)
  router.post('/update',validateJWT,updateFinancialData)
  router.post("/attachment",upload.single('file'),validateJWT, createPdfAttachment)
- router.delete("/attachment", validateJWT, deletePdfAttachment);
+ router.post("/delete_attachment", validateJWT, deletePdfAttachment);
 module.exports = router

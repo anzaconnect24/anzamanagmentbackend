@@ -158,7 +158,7 @@ const deletePdfAttachment = async (req, res) => {
     const application = await CratLegals.findOne({
       where: {
         subDomain,
-        id,
+        userId: id,
       }
     });
 
@@ -183,7 +183,7 @@ const deletePdfAttachment = async (req, res) => {
     // Remove the attachment record from the database
     await CratLegals.update(
       { attachment: null },
-      { where: { subDomain, id } }
+      { where: { subDomain, userId: id } }
     );
 
     res.json({ message: 'Attachment deleted successfully' });
