@@ -154,7 +154,7 @@ const deletePdfAttachment = async (req, res) => {
     const application = await CratMarkets.findOne({
       where: {
         subDomain,
-        id,
+        userId: id,
       }
     });
 
