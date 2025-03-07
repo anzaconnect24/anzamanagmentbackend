@@ -4,7 +4,7 @@
     "password": "root",
     "database": "anza_test",
     "host": "localhost",
-    "port": "8889",
+    "port": "3306",
     "dialect": "mysql"
 },
   "developmen": {
@@ -12,7 +12,7 @@
     "password": "root",
     "database": "anza_test",
     "host": "localhost",
-    "port": "8889",
+    "port": "3306",
     "dialect": "mysql"
   },
   "test": {
