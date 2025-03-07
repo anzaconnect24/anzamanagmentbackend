@@ -181,7 +181,7 @@ const deletePdfAttachment = async (req, res) => {
     // Remove the attachment record from the database
     await CratMarkets.update(
       { attachment: null },
-      { where: { subDomain, id } }
+      { where: { subDomain,  userId: id, } }
     );
 
     res.json({ message: 'Attachment deleted successfully' });
