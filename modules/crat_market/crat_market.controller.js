@@ -38,8 +38,6 @@ const createMarket = async (req, res) => {
   }
 };
 
-  
-  
   const getMarketData = async (req, res) => {
     try {
       const id = req.user.id;
@@ -58,7 +56,6 @@ const createMarket = async (req, res) => {
         errorResponse(res, error);
     }
 }
-
 
 const updateMarketData = async (req, res) => {
     console.log('Update API triggered');
@@ -104,7 +101,6 @@ const updateMarketData = async (req, res) => {
       console.error('Error updating data:', error);
     }
   };
-
 
 const createPdfAttachment = async (req, res) => {
   try {
