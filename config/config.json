@@ -27,6 +27,7 @@
     "password": "Anza@2024",
     "database": "anza",
     "host": "139.162.178.79",
+    "port": "3306",
     "dialect": "mysql"
   }
 }
