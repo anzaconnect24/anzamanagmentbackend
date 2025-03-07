@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": "root",
-    "database": "anza_test",
-    "host": "127.0.0.1",
+    "username": "anza_user",
+    "password": "Anza@2024",
+    "database": "anza",
+    "host": "139.162.178.79",
     "port": "3306",
     "dialect": "mysql"
 },
