@@ -132,7 +132,7 @@ const createPdfAttachment = async (req, res) => {
           attachment: attachment,
       }, {
           where: {
-              subDomain // Ensure that only the correct record is updated
+              subDomain
           }
       });
 
