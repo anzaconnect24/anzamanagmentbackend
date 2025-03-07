@@ -8,5 +8,5 @@ router.post("/create",validateJWT,createMarket)
 router.get('/data',validateJWT,getMarketData)
  router.post('/update',validateJWT,updateMarketData)
  router.post("/attachment",upload.single('file'),validateJWT, createPdfAttachment)
- router.delete("/delete_attachment", validateJWT, deletePdfAttachment); // Add this route
+ router.post("/delete_attachment", validateJWT, deletePdfAttachment); // Add this route
 module.exports = router

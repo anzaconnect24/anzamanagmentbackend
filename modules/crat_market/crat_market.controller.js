@@ -141,6 +141,8 @@ const createPdfAttachment = async (req, res) => {
   }
 };
   
+const { URL } = require('url'); // Import the URL module
+
 const deletePdfAttachment = async (req, res) => {
   console.log('deleting attachment');
   try {
@@ -161,11 +163,11 @@ const deletePdfAttachment = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    // attachment has the URL, so extract the file name from the URL if necessary
-    // For example: if attachment is "localhost:5001/files/testpdf.pdf", we need to extract "testpdf.pdf"
-    const attachmentFileName = path.basename(attachment); // Extract file name from URL
+    // If attachment is a full URL, extract the file name
+    const attachmentUrl = new URL(attachment); // Parse the attachment URL
+    const attachmentFileName = path.basename(attachmentUrl.pathname); // Get the file name from the path
     const attachmentPath = path.join(__dirname, '../../files/', attachmentFileName);
-    console.log(attachmentPath);
+    console.log('Attachment file path:', attachmentPath);
 
     // Remove the file from the filesystem
     if (fs.existsSync(attachmentPath)) {
@@ -187,6 +189,7 @@ const deletePdfAttachment = async (req, res) => {
     res.status(500).json({ message: 'Error deleting attachment' });
   }
 };
+
 
 
 module.exports = {
