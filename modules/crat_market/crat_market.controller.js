@@ -147,6 +147,7 @@ const deletePdfAttachment = async (req, res) => {
     const id = req.user.id;
     const { subDomain, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
 
+    console.log('this is id:', id);
     console.log(req.body);
 
     // Find the application by subDomain and userId
