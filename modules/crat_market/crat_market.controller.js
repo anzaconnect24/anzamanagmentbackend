@@ -146,6 +146,7 @@ const createPdfAttachment = async (req, res) => {
 };
   
 const deletePdfAttachment = async (req, res) => {
+  console.log('deleting attachment');
   try {
     const id = req.user.id;
     const { subDomain, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
