@@ -3,133 +3,151 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const swaggerUi = require("swagger-ui-express");
 
-const UserRoutes =  require("./modules/user/user.routes")
-const CratMarketRoutes = require("./modules/crat_market/crat_market.routes")
-const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.routes")
-const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes")
-const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes")
-const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes")
-const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes")
-const RoleRoutes =  require("./modules/role/role.routes")
-const PermissionRoutes =  require("./modules/permission/permission.routes")
-const UserRoleRoutes =  require("./modules/user_role/user_role.routes")
-const UserPermissionRoutes =  require("./modules/user_permission/user_permission.routes")
-const ApplicationRoutes =  require("./modules/application/application.routes")
-const ApplicationReviewRoutes =  require("./modules/application_review/application_review.routes")
-const AttachmentRoutes =  require("./modules/attachment/attachment.routes")
-const BusinessRoutes =  require("./modules/business/business.routes")
-const BusinessReviewRoutes =  require("./modules/business_review/business_review.routes")
-const ProgramRoutes =  require("./modules/program/program.routes")
-const ProgramApplicationRoutes =  require("./modules/program_application/program_application.routes")
-const ProgramApplicationReviewRoutes =  require("./modules/program_application_review/program_application_review.routes")
-const BusinessInvestmentRequestRoutes =  require("./modules/business_investment_request/business_investment_request.routes")
-const BusinessInvestmentRequestReviewRoutes =  require("./modules/business_investment_request_review/business_investment_request_review.routes")
-const InvestorProfileRoutes =  require("./modules/investor_profile/investor_profile.routes")
-const ProgramUpdateRoutes =  require("./modules/program_update/program_update.routes")
-const PitchMaterialRoutes =  require("./modules/pitch_material/pitch_material.routes")
-const BusinessDocumentRoutes =  require("./modules/business_document/business_document.routes")
-const LogRoutes =  require("./modules/log/log.routes")
-const InvestmentInterestRoutes =  require("./modules/investment_interest/investment_interest.routes")
-const SuccessStoryRoutes =  require("./modules/success_story/success_story.routes")
-const ConversationRoutes = require("./modules/conversation/conversation.routes")
-const MessageRoutes = require("./modules/message/message.routes")
-const ProductRoutes =  require("./modules/product/product.routes")
-const WishlistRoutes =  require("./modules/wishlist/wishlist.routes")
-const OrderRoutes =  require("./modules/order/order.routes")
-const ProductImageRoutes =  require("./modules/product_image/product_image.routes")
-const BusinessSectors =  require("./modules/sector/sector.routes")
-const Reviews =  require("./modules/review/review.routes")
-const Favourites =  require("./modules/favourite/favourite.routes")
-const Promotions =  require("./modules/promotion/promotion.routes")
-const Payments =  require("./modules/payment/payment.routes")
-const Admin =  require("./modules/admin/admin.routes")
-const Seller =  require("./modules/seller/seller.routes")
-const NotificationRoutes =  require("./modules/notification/notification.routes")
-const Subscription =  require("./modules/subscription/subscription.routes")
+const UserRoutes = require("./modules/user/user.routes");
+const CratMarketRoutes = require("./modules/crat_market/crat_market.routes");
+const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.routes");
+const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes");
+const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes");
+const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes");
+const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes");
+const RoleRoutes = require("./modules/role/role.routes");
+const PermissionRoutes = require("./modules/permission/permission.routes");
+const UserRoleRoutes = require("./modules/user_role/user_role.routes");
+const UserPermissionRoutes = require("./modules/user_permission/user_permission.routes");
+const ApplicationRoutes = require("./modules/application/application.routes");
+const ApplicationReviewRoutes = require("./modules/application_review/application_review.routes");
+const AttachmentRoutes = require("./modules/attachment/attachment.routes");
+const BusinessRoutes = require("./modules/business/business.routes");
+const BusinessReviewRoutes = require("./modules/business_review/business_review.routes");
+const ProgramRoutes = require("./modules/program/program.routes");
+const ProgramApplicationRoutes = require("./modules/program_application/program_application.routes");
+const ProgramApplicationReviewRoutes = require("./modules/program_application_review/program_application_review.routes");
+const BusinessInvestmentRequestRoutes = require("./modules/business_investment_request/business_investment_request.routes");
+const BusinessInvestmentRequestReviewRoutes = require("./modules/business_investment_request_review/business_investment_request_review.routes");
+const InvestorProfileRoutes = require("./modules/investor_profile/investor_profile.routes");
+const ProgramUpdateRoutes = require("./modules/program_update/program_update.routes");
+const PitchMaterialRoutes = require("./modules/pitch_material/pitch_material.routes");
+const BusinessDocumentRoutes = require("./modules/business_document/business_document.routes");
+const LogRoutes = require("./modules/log/log.routes");
+const InvestmentInterestRoutes = require("./modules/investment_interest/investment_interest.routes");
+const SuccessStoryRoutes = require("./modules/success_story/success_story.routes");
+const ConversationRoutes = require("./modules/conversation/conversation.routes");
+const MessageRoutes = require("./modules/message/message.routes");
+const ProductRoutes = require("./modules/product/product.routes");
+const WishlistRoutes = require("./modules/wishlist/wishlist.routes");
+const OrderRoutes = require("./modules/order/order.routes");
+const ProductImageRoutes = require("./modules/product_image/product_image.routes");
+const BusinessSectors = require("./modules/sector/sector.routes");
+const Reviews = require("./modules/review/review.routes");
+const Favourites = require("./modules/favourite/favourite.routes");
+const Promotions = require("./modules/promotion/promotion.routes");
+const Payments = require("./modules/payment/payment.routes");
+const Admin = require("./modules/admin/admin.routes");
+const Seller = require("./modules/seller/seller.routes");
+const NotificationRoutes = require("./modules/notification/notification.routes");
+const Subscription = require("./modules/subscription/subscription.routes");
 const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
 const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
 const StatsRoutes = require("./modules/stats/stats.routes");
-const { usersTag, statsTag, notificationsTag, rolesTag, permissionsTag, userRolesTag, userPermissionsTag, applicationsTag, applicationReviewsTag, attachmentsTag, businessDocumentsTag, businessReviewsTag, mentorEntrepreneursTag, mentorReportsTag, programsTag, programApplicationsTag, programApplicationReviewsTag, investorProfilesTag, programUpdatesTag, conversationsTag, pitchMaterialsTag, businessInvestmentRequestsTag, businessInvestmentRequestReviewsTag, logsTag, investmentInterestsTag, successStoriesTag, productsTag, ordersTag, wishlistsTag, sectorsTag, reviewsTag, favouritesTag, promotionsTag, paymentsTag, adminTag, sellersTag, subscriptionsTag, cratFinancialTag, cratMarketTag, cratLegalTag, cratOperationsTag, cratGeneralTag } = require("./utils/swaggerTags");
-
-// ********************
-const app = express();
 
 const swaggerDocument = require("./swagger-output.json");
+
+// ********************
+// Initialize Express App
+const app = express();
+const PORT = 5010;
+
+// Middleware
 app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.use("/user",usersTag, UserRoutes);
-app.use("/stats",statsTag, StatsRoutes);
-app.use("/notification",notificationsTag, NotificationRoutes);
-app.use("/role",rolesTag, RoleRoutes);
-app.use("/permission",permissionsTag, PermissionRoutes);
-app.use("/user_role",userRolesTag, UserRoleRoutes);
-app.use("/user_permission",userPermissionsTag, UserPermissionRoutes);
-app.use("/application",applicationsTag, ApplicationRoutes);
-app.use("/application_review",applicationReviewsTag, ApplicationReviewRoutes);
-app.use("/attachment",attachmentsTag, AttachmentRoutes);
-app.use("/business",businessDocumentsTag, BusinessRoutes);
-app.use("/business_review",businessReviewsTag, BusinessReviewRoutes);
-app.use("/mentor-entreprenuers",mentorEntrepreneursTag, MentorEntreprenuerRoutes);
-app.use("/mentor-reports",mentorReportsTag, MentorReportRoutes);
-app.use("/program",programsTag, ProgramRoutes);
-app.use("/program_application",programApplicationsTag, ProgramApplicationRoutes);
-app.use("/program_application_review",programApplicationReviewsTag, ProgramApplicationReviewRoutes);
-app.use("/investor_profile",investorProfilesTag, InvestorProfileRoutes);
-app.use("/program_update",programUpdatesTag, ProgramUpdateRoutes);
-app.use("/conversation",conversationsTag, ConversationRoutes);
-app.use("/pitch_material",pitchMaterialsTag, PitchMaterialRoutes);
-app.use("/business_investment_request",businessInvestmentRequestsTag, BusinessInvestmentRequestRoutes);
-app.use(
-  "/business_investment_request_review",
-  businessInvestmentRequestReviewsTag,
-  BusinessInvestmentRequestReviewRoutes
-);
-app.use("/business_document",businessDocumentsTag, BusinessDocumentRoutes);
-app.use("/log",logsTag, LogRoutes);
-app.use("/investment_interest",investmentInterestsTag, InvestmentInterestRoutes);
-app.use("/success_story",successStoriesTag, SuccessStoryRoutes);
-app.use("/product",productsTag, ProductRoutes);
-app.use("/order",ordersTag, OrderRoutes);
-app.use("/wishlist",wishlistsTag, WishlistRoutes);
-app.use("/sector",sectorsTag, BusinessSectors);
-app.use("/review",reviewsTag, Reviews);
-app.use("/favourite",favouritesTag, Favourites);
-app.use("/promotion",promotionsTag, Promotions);
-app.use("/payment",paymentsTag, Payments);
-app.use("/admin",adminTag, Admin);
-app.use("/seller",sellersTag, Seller);
-app.use("/subscription",subscriptionsTag, Subscription);
-app.use("/crat_market",cratMarketTag, CratMarketRoutes)
-app.use("/crat_financial",cratFinancialTag, CratFinancialRoutes)
-app.use("/crat_legal",cratLegalTag, CratLegalRoutes)
-app.use("/crat_operation",cratOperationsTag, CratOperationRoutes)
-app.use("/crat_general",cratGeneralTag, CratGeneralRoutes)
-app.use("/reviewer",reviewsTag, CratReviewerRoutes)
+// Routes
+app.use("/user", UserRoutes);
+app.use("/stats", StatsRoutes);
+app.use("/notification", NotificationRoutes);
+app.use("/role", RoleRoutes);
+app.use("/permission", PermissionRoutes);
+app.use("/user_role", UserRoleRoutes);
+app.use("/user_permission", UserPermissionRoutes);
+app.use("/application", ApplicationRoutes);
+app.use("/application_review", ApplicationReviewRoutes);
+app.use("/attachment", AttachmentRoutes);
+app.use("/business", BusinessRoutes);
+app.use("/business_review", BusinessReviewRoutes);
+app.use("/mentor-entreprenuers", MentorEntreprenuerRoutes);
+app.use("/mentor-reports", MentorReportRoutes);
+app.use("/program", ProgramRoutes);
+app.use("/program_application", ProgramApplicationRoutes);
+app.use("/program_application_review", ProgramApplicationReviewRoutes);
+app.use("/investor_profile", InvestorProfileRoutes);
+app.use("/program_update", ProgramUpdateRoutes);
+app.use("/conversation", ConversationRoutes);
+app.use("/pitch_material", PitchMaterialRoutes);
+app.use("/business_investment_request", BusinessInvestmentRequestRoutes);
+app.use("/business_investment_request_review", BusinessInvestmentRequestReviewRoutes);
+app.use("/business_document", BusinessDocumentRoutes);
+app.use("/log", LogRoutes);
+app.use("/investment_interest", InvestmentInterestRoutes);
+app.use("/success_story", SuccessStoryRoutes);
+app.use("/product", ProductRoutes);
+app.use("/order", OrderRoutes);
+app.use("/wishlist", WishlistRoutes);
+app.use("/sector", BusinessSectors);
+app.use("/review", Reviews);
+app.use("/favourite", Favourites);
+app.use("/promotion", Promotions);
+app.use("/payment", Payments);
+app.use("/admin", Admin);
+app.use("/seller", Seller);
+app.use("/subscription", Subscription);
+app.use("/crat_market", CratMarketRoutes);
+app.use("/crat_financial", CratFinancialRoutes);
+app.use("/crat_legal", CratLegalRoutes);
+app.use("/crat_operation", CratOperationRoutes);
+app.use("/crat_general", CratGeneralRoutes);
+app.use("/reviewer", CratReviewerRoutes);
 
-
-// app.post("/sendEmail",async(req,res)=>{
-//   try {
-//     const {email} = req.body
-//     const user = await User.findOne({
-//       where:{
-//         email
-//       }
-//     })
-//     const response = await sendMail(user,"Testing","Hello",true)
-//     successResponse(res,)
-//   } catch (error) {
-//     errorResponse(res,error)
-//   }
-// })
-
+// Default Route
 app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(5010, () => {
-  console.log("Server started at port 5000");
+// Start Server
+const server = app.listen(PORT, () => {
+  console.log(`Server started at port ${PORT}`);
 });
+
+// ************* Error Handling & Graceful Shutdown *************
+
+// Handle Uncaught Exceptions
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  process.exit(1);
+});
+
+// Handle Unhandled Promise Rejections
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  process.exit(1);
+});
+
+// Graceful Shutdown
+const shutdown = (signal) => {
+  console.log(`\nReceived ${signal}. Closing server...`);
+  server.close(() => {
+    console.log("Server closed gracefully.");
+    process.exit(0);
+  });
+
+  // Force exit if it takes too long
+  setTimeout(() => {
+    console.error("Forcefully shutting down...");
+    process.exit(1);
+  }, 5000);
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
