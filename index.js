@@ -111,25 +111,12 @@ app.use("/crat_general",cratGeneralTag, CratGeneralRoutes)
 app.use("/reviewer",reviewsTag, CratReviewerRoutes)
 
 
-// app.post("/sendEmail",async(req,res)=>{
-//   try {
-//     const {email} = req.body
-//     const user = await User.findOne({
-//       where:{
-//         email
-//       }
-//     })
-//     const response = await sendMail(user,"Testing","Hello",true)
-//     successResponse(res,)
-//   } catch (error) {
-//     errorResponse(res,error)
-//   }
-// })
+
 
 app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(5050, () => {
-  console.log("Server started at port 5050");
+app.listen(5000, () => {
+  console.log("Server started at port 5000");
 });

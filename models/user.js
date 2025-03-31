@@ -80,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       reportPdf: {
         type: DataTypes.STRING,
-        allowNull:false  
+        allowNull:true  
       },
     },
     {

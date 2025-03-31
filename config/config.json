@@ -3,7 +3,7 @@
     "username": "anza_user",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "139.162.178.79",
+    "host": "172.105.149.60",
     "port": "3306",
     "dialect": "mysql"
 },
@@ -26,7 +26,7 @@
     "username": "anza_user",
     "password": "Anza@2024",
     "database": "anza",
-    "host": "139.162.178.79",
+    "host": "172.105.149.60",
     "port": "3306",
     "dialect": "mysql"
   }
