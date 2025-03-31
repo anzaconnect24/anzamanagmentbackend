@@ -1,56 +1,94 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class InvestorProfile extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
-      InvestorProfile.belongsTo(models.User)
-      InvestorProfile.belongsTo(models.BusinessSector)
+      InvestorProfile.belongsTo(models.User);
+      InvestorProfile.belongsTo(models.BusinessSector);
     }
   }
-  InvestorProfile.init({
-      uuid:{
+
+  InvestorProfile.init(
+    {
+      uuid: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: true,
       },
       userId: {
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull: true,
       },
       company: {
         type: DataTypes.STRING,
-        allowNull:true
+        allowNull: true,
       },
-      role:{
+      role: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: true,
       },
       BusinessSectorId: {
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull: true,
       },
       geography: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: true,
       },
       ticketSize: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: true,
       },
       structure: {
-        type: DataTypes.ENUM('equity', 'debt','mezzanine'),
-        allowNull:false
+        type: DataTypes.ENUM("equity", "debt", "mezzanine"),
+        allowNull: true,
       },
-  }, {
-    sequelize,
-    modelName: 'InvestorProfile',
-  });
+
+      // Added attributes
+      linkedinURL: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      website: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      investmentFocus: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      investmentSize: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      investmentType: {
+        type: DataTypes.JSON,
+        allowNull: true,
+      },
+      bio: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      notableInvestment: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      preferMentoring: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
+      portifolioDocument: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+    },
+    {
+      sequelize,
+      modelName: "InvestorProfile",
+    }
+  );
+
   return InvestorProfile;
 };

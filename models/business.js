@@ -1,14 +1,9 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class Business extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
       Business.belongsTo(models.User);
       Business.belongsTo(models.BusinessSector);
       Business.hasMany(models.BusinessDocument);
@@ -26,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
   }
+
   Business.init(
     {
       uuid: {
@@ -136,11 +132,45 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM("waiting", "rejected", "accepted"),
         defaultValue: "waiting",
       },
+      // Newly added attributes
+      description: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      otherIndustry: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      numberOfCustomers: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      market: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      impact: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      growthPlan: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      fundraisingNeeds: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
     },
     {
       sequelize,
       modelName: "Business",
     }
   );
+
   return Business;
 };
