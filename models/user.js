@@ -40,6 +40,27 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: "CASCADE",
         scope: true,
       });
+      User.hasMany(models.UserRole, { onDelete: "cascade" });
+      User.hasMany(models.UserPermission, { onDelete: "cascade" });
+      User.hasOne(models.Business, { onDelete: "cascade" });
+      User.hasOne(models.BusinessReview, { onDelete: "cascade" });
+      User.hasMany(models.ProgramApplication, { onDelete: "cascade" });
+      User.hasOne(models.InvestorProfile, { onDelete: "cascade" });
+      User.hasOne(models.ProgramApplicationReview);
+      User.hasMany(models.BusinessInvestmentRequest, { onDelete: "cascade" });
+      User.hasOne(models.BusinessInvestmentRequestReview, {
+        onDelete: "cascade",
+      });
+      User.hasOne(models.Log, { onDelete: "cascade" });
+      User.hasMany(models.MentorEntreprenuer, { onDelete: "cascade" });
+      User.hasMany(models.InvestmentInterest, { onDelete: "cascade" });
+      User.hasMany(models.PitchMaterialViewer, { onDelete: "cascade" });
+
+      User.hasMany(models.CratFinancials, { foreignKey: 'userId' });
+      User.hasMany(models.CratMarkets, { foreignKey: 'userId' });
+      User.hasMany(models.CratOperations, { foreignKey: 'userId' });
+      User.hasMany(models.CratLegals, { foreignKey: 'userId' });
+  
     }
   }
   User.init(
@@ -79,6 +100,18 @@ module.exports = (sequelize, DataTypes) => {
       password: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      versionCount: {  
+        type: DataTypes.INTEGER,
+        defaultValue: 1, 
+      },
+      publishStatus: {  
+        type: DataTypes.STRING,
+        defaultValue: "Draft", 
+      },
+      reportPdf: {
+        type: DataTypes.STRING,
+        allowNull:false  
       },
     },
     {
