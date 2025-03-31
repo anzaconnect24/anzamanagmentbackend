@@ -13,10 +13,17 @@ module.exports = (sequelize, DataTypes) => {
       Business.belongsTo(models.BusinessSector);
       Business.hasMany(models.BusinessDocument);
       Business.hasMany(models.BusinessInvestmentRequest, {
-        onDelete: "cascade",
+        onDelete: "CASCADE",
+        scope: true,
       });
-      Business.hasMany(models.InvestmentInterest, { onDelete: "cascade" });
-      Business.hasMany(models.SuccessStory, { onDelete: "cascade" });
+      Business.hasMany(models.InvestmentInterest, {
+        onDelete: "CASCADE",
+        scope: true,
+      });
+      Business.hasMany(models.SuccessStory, {
+        onDelete: "CASCADE",
+        scope: true,
+      });
     }
   }
   Business.init(

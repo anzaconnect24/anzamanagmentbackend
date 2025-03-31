@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class SuccessStory extends Model {
     /**
@@ -11,41 +9,47 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      SuccessStory.belongsTo(models.Business)
+      SuccessStory.belongsTo(models.Business, {
+        onDelete: "CASCADE",
+        scope: true,
+      });
     }
   }
-  SuccessStory.init({
-      uuid:{
+  SuccessStory.init(
+    {
+      uuid: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4
+        defaultValue: DataTypes.UUIDV4,
       },
       title: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
       businessId: {
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull: false,
       },
       story: {
         type: DataTypes.TEXT,
-        allowNull:false
+        allowNull: false,
       },
       videoLink: {
         type: DataTypes.TEXT,
-        allowNull:true
+        allowNull: true,
       },
       documentLink: {
         type: DataTypes.TEXT,
-        allowNull:true
+        allowNull: true,
       },
       likes: {
         type: DataTypes.INTEGER,
-        defaultValue:0
+        defaultValue: 0,
       },
-  }, {
-    sequelize,
-    modelName: 'SuccessStory',
-  });
+    },
+    {
+      sequelize,
+      modelName: "SuccessStory",
+    }
+  );
   return SuccessStory;
 };
