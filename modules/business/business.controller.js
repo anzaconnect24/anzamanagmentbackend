@@ -31,7 +31,18 @@ const createBusiness = async (req, res) => {
       business_sector_uuid,
       traction,
       // status,
+    
+      // Newly added attributes
+      description,
+      otherIndustry,
+      numberOfCustomers,
+      market,
+      location,
+      impact,
+      growthPlan,
+      fundraisingNeeds,
     } = req.body;
+    
 
     const user = req.user;
     console.log(user);
@@ -56,6 +67,16 @@ const createBusiness = async (req, res) => {
       businessSectorId: businessSector.id,
       traction,
       userId: user.id,
+
+      //new attributes
+      description,
+      otherIndustry,
+      numberOfCustomers,
+      market,
+      location,
+      impact,
+      growthPlan,
+      fundraisingNeeds,
 
       // status,
     });

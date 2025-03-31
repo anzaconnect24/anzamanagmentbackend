@@ -185,6 +185,7 @@ const registerUser = async (req, res) => {
       const tokens = generateJwtTokens(response);
       res.status(201).json({
         status: true,
+        body: response,
         tokens,
       });
     }
@@ -293,7 +294,7 @@ const inviteUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  console.log('logging in');
+  console.log("logging in");
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ where: { email } });
@@ -314,7 +315,6 @@ const loginUser = async (req, res) => {
         res.status(200).json({
           status: true,
           tokens,
-          
         });
       } else {
         res.status(403).json({
