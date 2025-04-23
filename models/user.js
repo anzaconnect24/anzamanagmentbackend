@@ -100,18 +100,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      // versionCount: {
-      //   type: DataTypes.INTEGER,
-      //   defaultValue: 1,
-      // },
-      // publishStatus: {
-      //   type: DataTypes.STRING,
-      //   defaultValue: "Draft",
-      // },
-      // reportPdf: {
-      //   type: DataTypes.STRING,
-      //   allowNull: false,
-      // },
+      versionCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+      },
+      publishStatus: {
+        type: DataTypes.STRING,
+        defaultValue: "Draft",
+      },
+      reportPdf: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
     },
     {
       sequelize,
