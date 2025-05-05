@@ -31,7 +31,7 @@ const createBusiness = async (req, res) => {
       business_sector_uuid,
       traction,
       // status,
-    
+
       // Newly added attributes
       description,
       otherIndustry,
@@ -42,7 +42,6 @@ const createBusiness = async (req, res) => {
       growthPlan,
       fundraisingNeeds,
     } = req.body;
-    
 
     const user = req.user;
     console.log(user);
@@ -279,11 +278,14 @@ const findBusiness = async (req, res) => {
       attributes: {
         exclude: ["userId", "businessSectorId"],
       },
-      include: [User, BusinessSector, BusinessDocument],
+      include: [
+        { model: User },
+        { model: BusinessSector },
+        { model: BusinessDocument },
+      ],
     });
     const checkMentor = await MentorEntreprenuer.findOne({
       attributes: ["id", "mentorId", "entreprenuerId"],
-
       where: {
         mentorId: user.id,
         entreprenuerId: response.User.id,
@@ -312,7 +314,10 @@ const getWaitingBusinesses = async (req, res) => {
       where: {
         status: "waiting",
       },
-      include: [User, BusinessSector],
+      include: [
+        { model: User, required: true },
+        { model: BusinessSector, required: true },
+      ],
     });
     const totalPages =
       count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
