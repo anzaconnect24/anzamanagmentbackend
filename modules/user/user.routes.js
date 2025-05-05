@@ -30,6 +30,7 @@ const {
   getMentors,
   getMentorEntreprenuers,
 } = require("./user.controller");
+const { getPagination } = require("../../utils/getPagination");
 
 router.post("/register", upload.single("file"), registerUser);
 router.post("/message", validateJWT, sendMessage);
@@ -57,7 +58,7 @@ router.get("/mentors", validateJWT, getMentors);
 router.get("/reviewers", validateJWT, getReviewers);
 router.get("/enterprenuers", validateJWT, getEnterprenuers);
 router.get("/enterprenuers/mentor/:uuid", validateJWT, getMentorEntreprenuers);
-router.get("/", validateJWT, getUsers);
+router.get("/", validateJWT, getPagination, getUsers);
 router.get("/:uuid", validateJWT, getUserDetails);
 router.get("/role/:uuid", validateJWT, getUsersByRole);
 

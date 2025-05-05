@@ -366,17 +366,13 @@ const getUsersByRole = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    let { page, limit, keyword } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-    const offset = (page - 1) * limit;
     const { count, rows } = await User.findAndCountAll({
-      offset: offset, //ruka ngapi
-      limit: limit, //leta ngapi
+      offset: req.offset, //ruka ngapi
+      limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       where: {
         name: {
-          [Op.like]: "%" + keyword + "%",
+          [Op.like]: "%" + req.keyword + "%",
         },
       },
     });
@@ -386,8 +382,16 @@ const getUsers = async (req, res) => {
       },
     });
     const totalPages =
-      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
-    successResponse(res, { count, adminCount, data: rows, page, totalPages });
+      count % req.limit > 0
+        ? parseInt(count / req.limit) + 1
+        : parseInt(count / req.limit);
+    successResponse(res, {
+      count,
+      adminCount,
+      data: rows,
+      page: req.page,
+      totalPages,
+    });
   } catch (error) {
     errorResponse(res, error);
   }
