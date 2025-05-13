@@ -155,6 +155,7 @@ const registerUser = async (req, res) => {
     const user = await User.findOne({ where: { email } });
     let image = null;
     if (user) {
+      console.log("user already exists");
       res.status(403).json({
         status: false,
         message: "Email is already registered",

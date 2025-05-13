@@ -15,24 +15,12 @@ const { where } = require("sequelize");
 
 const createPitchMaterial = async (req, res) => {
   try {
-    const user = req.user;
-    let link = null;
-    let { fileName, type, description } = req.body;
-    // const program = await Program.findOne({
-    //     where:{uuid:program_uuid}
-    // })
-    console.log(req.body);
-    if (req.file) {
-      link = await getUrl(req);
-      console.log(link);
-    }
-    console.log(link);
-
+    let { fileName, type, description, url } = req.body;
     const response = await PitchMaterial.create({
       fileName: fileName,
       type: type,
       description: description,
-      link: link,
+      link: url,
     });
     successResponse(res, response);
   } catch (error) {

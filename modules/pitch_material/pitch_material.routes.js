@@ -5,7 +5,7 @@ const { createPitchMaterial, updatePitchMaterial, deletePitchMaterial, getUserPi
 getVideoPitchMaterials,getDocumentPitchMaterials,getRejectedPitchMaterials,getPitchMaterialDetails,postPitchMaterialDocument, deletePitchMaterialViewer, addPitchMaterialViewer } = require('./pitch_material.controller');
 
 const router = Router()
-router.post("/",upload.single('file'),validateJWT,createPitchMaterial)
+router.post("/",validateJWT,createPitchMaterial)
 router.post("/document/:uuid",upload.single('file'),validateJWT,postPitchMaterialDocument)
 router.get('/user',validateJWT,getUserPitchMaterial)
 // business UUID
