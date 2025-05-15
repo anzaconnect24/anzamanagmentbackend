@@ -35,6 +35,11 @@ const createInvestorProfile = async (req, res) => {
       user_uuid,
     } = req.body;
 
+    const sectorData = await BusinessSector.findOne({
+      where: {
+        uuid: sector,
+      },
+    });
     const user = await User.findOne({
       where: {
         uuid: user_uuid,
@@ -44,7 +49,7 @@ const createInvestorProfile = async (req, res) => {
       userId: user.id,
       role,
       company,
-      BusinessSectorId: sector,
+      BusinessSectorId: sectorData.id,
       ticketSize,
       geography,
       //   structure,
