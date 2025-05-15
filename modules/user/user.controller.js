@@ -444,6 +444,9 @@ const getInvestors = async (req, res) => {
           {
             role: "Investor",
           },
+          {
+            activated: true,
+          },
         ],
       },
     });
