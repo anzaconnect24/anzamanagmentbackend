@@ -433,7 +433,12 @@ const getInvestors = async (req, res) => {
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
 
-      include: [InvestorProfile, BusinessSector],
+      include: [
+        {
+          model: InvestorProfile,
+          include: [BusinessSector],
+        },
+      ],
       where: {
         [Op.and]: [
           {
