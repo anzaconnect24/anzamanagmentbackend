@@ -6,6 +6,7 @@ const {
   BusinessSector,
   BusinessDocument,
   InvestmentInterest,
+  MentorProfile,
   Product,
   Role,
   PitchMaterial,
@@ -432,7 +433,6 @@ const getInvestors = async (req, res) => {
       offset: offset, //ruka ngapi
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
-
       include: [
         {
           model: InvestorProfile,
@@ -676,6 +676,7 @@ const getMentors = async (req, res) => {
       offset: offset, //ruka ngapi
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
+      include: [MentorProfile],
       where: {
         role: "Mentor",
       },
@@ -792,6 +793,9 @@ const getUserDetails = async (req, res) => {
         {
           model: InvestorProfile,
           include: [BusinessSector],
+        },
+        {
+          model: MentorProfile,
         },
       ],
     });
