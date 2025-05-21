@@ -676,7 +676,12 @@ const getMentors = async (req, res) => {
       offset: offset, //ruka ngapi
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
-      include: [MentorProfile],
+      include: [
+        {
+          model: MentorProfile,
+          include: [BusinessSector],
+        },
+      ],
       where: {
         role: "Mentor",
       },
@@ -796,6 +801,7 @@ const getUserDetails = async (req, res) => {
         },
         {
           model: MentorProfile,
+          include: [BusinessSector],
         },
       ],
     });

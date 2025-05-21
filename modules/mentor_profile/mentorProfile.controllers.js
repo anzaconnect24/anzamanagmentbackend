@@ -17,7 +17,7 @@ const createMentorProfile = async (req, res) => {
       mentorshipFocus,
       smeFocus,
       language,
-      businessSectorUUID,
+      business_sector_uuid,
     } = req.body;
     const user = await User.findOne({
       where: {
@@ -26,7 +26,7 @@ const createMentorProfile = async (req, res) => {
     });
     const businessSector = await BusinessSector.findOne({
       where: {
-        uuid: businessSectorUUID,
+        uuid: business_sector_uuid,
       },
     });
     console.log(req.body);
