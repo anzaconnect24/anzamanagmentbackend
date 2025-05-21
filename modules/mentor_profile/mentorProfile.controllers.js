@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { MentorProfile, User } = require("../../models");
+const { MentorProfile, BusinessSector, User } = require("../../models");
 
 const createMentorProfile = async (req, res) => {
   try {
@@ -13,10 +13,20 @@ const createMentorProfile = async (req, res) => {
       mentorHours,
       mentoringFormat,
       description,
+      location,
+      mentorshipFocus,
+      smeFocus,
+      language,
+      businessSectorUUID,
     } = req.body;
     const user = await User.findOne({
       where: {
         uuid: user_uuid,
+      },
+    });
+    const businessSector = await BusinessSector.findOne({
+      where: {
+        uuid: businessSectorUUID,
       },
     });
     console.log(req.body);
@@ -31,6 +41,11 @@ const createMentorProfile = async (req, res) => {
       mentorHours,
       mentoringFormat,
       description,
+      businessSectorId: businessSector.id,
+      location,
+      mentorshipFocus,
+      smeFocus,
+      language,
     });
     successResponse(res, response);
   } catch (error) {

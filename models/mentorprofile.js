@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       MentorProfile.belongsTo(models.User);
+      MentorProfile.belongsTo(models.BusinessSector);
     }
   }
   MentorProfile.init(
@@ -44,6 +45,26 @@ module.exports = (sequelize, DataTypes) => {
       },
       mentorHours: {
         type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      businessSectorId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      language: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      mentorshipFocus: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      smeFocus: {
+        type: DataTypes.TEXT("long"),
         allowNull: true,
       },
       mentoringFormat: {

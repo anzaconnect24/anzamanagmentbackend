@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class InvestorBusinessSector extends Model {
     /**
@@ -13,22 +11,25 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  InvestorBusinessSector.init({
-    uuid:{
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4
+  InvestorBusinessSector.init(
+    {
+      uuid: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      businessSectorId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      investorProfileId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     },
-    businessSectorId: {
-      type: DataTypes.INTEGER,
-      allowNull:false
-    },
-    investorProfileId: {
-      type: DataTypes.INTEGER,
-      allowNull:false
-    },
-  }, {
-    sequelize,
-    modelName: 'InvestorBusinessSector',
-  });
+    {
+      sequelize,
+      modelName: "InvestorBusinessSector",
+    }
+  );
   return InvestorBusinessSector;
 };

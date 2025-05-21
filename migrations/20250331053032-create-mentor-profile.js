@@ -49,6 +49,26 @@ module.exports = {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      businessSectorId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      language: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      mentorshipFocus: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      smeFocus: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,
