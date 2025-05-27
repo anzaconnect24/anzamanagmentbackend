@@ -89,8 +89,9 @@ const scoreCalculation = async (req, res) => {
   try {
     const { user_uuid } = req.query;
     let id;
+    console.log(user_uuid);
     if (user_uuid != "undefined") {
-      const user = User.findOne({
+      const user = await User.findOne({
         where: {
           uuid: user_uuid,
         },
@@ -104,7 +105,7 @@ const scoreCalculation = async (req, res) => {
       return errorResponse(res, "User ID is missing");
     }
 
-    console.log(id);
+    console.log("id", id);
 
     // Retrieve the data from all relevant tables based on userId
     const financials = await CratFinancials.findAll({
@@ -231,7 +232,7 @@ const scoreCalculation = async (req, res) => {
       general_status: generalStatus,
     };
 
-    console.log(response);
+    // console.log(response);
 
     // Send response
     successResponse(res, response);
