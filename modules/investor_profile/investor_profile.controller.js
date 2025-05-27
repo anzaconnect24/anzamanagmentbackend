@@ -29,6 +29,7 @@ const createInvestorProfile = async (req, res) => {
       investmentSize,
       investmentType,
       bio,
+      seeking,
       notableInvestment,
       preferMentoring,
       portifolioDocument,
@@ -52,6 +53,7 @@ const createInvestorProfile = async (req, res) => {
       BusinessSectorId: sectorData.id,
       ticketSize,
       geography,
+      seeking,
       //   structure,
       //added attributes
       linkedinURL,

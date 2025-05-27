@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT("long"),
         allowNull: true,
       },
+      seeking: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
       website: {
         type: DataTypes.STRING,
         allowNull: true,
