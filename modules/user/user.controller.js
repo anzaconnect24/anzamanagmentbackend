@@ -780,6 +780,12 @@ const getMyDetails = async (req, res) => {
             model: BusinessSector,
           },
         },
+        {
+          model: MentorProfile,
+          include: {
+            model: BusinessSector,
+          },
+        },
       ],
     });
     successResponse(res, response);
