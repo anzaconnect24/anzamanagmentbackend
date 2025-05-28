@@ -56,16 +56,13 @@ const createMentorProfile = async (req, res) => {
 
 const updateMentorProfile = async (req, res) => {
   try {
-    let { name } = req.body;
     const uuid = req.params.uuid;
     const mentorprofile = await MentorProfile.findOne({
       where: {
         uuid,
       },
     });
-    const response = await mentorprofile.update({
-      name,
-    });
+    const response = await mentorprofile.update(req.body);
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
