@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   ProgramApplication.init({
-      uuid:{
+      uuid: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4
       },

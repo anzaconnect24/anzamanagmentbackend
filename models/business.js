@@ -153,6 +153,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      revenue: {
+        type: DataTypes.DOUBLE,
+        allowNull: true,
+      },
+      websiteLink: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      instagramLink: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       impact: {
         type: DataTypes.TEXT("long"),
         allowNull: true,

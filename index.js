@@ -51,6 +51,8 @@ const Subscription = require("./modules/subscription/subscription.routes");
 const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
 const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
 const StatsRoutes = require("./modules/stats/stats.routes");
+const MentorshipApplicationRoutes = require("./modules/mentorshipApplications/mentorshipApplications.routes");
+const InvestmentApplicationRoutes = require("./modules/investmentApplications/investmentApplications.routes");
 const {
   usersTag,
   statsTag,
@@ -96,6 +98,8 @@ const {
   cratGeneralTag,
   staffProfileTag,
   mentorProfileTag,
+  investmentApplicationTag,
+  mentorshipApplicationsTag,
 } = require("./utils/swaggerTags");
 
 // ********************
@@ -105,12 +109,24 @@ const swaggerDocument = require("./swagger-output.json");
 const upload = require("./utils/upload");
 const getUrl = require("./utils/cloudinary_upload");
 const { successResponse, errorResponse } = require("./utils/responses");
+const investmentapplication = require("./models/investmentapplication");
 app.use("/files", express.static("files"));
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+app.use("/user", usersTag, UserRoutes);
+app.use(
+  "/investment-applications",
+  investmentApplicationTag,
+  InvestmentApplicationRoutes
+);
+app.use(
+  "/mentorship-applications",
+  mentorshipApplicationsTag,
+  MentorshipApplicationRoutes
+);
 app.use("/user", usersTag, UserRoutes);
 app.use("/stats", statsTag, StatsRoutes);
 app.use("/notification", notificationsTag, NotificationRoutes);

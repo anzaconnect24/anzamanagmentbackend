@@ -2,7 +2,14 @@ const usersTag = (req, res, next) => {
   // #swagger.tags = ['Users']
   next();
 };
-
+const investmentApplicationTag = (req, res, next) => {
+  // #swagger.tags = ['Investment Applications']
+  next();
+};
+const mentorshipApplicationsTag = (req, res, next) => {
+  // #swagger.tags = ['Mentorship Applications']
+  next();
+};
 const statsTag = (req, res, next) => {
   // #swagger.tags = ['Stats']
   next();
@@ -272,6 +279,8 @@ module.exports = {
   cratFinancialTag,
 
   cratLegalTag,
+  investmentApplicationTag,
+  mentorshipApplicationsTag,
   cratOperationsTag,
   cratGeneralTag,
   cratReviewersTag,

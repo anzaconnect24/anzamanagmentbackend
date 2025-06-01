@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class BusinessInvestmentRequest extends Model {
     /**
@@ -11,56 +9,65 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      BusinessInvestmentRequest.hasOne(models.BusinessInvestmentRequestReview, {onDelete: 'cascade'})
-      BusinessInvestmentRequest.belongsTo(models.User)
-      BusinessInvestmentRequest.belongsTo(models.Business)
+      BusinessInvestmentRequest.hasOne(models.BusinessInvestmentRequestReview, {
+        onDelete: "cascade",
+      });
+      BusinessInvestmentRequest.belongsTo(models.User);
+      BusinessInvestmentRequest.belongsTo(models.Business);
     }
   }
-  BusinessInvestmentRequest.init({
-      uuid:{
+  BusinessInvestmentRequest.init(
+    {
+      uuid: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4
+        defaultValue: DataTypes.UUIDV4,
       },
       userId: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
       businessId: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
-      investmentAmount:{
-        type:DataTypes.INTEGER,
-        defaultValue:0
+      investmentAmount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
       },
       investmentType: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
-      currency:{
+      currency: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
       dueDiligenceDate: {
         type: DataTypes.DATE,
-        allowNull:false
+        allowNull: false,
       },
       helpFromAnza: {
         type: DataTypes.TEXT,
-        allowNull:false
+        allowNull: false,
+      },
+      additionalInfo: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
       },
       feedback: {
         type: DataTypes.STRING,
-        allowNull:true
+        allowNull: true,
       },
       status: {
-        type: DataTypes.ENUM('waiting','accepted','rejected','closed'),
-        defaultValue:"waiting",
-        allowNull:false
+        type: DataTypes.ENUM("waiting", "accepted", "rejected", "closed"),
+        defaultValue: "waiting",
+        allowNull: false,
       },
-  }, {
-    sequelize,
-    modelName: 'BusinessInvestmentRequest',
-  });
+    },
+    {
+      sequelize,
+      modelName: "BusinessInvestmentRequest",
+    }
+  );
   return BusinessInvestmentRequest;
 };

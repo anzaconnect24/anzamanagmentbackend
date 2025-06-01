@@ -41,6 +41,9 @@ const createBusiness = async (req, res) => {
       impact,
       growthPlan,
       fundraisingNeeds,
+      revenue,
+      instagramLink,
+      websiteLink,
     } = req.body;
 
     const user = req.user;
@@ -76,7 +79,9 @@ const createBusiness = async (req, res) => {
       impact,
       growthPlan,
       fundraisingNeeds,
-
+      revenue,
+      instagramLink,
+      websiteLink,
       // status,
     });
     successResponse(res, response);
