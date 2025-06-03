@@ -56,7 +56,7 @@ router.get(
 router.get("/admins", validateJWT, getAdmins);
 router.get("/mentors", validateJWT, getMentors);
 router.get("/reviewers", validateJWT, getReviewers);
-router.get("/enterprenuers", validateJWT, getEnterprenuers);
+router.get("/enterprenuers", validateJWT, getPagination, getEnterprenuers);
 router.get("/enterprenuers/mentor/:uuid", validateJWT, getMentorEntreprenuers);
 router.get("/", validateJWT, getPagination, getUsers);
 router.get("/:uuid", validateJWT, getUserDetails);
