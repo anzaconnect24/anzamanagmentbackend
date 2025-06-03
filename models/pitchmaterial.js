@@ -1,7 +1,5 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class PitchMaterial extends Model {
     /**
@@ -11,33 +9,44 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      PitchMaterial.hasMany(models.PitchMaterialViewer)
+      PitchMaterial.hasMany(models.PitchMaterialViewer);
     }
   }
-  PitchMaterial.init({
-      uuid:{
+  PitchMaterial.init(
+    {
+      uuid: {
         type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4
+        defaultValue: DataTypes.UUIDV4,
       },
       fileName: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
       type: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
       description: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: false,
       },
-      link: {
+      category: {
         type: DataTypes.STRING,
-        allowNull:false
+        allowNull: true,
       },
-  }, {
-    sequelize,
-    modelName: 'PitchMaterial',
-  });
+      thumbnailUrl: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      materialUrl: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+    },
+    {
+      sequelize,
+      modelName: "PitchMaterial",
+    }
+  );
   return PitchMaterial;
 };

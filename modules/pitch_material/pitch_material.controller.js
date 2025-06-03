@@ -15,12 +15,15 @@ const { where } = require("sequelize");
 
 const createPitchMaterial = async (req, res) => {
   try {
-    let { fileName, type, description, url } = req.body;
+    let { fileName, type, description, materialUrl, thumbnailUrl, category } =
+      req.body;
     const response = await PitchMaterial.create({
       fileName: fileName,
       type: type,
       description: description,
-      link: url,
+      materialUrl,
+      thumbnailUrl,
+      category,
     });
     successResponse(res, response);
   } catch (error) {

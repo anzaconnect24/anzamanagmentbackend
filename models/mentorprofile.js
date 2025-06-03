@@ -60,7 +60,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       mentorshipFocus: {
-        type: DataTypes.TEXT("long"),
+        type: DataTypes.JSON,
         allowNull: true,
       },
       smeFocus: {

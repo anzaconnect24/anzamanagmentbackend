@@ -550,14 +550,9 @@ const getInterestedEnterprenuers = async (req, res) => {
 
 const getEnterprenuers = async (req, res) => {
   try {
-    let { page, limit, keyword } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-    const offset = (page - 1) * limit;
-
-    const { count, rows } = await User.findAndCountAll({
-      offset: offset, //ruka ngapi
-      limit: limit, //leta ngapi
+    const response = await User.findAndCountAll({
+      offset: req.offset,
+      limit: req.limit,
       order: [["createdAt", "DESC"]],
       include: [
         {
@@ -571,7 +566,7 @@ const getEnterprenuers = async (req, res) => {
           ],
           where: {
             name: {
-              [Op.like]: "%" + keyword + "%",
+              [Op.like]: "%" + req.keyword + "%",
             },
           },
           required: true,
@@ -583,7 +578,12 @@ const getEnterprenuers = async (req, res) => {
     });
     const totalPages =
       count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
-    successResponse(res, { count, data: rows, page, totalPages });
+    successResponse(res, {
+      count: response.count,
+      data: response.rows,
+      page: req.page,
+      totalPages,
+    });
   } catch (error) {
     errorResponse(res, error);
   }
