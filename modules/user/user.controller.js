@@ -577,7 +577,7 @@ const getEnterprenuers = async (req, res) => {
       },
     });
     const totalPages =
-      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
+      response.count % req.limit > 0 ? parseInt(response.count / req.limit) + 1 : parseInt(response.count / req.limit);
     successResponse(res, {
       count: response.count,
       data: response.rows,

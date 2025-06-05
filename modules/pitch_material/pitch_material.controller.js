@@ -202,20 +202,12 @@ const getVideoPitchMaterials = async (req, res) => {
 
 const getDocumentPitchMaterials = async (req, res) => {
   try {
-    let { page, limit } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-    const offset = (page - 1) * limit;
-
-    const { count, rows } = await PitchMaterial.findAndCountAll({
-      offset: offset, //ruka ngapi
-      limit: limit, //leta ngapi
+   
+    const response= await PitchMaterial.findAll({
       order: [["createdAt", "DESC"]],
       where: { type: "document" },
     });
-    const totalPages =
-      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
-    successResponse(res, { count, data: rows, page, totalPages });
+    successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
   }

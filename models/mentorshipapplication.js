@@ -9,6 +9,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      MentorshipApplication.belongsTo(models.User,{
+        as:"mentor",
+        foreignKey:"mentorId",
+        targetKey:"id"
+      })
+      MentorshipApplication.belongsTo(models.User, {
+        as: "entrepreneur",
+        foreignKey: "entreprenuerId",
+        targetKey: "id", // Adjust to 'userId' if that's the primary key in User model
+      });
     }
   }
   MentorshipApplication.init(

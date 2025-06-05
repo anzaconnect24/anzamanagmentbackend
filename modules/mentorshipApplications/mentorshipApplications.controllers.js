@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { MentorshipApplication, User } = require("../../models");
+const { MentorshipApplication, User,MentorProfile } = require("../../models");
+const { Op } = require("sequelize");
 
 const createMentorshipApplication = async (req, res) => {
   user = req.user;
@@ -42,6 +43,47 @@ const getAllMentorshipApplications = async (req, res) => {
         exclude: ["id"],
       },
     });
+    successResponse(res, { count, data: rows, page: req.page });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+const getEntreprenuerMentorshipApplications = async (req, res) => {
+  try {
+    const {uuid} = req.params;
+    const user  = await User.findOne({
+      where:{
+        uuid
+      }
+    })
+    const { count, rows } = await MentorshipApplication.findAndCountAll({
+      offset: req.offset,
+      limit: req.limit,
+      order: [["createdAt", "DESC"]],
+      include:[{
+        model:User,
+        as:"mentor",
+        where:{
+          name:{
+            [Op.like]:`%${req.keyword}%`
+          }
+        },
+        include:[MentorProfile]
+      },
+      {
+        model:User,
+        as:"entrepreneur",
+        where:{
+          id:user.id
+        },
+        required:true
+      }],
+      attributes: {
+        exclude: ["id"],
+      },
+    });
+
+
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {
     errorResponse(res, error);
@@ -100,5 +142,6 @@ module.exports = {
   getMentorshipApplication,
   getAllMentorshipApplications,
   deleteMentorshipApplication,
+  getEntreprenuerMentorshipApplications,
   updateMentorshipApplication,
 };
