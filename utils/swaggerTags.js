@@ -24,7 +24,18 @@ const rolesTag = (req, res, next) => {
   // #swagger.tags = ['Roles']
   next();
 };
-
+const modulesTag = (req, res, next) => {
+  // #swagger.tags = ['Modules']
+  next();
+};
+const slidesTag = (req, res, next) => {
+  // #swagger.tags = ['Slides']
+  next();
+};
+const commentsTag = (req, res, next) => {
+  // #swagger.tags = ['Comments']
+  next();
+};
 const mentorProfileTag = (req, res, next) => {
   // #swagger.tags = ['Mentor Profile']
   next();
@@ -284,4 +295,7 @@ module.exports = {
   cratOperationsTag,
   cratGeneralTag,
   cratReviewersTag,
+  slidesTag,
+  modulesTag,
+  commentsTag
 };

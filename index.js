@@ -43,6 +43,9 @@ const Favourites = require("./modules/favourite/favourite.routes");
 const Promotions = require("./modules/promotion/promotion.routes");
 const Payments = require("./modules/payment/payment.routes");
 const Admin = require("./modules/admin/admin.routes");
+const ModulesRoutes = require("./modules/modules/modules.routes");
+const SlidesRoutes = require("./modules/slides/slides.routes");
+const CommentsRoutes = require("./modules/comments/comments.routes");
 const MentorProfileRoutes = require("./modules/mentor_profile/mentorProfile.routes");
 const StaffProfileRoutes = require("./modules/staff_profile/staffProfile.routes");
 const Seller = require("./modules/seller/seller.routes");
@@ -100,6 +103,9 @@ const {
   mentorProfileTag,
   investmentApplicationTag,
   mentorshipApplicationsTag,
+  modulesTag,
+  commentsTag,
+  slidesTag,
 } = require("./utils/swaggerTags");
 
 // ********************
@@ -131,6 +137,9 @@ app.use("/user", usersTag, UserRoutes);
 app.use("/stats", statsTag, StatsRoutes);
 app.use("/notification", notificationsTag, NotificationRoutes);
 app.use("/role", rolesTag, RoleRoutes);
+app.use("/modules", modulesTag, ModulesRoutes);
+app.use("/comments", commentsTag, CommentsRoutes);
+app.use("/slides", slidesTag, SlidesRoutes);
 app.use("/staff-profile", staffProfileTag, StaffProfileRoutes);
 app.use("/mentor-profile", mentorProfileTag, MentorProfileRoutes);
 app.use("/permission", permissionsTag, PermissionRoutes);
