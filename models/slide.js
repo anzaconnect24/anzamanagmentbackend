@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Slide.belongsTo(models.Module);
       Slide.hasMany(models.User);
+      Slide.hasMany(models.SlideReader);
     }
   }
   Slide.init(
