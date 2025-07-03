@@ -18,16 +18,16 @@ module.exports = {
         allowNull: false,
       },
       userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+        type: DataTypes.UUID,
+        allowNull: true,
       },
       moduleId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+        type: DataTypes.UUID,
+        allowNull: true,
       },
       slideId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+        type: DataTypes.UUID,
+        allowNull: true,
       },
       createdAt: {
         allowNull: false,
