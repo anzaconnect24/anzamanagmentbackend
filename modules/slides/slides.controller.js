@@ -55,6 +55,7 @@ const deleteSlide = async (req, res) => {
 const markRead = async (req, res) => {
   try {
     const { slide_uuid } = req.body;
+    console.log(slide_uuid);
     const slide = await Slide.findOne({
       where: {
         uuid: slide_uuid,
@@ -85,12 +86,16 @@ const getSlides = async (req, res) => {
       limit: req.limit,
       order: [["createdAt"]],
       distinct: true,
+      attributes: {
+        exclude: ["ModuleId"],
+      },
       include: [
         {
-          SlideReader,
+          model: SlideReader,
           where: {
             userId: req.user.id,
           },
+          required: false,
         },
       ],
       where: {

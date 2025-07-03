@@ -59,12 +59,14 @@ const getModules = async (req, res) => {
       include: [
         {
           model: Slide,
+          required: false,
           include: [
             {
               model: SlideReader,
               where: {
                 userId: req.user.id,
               },
+              required: false,
             },
           ],
         },
