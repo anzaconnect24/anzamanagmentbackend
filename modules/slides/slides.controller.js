@@ -4,7 +4,7 @@ const { sendEmail } = require("../../utils/send_email");
 
 const createSlide = async (req, res) => {
   try {
-    const { content, module_uuid } = req.body;
+    const { content, title, module_uuid } = req.body;
     const module = await Module.findOne({
       where: {
         uuid: module_uuid,
@@ -12,6 +12,7 @@ const createSlide = async (req, res) => {
     });
     const response = await Slide.create({
       content,
+      title,
       moduleId: module.id,
     });
     successResponse(res, response);
