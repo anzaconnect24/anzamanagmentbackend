@@ -87,6 +87,7 @@ const getComments = async (req, res) => {
       offset: req.offset,
       limit: req.limit,
       order: [["createdAt", "DESC"]],
+      include:[User],
       distinct: true,
       where: filter,
     });
