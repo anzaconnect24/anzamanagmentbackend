@@ -16,7 +16,7 @@ const createSlide = async (req, res) => {
       title,
       moduleId: module.id,
     });
-    successResponse(res, response);
+    successResponse(res, { ...response, module });
   } catch (error) {
     errorResponse(res, error);
   }
