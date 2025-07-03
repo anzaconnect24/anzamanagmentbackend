@@ -1,7 +1,7 @@
 "use strict";
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
-  class Comment extends Model {
+  class SlideReader extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -9,26 +9,23 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Comment.belongsTo(models.Module);
-      Comment.belongsTo(models.Slide);
-      Comment.belongsTo(models.User);
+      SlideReader.belongsTo(models.User);
+      SlideReader.belongsTo(models.Slide);
     }
   }
-  Comment.init(
+  SlideReader.init(
     {
+      id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: DataTypes.INTEGER,
+      },
       uuid: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      message: {
-        type: DataTypes.TEXT("long"),
-        allowNull: false,
-      },
       userId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      moduleId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
@@ -39,8 +36,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "Comment",
+      modelName: "SlideReader",
     }
   );
-  return Comment;
+  return SlideReader;
 };

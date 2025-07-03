@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Slide.belongsTo(models.Module);
+      Slide.hasMany(models.User);
     }
   }
   Slide.init(
@@ -18,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-       title: {
+      title: {
         type: DataTypes.STRING,
         allowNull: false,
       },

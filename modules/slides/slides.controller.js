@@ -1,6 +1,7 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { Slide, User, Module } = require("../../models");
+const { Slide, User, Module, SlideReader } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const { response } = require("express");
 
 const createSlide = async (req, res) => {
   try {
@@ -51,6 +52,23 @@ const deleteSlide = async (req, res) => {
     errorResponse(res, error);
   }
 };
+const markRead = async (req, res) => {
+  try {
+    const { slide_uuid } = req.body;
+    const slide = await Slide.findOne({
+      where: {
+        uuid: slide_uuid,
+      },
+    });
+    const response = SlideReader.create({
+      slideId: slide.id,
+      userId: req.user.id,
+    });
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
 
 const getSlides = async (req, res) => {
   try {
@@ -67,6 +85,14 @@ const getSlides = async (req, res) => {
       limit: req.limit,
       order: [["createdAt"]],
       distinct: true,
+      include: [
+        {
+          SlideReader,
+          where: {
+            userId: req.user.id,
+          },
+        },
+      ],
       where: {
         moduleId: module.id,
       },
@@ -82,4 +108,5 @@ module.exports = {
   updateSlide,
   deleteSlide,
   getSlides,
+  markRead,
 };

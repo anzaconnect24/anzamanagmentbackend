@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { Module, User } = require("../../models");
+const { Module, User, Slide, SlideReader } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
 const createModule = async (req, res) => {
@@ -56,6 +56,19 @@ const getModules = async (req, res) => {
       limit: req.limit,
       order: [["createdAt", "DESC"]],
       distinct: true,
+      include: [
+        {
+          model: Slide,
+          include: [
+            {
+              model: SlideReader,
+              where: {
+                userId: req.user.id,
+              },
+            },
+          ],
+        },
+      ],
       where: {
         course,
       },

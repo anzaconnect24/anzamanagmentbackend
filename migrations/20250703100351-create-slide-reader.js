@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, DataTypes) {
-    await queryInterface.createTable("Comments", {
+    await queryInterface.createTable("SlideReaders", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,15 +13,7 @@ module.exports = {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      message: {
-        type: DataTypes.TEXT("long"),
-        allowNull: false,
-      },
       userId: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      moduleId: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
@@ -40,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, DataTypes) {
-    await queryInterface.dropTable("Comments");
+    await queryInterface.dropTable("SlideReaders");
   },
 };
