@@ -16,7 +16,7 @@ const createSlide = async (req, res) => {
       title,
       moduleId: module.id,
     });
-    successResponse(res, { ...response, module });
+    successResponse(res, { ...response });
   } catch (error) {
     errorResponse(res, error);
   }
@@ -71,7 +71,7 @@ const getSlides = async (req, res) => {
         moduleId: module.id,
       },
     });
-    successResponse(res, { count, data: rows, page: req.page });
+    successResponse(res, { count, data: rows, page: req.page, module });
   } catch (error) {
     errorResponse(res, error);
   }
