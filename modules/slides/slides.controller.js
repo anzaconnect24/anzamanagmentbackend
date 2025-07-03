@@ -10,6 +10,7 @@ const createSlide = async (req, res) => {
         uuid: module_uuid,
       },
     });
+    console.log(req.body);
     const response = await Slide.create({
       content,
       title,
@@ -54,11 +55,13 @@ const deleteSlide = async (req, res) => {
 const getSlides = async (req, res) => {
   try {
     const { module_uuid } = req.query;
+    console.log(module_uuid);
     const module = await Module.findOne({
       where: {
         uuid: module_uuid,
       },
     });
+    console.log(module);
     const { count, rows } = await Slide.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
