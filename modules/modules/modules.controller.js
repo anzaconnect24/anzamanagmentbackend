@@ -36,6 +36,7 @@ const updateModule = async (req, res) => {
 const getModule = async (req, res) => {
   try {
     const uuid = req.params.uuid;
+    console.log(uuid);
     const module = await Module.findOne({
       where: {
         uuid,
