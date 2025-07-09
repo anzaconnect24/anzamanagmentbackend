@@ -19,7 +19,15 @@ module.exports = {
       },
       content: {
         type: DataTypes.TEXT("long"),
-        allowNull: false,
+        allowNull: true,
+      },
+      file: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      type: {
+        type: DataTypes.ENUM("text", "file"),
+        defaultValue: "text",
       },
       moduleId: {
         type: DataTypes.INTEGER,

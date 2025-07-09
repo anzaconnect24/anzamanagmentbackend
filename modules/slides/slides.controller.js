@@ -5,7 +5,7 @@ const { response } = require("express");
 
 const createSlide = async (req, res) => {
   try {
-    const { content, title, module_uuid } = req.body;
+    const { content, title, module_uuid, file, type } = req.body;
     const module = await Module.findOne({
       where: {
         uuid: module_uuid,
@@ -15,6 +15,8 @@ const createSlide = async (req, res) => {
     const response = await Slide.create({
       content,
       title,
+      file,
+      type,
       moduleId: module.id,
     });
     successResponse(res, { ...response });

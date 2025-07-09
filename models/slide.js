@@ -24,13 +24,21 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      content: {
-        type: DataTypes.TEXT("long"),
-        allowNull: false,
-      },
       moduleId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      content: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      file: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      type: {
+        type: DataTypes.ENUM("text", "file"),
+        defaultValue: "text",
       },
     },
     {
