@@ -157,6 +157,7 @@ const getUserCounts = async (req, res) => {
         status: "waiting",
       },
       include: [
+        { model: User, required: true },
         {
           model: Program,
           required: true,
