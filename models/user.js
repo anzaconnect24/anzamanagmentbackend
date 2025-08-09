@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         scope: true,
       });
       User.hasOne(models.InvestorProfile, { onDelete: "CASCADE", scope: true });
-      User.hasOne(models.ProgramApplicationReview);
+
       User.hasMany(models.BusinessInvestmentRequest, {
         onDelete: "CASCADE",
         scope: true,
@@ -46,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasOne(models.BusinessReview, { onDelete: "cascade" });
       User.hasMany(models.ProgramApplication, { onDelete: "cascade" });
       User.hasOne(models.InvestorProfile, { onDelete: "cascade" });
-      User.hasOne(models.ProgramApplicationReview);
+
       User.hasMany(models.BusinessInvestmentRequest, { onDelete: "cascade" });
       User.hasOne(models.BusinessInvestmentRequestReview, {
         onDelete: "cascade",
@@ -61,7 +61,6 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.CratOperations, { foreignKey: "userId" });
       User.hasMany(models.CratLegals, { foreignKey: "userId" });
       User.hasOne(models.MentorProfile, { onDelete: "CASCADE", scope: true });
-      
     }
   }
   User.init(

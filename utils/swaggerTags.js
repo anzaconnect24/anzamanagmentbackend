@@ -245,6 +245,11 @@ const cratReviewersTag = (req, res, next) => {
   next();
 };
 
+const investmentOpportunitiesTag = (req, res, next) => {
+  // #swagger.tags = ['Investment Opportunities']
+  next();
+};
+
 module.exports = {
   usersTag,
   statsTag,
@@ -297,5 +302,6 @@ module.exports = {
   cratReviewersTag,
   slidesTag,
   modulesTag,
-  commentsTag
+  commentsTag,
+  investmentOpportunitiesTag
 };

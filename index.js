@@ -107,6 +107,7 @@ const {
   modulesTag,
   commentsTag,
   slidesTag,
+  investmentOpportunitiesTag,
 } = require("./utils/swaggerTags");
 
 // ********************
@@ -142,7 +143,7 @@ app.use("/modules", modulesTag, ModulesRoutes);
 app.use("/comments", commentsTag, CommentsRoutes);
 app.use("/slides", slidesTag, SlidesRoutes);
 app.use("/staff-profile", staffProfileTag, StaffProfileRoutes);
-app.use("/investment-opportunities", InvestmentApplicationRoutes);
+app.use("/investment-opportunities", investmentOpportunitiesTag, InvestmentOpportunities);
 app.use("/mentor-profile", mentorProfileTag, MentorProfileRoutes);
 app.use("/permission", permissionsTag, PermissionRoutes);
 app.use("/user_role", userRolesTag, UserRoleRoutes);
