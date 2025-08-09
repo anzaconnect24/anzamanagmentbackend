@@ -54,6 +54,7 @@ const Subscription = require("./modules/subscription/subscription.routes");
 const MentorEntreprenuerRoutes = require("./modules/mentor_entreprenuer/mentorEntreprenuer.routes");
 const MentorReportRoutes = require("./modules/mentor_reports/mentorReports.routes");
 const StatsRoutes = require("./modules/stats/stats.routes");
+const InvestmentOpportunities = require("./modules/investmentOpportunities/investmentOpportunities.routes");
 const MentorshipApplicationRoutes = require("./modules/mentorshipApplications/mentorshipApplications.routes");
 const InvestmentApplicationRoutes = require("./modules/investmentApplications/investmentApplications.routes");
 const {
@@ -141,6 +142,7 @@ app.use("/modules", modulesTag, ModulesRoutes);
 app.use("/comments", commentsTag, CommentsRoutes);
 app.use("/slides", slidesTag, SlidesRoutes);
 app.use("/staff-profile", staffProfileTag, StaffProfileRoutes);
+app.use("/investment-opportunities", InvestmentApplicationRoutes);
 app.use("/mentor-profile", mentorProfileTag, MentorProfileRoutes);
 app.use("/permission", permissionsTag, PermissionRoutes);
 app.use("/user_role", userRolesTag, UserRoleRoutes);
