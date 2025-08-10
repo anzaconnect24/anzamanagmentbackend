@@ -1,7 +1,7 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const { InvestmentOpportunity, User } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
-const { where } = require("sequelize");
+const { Op } = require("sequelize");
 
 const createInvestmentOpportunity = async (req, res) => {
   try {
@@ -51,18 +51,17 @@ const deleteInvestmentOpportunity = async (req, res) => {
 const getAllInvestmentOpportunities = async (req, res) => {
   // res.status(200).json({"k":"v"});
   try {
-    let { page, limit } = req.query;
-
     const { count, rows } = await InvestmentOpportunity.findAndCountAll({
       offset: req.offset, //ruka ngapi
       limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       where: {
         title: {
-          [where.like]: `%${req.keyword}%`,
+          [Op.like]: `%${req.keyword}%`,
         },
       },
     });
+    console.log("Investment Opportunities Count:", count);
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {
     errorResponse(res, error);

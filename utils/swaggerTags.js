@@ -303,5 +303,5 @@ module.exports = {
   slidesTag,
   modulesTag,
   commentsTag,
-  investmentOpportunitiesTag
+  investmentOpportunitiesTag,
 };
