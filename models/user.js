@@ -13,10 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.UserPermission, { onDelete: "CASCADE", scope: true });
       User.hasOne(models.Business, { onDelete: "CASCADE", scope: true });
       User.hasOne(models.BusinessReview, { onDelete: "CASCADE", scope: true });
-      User.hasMany(models.ProgramApplication, {
-        onDelete: "CASCADE",
-        scope: true,
-      });
+
       User.hasOne(models.InvestorProfile, { onDelete: "CASCADE", scope: true });
 
       User.hasMany(models.BusinessInvestmentRequest, {
@@ -44,7 +41,6 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.UserPermission, { onDelete: "cascade" });
       User.hasOne(models.Business, { onDelete: "cascade" });
       User.hasOne(models.BusinessReview, { onDelete: "cascade" });
-      User.hasMany(models.ProgramApplication, { onDelete: "cascade" });
       User.hasOne(models.InvestorProfile, { onDelete: "cascade" });
 
       User.hasMany(models.BusinessInvestmentRequest, { onDelete: "cascade" });

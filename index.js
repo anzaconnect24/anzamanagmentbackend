@@ -20,12 +20,9 @@ const AttachmentRoutes = require("./modules/attachment/attachment.routes");
 const BusinessRoutes = require("./modules/business/business.routes");
 const BusinessReviewRoutes = require("./modules/business_review/business_review.routes");
 const ProgramRoutes = require("./modules/program/program.routes");
-const ProgramApplicationRoutes = require("./modules/program_application/program_application.routes");
-const ProgramApplicationReviewRoutes = require("./modules/program_application_review/program_application_review.routes");
 const BusinessInvestmentRequestRoutes = require("./modules/business_investment_request/business_investment_request.routes");
 const BusinessInvestmentRequestReviewRoutes = require("./modules/business_investment_request_review/business_investment_request_review.routes");
 const InvestorProfileRoutes = require("./modules/investor_profile/investor_profile.routes");
-const ProgramUpdateRoutes = require("./modules/program_update/program_update.routes");
 const PitchMaterialRoutes = require("./modules/pitch_material/pitch_material.routes");
 const BusinessDocumentRoutes = require("./modules/business_document/business_document.routes");
 const LogRoutes = require("./modules/log/log.routes");
@@ -73,10 +70,7 @@ const {
   mentorEntrepreneursTag,
   mentorReportsTag,
   programsTag,
-  programApplicationsTag,
-  programApplicationReviewsTag,
   investorProfilesTag,
-  programUpdatesTag,
   conversationsTag,
   pitchMaterialsTag,
   businessInvestmentRequestsTag,
@@ -163,19 +157,8 @@ app.use(
   MentorEntreprenuerRoutes
 );
 app.use("/mentor-reports", mentorReportsTag, MentorReportRoutes);
-app.use("/program", programsTag, ProgramRoutes);
-app.use(
-  "/program_application",
-  programApplicationsTag,
-  ProgramApplicationRoutes
-);
-app.use(
-  "/program_application_review",
-  programApplicationReviewsTag,
-  ProgramApplicationReviewRoutes
-);
+app.use("/programs", programsTag, ProgramRoutes);
 app.use("/investor_profile", investorProfilesTag, InvestorProfileRoutes);
-app.use("/program_update", programUpdatesTag, ProgramUpdateRoutes);
 app.use("/conversation", conversationsTag, ConversationRoutes);
 app.use("/pitch_material", pitchMaterialsTag, PitchMaterialRoutes);
 app.use(
