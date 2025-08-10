@@ -7,13 +7,7 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate(models) {
-      // define association here
-      SuccessStory.belongsTo(models.Business, {
-        onDelete: "CASCADE",
-        scope: true,
-      });
-    }
+    static associate(models) {}
   }
   SuccessStory.init(
     {
@@ -25,25 +19,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
-      businessId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
-      story: {
+      description: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
       videoLink: {
         type: DataTypes.TEXT,
         allowNull: true,
-      },
-      documentLink: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      likes: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
       },
     },
     {

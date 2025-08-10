@@ -178,7 +178,7 @@ app.use(
   investmentInterestsTag,
   InvestmentInterestRoutes
 );
-app.use("/success_story", successStoriesTag, SuccessStoryRoutes);
+app.use("/success-stories", successStoriesTag, SuccessStoryRoutes);
 app.use("/product", productsTag, ProductRoutes);
 app.use("/order", ordersTag, OrderRoutes);
 app.use("/wishlist", wishlistsTag, WishlistRoutes);

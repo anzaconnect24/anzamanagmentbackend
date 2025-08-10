@@ -15,10 +15,6 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: "CASCADE",
         scope: true,
       });
-      Business.hasMany(models.SuccessStory, {
-        onDelete: "CASCADE",
-        scope: true,
-      });
     }
   }
 
