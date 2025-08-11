@@ -84,8 +84,6 @@ const getSlides = async (req, res) => {
     });
     console.log(module);
     const { count, rows } = await Slide.findAndCountAll({
-      offset: req.offset,
-      limit: req.limit,
       order: [["createdAt"]],
       distinct: true,
       attributes: {
