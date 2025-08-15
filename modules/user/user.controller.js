@@ -554,6 +554,10 @@ const getInterestedEnterprenuers = async (req, res) => {
 
 const getEnterprenuers = async (req, res) => {
   try {
+    // allow keyword to come from middleware (req.keyword) or query string
+    const keyword = req.keyword || (req.query && req.query.keyword) || "";
+    const like = "%" + keyword + "%";
+
     const response = await User.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
@@ -564,20 +568,21 @@ const getEnterprenuers = async (req, res) => {
           include: [
             {
               model: BusinessSector,
-
               required: false,
             },
           ],
-          where: {
-            name: {
-              [Op.like]: "%" + req.keyword + "%",
-            },
-          },
-          required: true,
+          required: false, // make Business optional so we can still find users without a business
         },
       ],
       where: {
         role: "Enterprenuer",
+        [Op.or]: [
+          { name: { [Op.like]: like } },
+          { email: { [Op.like]: like } },
+          // search by business name/email using Sequelize.col
+          Sequelize.where(Sequelize.col("Business.name"), { [Op.like]: like }),
+          Sequelize.where(Sequelize.col("Business.email"), { [Op.like]: like }),
+        ],
       },
     });
     const totalPages =
