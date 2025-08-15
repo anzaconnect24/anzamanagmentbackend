@@ -10,6 +10,8 @@ const {
   Product,
   CratMarkets,
   CratFinancials,
+  CratOperations,
+  CratLegals,
   Role,
   PitchMaterial,
 } = require("../../models");
@@ -810,6 +812,12 @@ const getUserDetails = async (req, res) => {
         },
         {
           model: CratFinancials,
+        },
+        {
+          model: CratOperations,
+        },
+        {
+          model: CratLegals,
         },
         {
           model: InvestorProfile,
