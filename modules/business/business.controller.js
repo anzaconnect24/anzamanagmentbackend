@@ -7,6 +7,10 @@ const {
   MentorEntreprenuer,
   Sequelize,
   BusinessDocument,
+  CratMarkets,
+  CratFinancials,
+  CratOperations,
+  CratLegals,
 } = require("../../models");
 const { where, Op } = require("sequelize");
 
@@ -284,7 +288,12 @@ const findBusiness = async (req, res) => {
         exclude: ["userId", "businessSectorId"],
       },
       include: [
-        { model: User },
+        { model: User,include:[
+          { model: CratMarkets },
+          { model: CratFinancials },
+          { model: CratOperations },
+          { model: CratLegals },
+        ] },
         { model: BusinessSector },
         { model: BusinessDocument },
       ],
