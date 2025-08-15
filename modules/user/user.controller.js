@@ -8,6 +8,8 @@ const {
   InvestmentInterest,
   MentorProfile,
   Product,
+  CratMarkets,
+  CratFinancials,
   Role,
   PitchMaterial,
 } = require("../../models");
@@ -577,7 +579,9 @@ const getEnterprenuers = async (req, res) => {
       },
     });
     const totalPages =
-      response.count % req.limit > 0 ? parseInt(response.count / req.limit) + 1 : parseInt(response.count / req.limit);
+      response.count % req.limit > 0
+        ? parseInt(response.count / req.limit) + 1
+        : parseInt(response.count / req.limit);
     successResponse(res, {
       count: response.count,
       data: response.rows,
@@ -801,6 +805,12 @@ const getUserDetails = async (req, res) => {
         uuid,
       },
       include: [
+        {
+          model: CratMarkets,
+        },
+        {
+          model: CratFinancials,
+        },
         {
           model: InvestorProfile,
           include: [BusinessSector],
