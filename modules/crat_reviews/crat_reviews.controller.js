@@ -11,7 +11,7 @@ class CratReviewController {
       // Check if entrepreneur already has ANY review (one-to-one relationship)
       const existingReview = await CratReview.findOne({
         where: {
-          entrepreneur_id
+          entrepreneur_id,
         },
       });
 

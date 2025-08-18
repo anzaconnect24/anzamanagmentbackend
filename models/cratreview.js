@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
       entrepreneur_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        unique: true // One-to-one relationship
+        unique: true, // One-to-one relationship
       },
       reviewer_id: {
         type: DataTypes.INTEGER,
