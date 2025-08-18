@@ -10,6 +10,7 @@ const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes");
 const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes");
 const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes");
 const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes");
+const CratReviewRoutes = require("./modules/crat_reviews/crat_reviews.routes");
 const RoleRoutes = require("./modules/role/role.routes");
 const PermissionRoutes = require("./modules/permission/permission.routes");
 const UserRoleRoutes = require("./modules/user_role/user_role.routes");
@@ -94,6 +95,7 @@ const {
   cratLegalTag,
   cratOperationsTag,
   cratGeneralTag,
+  cratReviewsTag,
   staffProfileTag,
   mentorProfileTag,
   investmentApplicationTag,
@@ -195,6 +197,7 @@ app.use("/crat_financial", cratFinancialTag, CratFinancialRoutes);
 app.use("/crat_legal", cratLegalTag, CratLegalRoutes);
 app.use("/crat_operation", cratOperationsTag, CratOperationRoutes);
 app.use("/crat_general", cratGeneralTag, CratGeneralRoutes);
+app.use("/crat_reviews", cratReviewsTag, CratReviewRoutes);
 app.use("/reviewer", reviewsTag, CratReviewerRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {

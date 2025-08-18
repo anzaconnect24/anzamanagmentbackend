@@ -240,6 +240,11 @@ const cratGeneralTag = (req, res, next) => {
   next();
 };
 
+const cratReviewsTag = (req, res, next) => {
+  // #swagger.tags = ['Crat Reviews']
+  next();
+};
+
 const cratReviewersTag = (req, res, next) => {
   // #swagger.tags = ['Crat Reviewers']
   next();
@@ -299,6 +304,7 @@ module.exports = {
   mentorshipApplicationsTag,
   cratOperationsTag,
   cratGeneralTag,
+  cratReviewsTag,
   cratReviewersTag,
   slidesTag,
   modulesTag,
