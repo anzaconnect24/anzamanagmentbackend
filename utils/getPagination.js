@@ -2,8 +2,8 @@ module.exports.getPagination = (req, res, next) => {
   try {
     let { page, limit, keyword } = req.query;
     console.log(page, limit, keyword);
-    page = parseInt(page) || 1;
-    limit = parseInt(limit) || 8;
+    page = parseInt(page || 1);
+    limit = parseInt(limit || 50);
     const offset = (page - 1) * limit;
     req.page = page;
     req.limit = limit;

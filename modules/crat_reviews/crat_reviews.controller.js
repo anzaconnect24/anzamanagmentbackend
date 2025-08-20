@@ -1,4 +1,4 @@
-const { CratReview, User, Notification } = require("../../models");
+const { CratReview, User, Business, Notification } = require("../../models");
 const { successResponse, errorResponse } = require("../../utils/responses");
 const { Op } = require("sequelize");
 
@@ -48,12 +48,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });
@@ -80,12 +78,11 @@ class CratReviewController {
         {
           model: User,
           as: "entrepreneur",
-          attributes: ["id", "firstName", "lastName", "email"],
+          include: [Business],
           where: search
             ? {
                 [Op.or]: [
-                  { firstName: { [Op.iLike]: `%${search}%` } },
-                  { lastName: { [Op.iLike]: `%${search}%` } },
+                  { name: { [Op.iLike]: `%${search}%` } },
                   { email: { [Op.iLike]: `%${search}%` } },
                 ],
               }
@@ -94,7 +91,7 @@ class CratReviewController {
         {
           model: User,
           as: "reviewer",
-          attributes: ["id", "firstName", "lastName", "email"],
+
           required: false,
         },
       ];
@@ -132,12 +129,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
         limit: parseInt(limit),
@@ -170,12 +165,11 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
+            include: [Business],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
         limit: parseInt(limit),
@@ -206,12 +200,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });
@@ -263,12 +255,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });
@@ -322,12 +312,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });
@@ -375,12 +363,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });
@@ -411,12 +397,10 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
           {
             model: User,
             as: "reviewer",
-            attributes: ["id", "firstName", "lastName", "email"],
           },
         ],
       });

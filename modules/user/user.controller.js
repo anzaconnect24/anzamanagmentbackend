@@ -405,23 +405,19 @@ const getUsers = async (req, res) => {
 
 const getReviewers = async (req, res) => {
   try {
-    let { page, limit } = req.query;
-    page = parseInt(page);
-    limit = parseInt(limit);
-    const offset = (page - 1) * limit;
-
     const { count, rows } = await User.findAndCountAll({
-      offset: offset, //ruka ngapi
-      limit: limit, //leta ngapi
+      offset: req.offset, //ruka ngapi
+      limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       include: [Business],
       where: {
-        role: "Reviewer",
+        role: {
+          [Op.or]: ["Reviewer", "Staff"],
+        },
       },
     });
-    const totalPages =
-      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
-    successResponse(res, { count, data: rows, page, totalPages });
+
+    successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {
     errorResponse(res, error);
   }
