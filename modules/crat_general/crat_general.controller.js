@@ -5,11 +5,13 @@ const {
   CratOperations,
   CratLegals,
   User,
+  CratReview,
 } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
 const fs = require("fs");
+const user = require("../../models/user");
 
 const publishReport = async (req, res) => {
   console.log("publish triggered");
@@ -17,7 +19,10 @@ const publishReport = async (req, res) => {
   const id = req.user.id;
   try {
     // Find the user or record to update
-    const user = await User.findOne({ where: { id: id } });
+    const user = await User.findOne({
+      where: { id: id },
+      include: [{ model: CratReview, as: "entrepreneurReview" }],
+    });
 
     if (!user) {
       return res
@@ -42,7 +47,16 @@ const publishReport = async (req, res) => {
 const getReportData = async (req, res) => {
   console.log("getting report");
   try {
-    const id = req.user.id;
+    const { user_uuid } = req.query;
+    console.log(user_uuid);
+    let id = req.user.id;
+
+    if (user_uuid) {
+      const user = await User.findOne({
+        uuid: user_uuid,
+      });
+      id = user.id;
+    }
 
     // Retrieve the data from all relevant tables
     const financials = await CratFinancials.findAll({
@@ -77,7 +91,7 @@ const getReportData = async (req, res) => {
     const response = [...financials, ...markets, ...operations, ...legals];
 
     // Log the response for preview
-    console.log(response);
+    // console.log(response);
 
     successResponse(res, response);
   } catch (error) {
@@ -90,12 +104,15 @@ const scoreCalculation = async (req, res) => {
     const { user_uuid } = req.query;
     let id;
     console.log(user_uuid);
+    let user;
     if (user_uuid != "undefined") {
-      const user = await User.findOne({
+      user = await User.findOne({
         where: {
           uuid: user_uuid,
         },
+        include: [{ model: CratReview, as: "entrepreneurReview" }],
       });
+      // console.log(user)
       id = user.id;
     } else {
       id = req.user.id;
@@ -189,54 +206,105 @@ const scoreCalculation = async (req, res) => {
         : "Not ready";
 
     // Final response
-    const response = {
-      commercial: {
-        actualScore: actualScores.market,
-        as_percentage: (actualScores.market / totalActualScore) * 100,
-        targetScore: targetScores.market,
-        ts_percentage: (targetScores.market / totalTargetScore) * 100,
-        percentage: marketResult.percentage,
-        status: marketResult.status,
-      },
-      financial: {
-        actualScore: actualScores.financials,
-        as_percentage: (actualScores.financials / totalActualScore) * 100,
-        targetScore: targetScores.financials,
-        ts_percentage: (targetScores.financials / totalTargetScore) * 100,
-        percentage: financialsResult.percentage,
-        status: financialsResult.status,
-      },
-      operations: {
-        actualScore: actualScores.operations,
-        as_percentage: (actualScores.operations / totalActualScore) * 100,
-        targetScore: targetScores.operations,
-        ts_percentage: (targetScores.operations / totalTargetScore) * 100,
-        percentage: operationsResult.percentage,
-        status: operationsResult.status,
-      },
-      legal: {
-        actualScore: actualScores.legals,
-        as_percentage: (actualScores.legals / totalActualScore) * 100,
-        targetScore: targetScores.legals,
-        ts_percentage: (targetScores.legals / totalTargetScore) * 100,
-        percentage: legalsResult.percentage,
-        status: legalsResult.status,
-      },
-      total: {
-        actualScore: totalActualScore,
-        as_percentage: 100,
-        targetScore: totalTargetScore,
-        ts_percentage: 100,
-        percentage: (totalActualScore / totalTargetScore) * 100,
-      },
-      general_status: generalStatus,
-    };
+    console.log(user);
+    let response = {};
+    if (
+      user.entrepreneurReview &&
+      user.entrepreneurReview.status === "accepted"
+    ) {
+      response = {
+        commercial: {
+          actualScore: actualScores.market,
+          as_percentage: (actualScores.market / totalActualScore) * 100,
+          targetScore: targetScores.market,
+          ts_percentage: (targetScores.market / totalTargetScore) * 100,
+          percentage: marketResult.percentage,
+          status: marketResult.status,
+        },
+        financial: {
+          actualScore: actualScores.financials,
+          as_percentage: (actualScores.financials / totalActualScore) * 100,
+          targetScore: targetScores.financials,
+          ts_percentage: (targetScores.financials / totalTargetScore) * 100,
+          percentage: financialsResult.percentage,
+          status: financialsResult.status,
+        },
+        operations: {
+          actualScore: actualScores.operations,
+          as_percentage: (actualScores.operations / totalActualScore) * 100,
+          targetScore: targetScores.operations,
+          ts_percentage: (targetScores.operations / totalTargetScore) * 100,
+          percentage: operationsResult.percentage,
+          status: operationsResult.status,
+        },
+        legal: {
+          actualScore: actualScores.legals,
+          as_percentage: (actualScores.legals / totalActualScore) * 100,
+          targetScore: targetScores.legals,
+          ts_percentage: (targetScores.legals / totalTargetScore) * 100,
+          percentage: legalsResult.percentage,
+          status: legalsResult.status,
+        },
+        total: {
+          actualScore: totalActualScore,
+          as_percentage: 100,
+          targetScore: totalTargetScore,
+          ts_percentage: 100,
+          percentage: (totalActualScore / totalTargetScore) * 100,
+        },
+        general_status: generalStatus,
+      };
+    } else {
+      response = {
+        commercial: {
+          actualScore: 0,
+          as_percentage: 0,
+          targetScore: 0,
+          ts_percentage: 0,
+          percentage: 0,
+          status: "Not ready",
+        },
+        financial: {
+          actualScore: 0,
+          as_percentage: 0,
+          targetScore: 0,
+          ts_percentage: 0,
+          percentage: 0,
+          status: "Not ready",
+        },
+        operations: {
+          actualScore: 0,
+          as_percentage: 0,
+          targetScore: 0,
+          ts_percentage: 0,
+          percentage: 0,
+          status: "Not ready",
+        },
+        legal: {
+          actualScore: 0,
+          as_percentage: 0,
+          targetScore: 0,
+          ts_percentage: 0,
+          percentage: 0,
+          status: "Not ready",
+        },
+        total: {
+          actualScore: 0,
+          as_percentage: 0,
+          targetScore: 0,
+          ts_percentage: 0,
+          percentage: 0,
+        },
+        general_status: "Not ready",
+      };
+    }
 
     // console.log(response);
 
     // Send response
     successResponse(res, response);
   } catch (error) {
+    console.error("Error in score calculation:", error);
     errorResponse(res, error);
   }
 };

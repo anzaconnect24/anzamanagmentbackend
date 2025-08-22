@@ -152,21 +152,21 @@ const getUserCounts = async (req, res) => {
         activated: false,
       },
     });
-    const pendingProgramApplication = await ProgramApplication.count({
-      where: {
-        status: "waiting",
-      },
-      include: [
-        { model: User, required: true },
-        {
-          model: Program,
-          required: true,
-        },
-      ],
-    });
+    // const pendingProgramApplication = await ProgramApplication.count({
+    //   where: {
+    //     status: "waiting",
+    //   },
+    //   include: [
+    //     { model: User, required: true },
+    //     {
+    //       model: Program,
+    //       required: true,
+    //     },
+    //   ],
+    // });
     const totalProgram = await Program.count({});
-    const totalProgramapplication = await ProgramApplication.count({});
-    const totalProgramupdate = await ProgramUpdate.count({});
+    // const totalProgramapplication = await ProgramApplication.count({});
+    // const totalProgramupdate = await ProgramUpdate.count({});
 
     const investorWaitingBusinessInvestmentRequests =
       await BusinessInvestmentRequest.count({
@@ -221,51 +221,51 @@ const getUserCounts = async (req, res) => {
       },
     });
 
-    const bfa = await ProgramApplication.findAll({
-      include: [
-        {
-          model: Program,
-          where: {
-            type: "bfa",
-          },
-        },
-      ],
-      attributes: {
-        include: [
-          [
-            Sequelize.fn(
-              "MONTH",
-              Sequelize.col("ProgramApplication.createdAt")
-            ),
-            "month",
-          ],
-        ],
-      },
-      // group: ['month']
-    });
+    // const bfa = await ProgramApplication.findAll({
+    //   include: [
+    //     {
+    //       model: Program,
+    //       where: {
+    //         type: "bfa",
+    //       },
+    //     },
+    //   ],
+    //   attributes: {
+    //     include: [
+    //       [
+    //         Sequelize.fn(
+    //           "MONTH",
+    //           Sequelize.col("ProgramApplication.createdAt")
+    //         ),
+    //         "month",
+    //       ],
+    //     ],
+    //   },
+    //   // group: ['month']
+    // });
 
-    const ira = await ProgramApplication.findAll({
-      include: [
-        {
-          model: Program,
-          where: {
-            type: "ira",
-          },
-        },
-      ],
-      attributes: {
-        include: [
-          [
-            Sequelize.fn(
-              "MONTH",
-              Sequelize.col("ProgramApplication.createdAt")
-            ),
-            "month",
-          ],
-        ],
-      },
-      // group: ['month']
-    });
+    // const ira = await ProgramApplication.findAll({
+    //   include: [
+    //     {
+    //       model: Program,
+    //       where: {
+    //         type: "ira",
+    //       },
+    //     },
+    //   ],
+    //   attributes: {
+    //     include: [
+    //       [
+    //         Sequelize.fn(
+    //           "MONTH",
+    //           Sequelize.col("ProgramApplication.createdAt")
+    //         ),
+    //         "month",
+    //       ],
+    //     ],
+    //   },
+    //   // group: ['month']
+    // });
 
     successResponse(res, {
       enterprenuers: enterprenuers,
@@ -281,15 +281,14 @@ const getUserCounts = async (req, res) => {
       totalUsers: totalUsers,
       pendingBusiness: pendingBusiness,
       pendingUser: pendingUser,
-      pendingProgramApplication: pendingProgramApplication,
       totalProgram: totalProgram,
-      totalProgramapplication: totalProgramapplication,
-      totalProgramupdate: totalProgramupdate,
+
+      totalProgramupdate: 0,
       businessLookingForInvestment: businessLookingForInvestment,
       investorWaitingBusinessInvestmentRequests,
       investorClosedBusinessInvestmentRequests,
-      bfa: bfa,
-      ira: ira,
+      bfa: 0,
+      ira: 0,
     });
   } catch (error) {
     errorResponse(res, error);

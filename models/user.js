@@ -57,6 +57,14 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.CratOperations, { foreignKey: "userId" });
       User.hasMany(models.CratLegals, { foreignKey: "userId" });
       User.hasOne(models.MentorProfile, { onDelete: "CASCADE", scope: true });
+      User.hasOne(models.CratReview, {
+        foreignKey: "entrepreneur_id",
+        as: "entrepreneurReview",
+      });
+      User.hasMany(models.CratReview, {
+        foreignKey: "reviewer_id",
+        as: "reviewerReviews",
+      });
     }
   }
   User.init(
