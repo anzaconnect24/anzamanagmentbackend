@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const { Program } = require("../../models");
+const { Op } = require("sequelize");
 
 const createProgram = async (req, res) => {
   try {
@@ -54,6 +55,12 @@ const getAllPrograms = async (req, res) => {
       offset: req.offset, //ruka ngapi
       limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
+      where: {
+        [Op.or]: [
+          { expireDate: null }, // Programs without expiry date
+          { expireDate: { [Op.gt]: new Date() } }, // Programs that haven't expired yet
+        ],
+      },
     });
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {

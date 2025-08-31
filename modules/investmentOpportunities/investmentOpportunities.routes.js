@@ -8,7 +8,7 @@ const {
   deleteInvestmentOpportunity,
   getInvestmentOpportunityDetails,
   getAllInvestmentOpportunities,
-} = require("./investmentOpportunities");
+} = require("./investmentOpportunities.controllers");
 const { getPagination } = require("../../utils/getPagination");
 
 router.post("/", validateJWT, createInvestmentOpportunity);

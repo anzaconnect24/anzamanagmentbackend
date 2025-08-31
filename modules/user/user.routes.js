@@ -38,7 +38,7 @@ router.post("/sms", validateJWT, pushSMS);
 router.post("/reset-password", sendPasswordLink);
 router.patch("/password/:uuid", passwordReset);
 router.patch("/me", validateJWT, updateMyInfo);
-router.patch("/image", upload.single("file"), validateJWT, updateUser);
+// router.patch("/image", upload.single("file"), validateJWT, updateUser);
 router.patch("/:uuid", validateJWT, updateUser);
 router.delete("/:uuid", validateJWT, deleteUser);
 router.post("/login", loginUser);

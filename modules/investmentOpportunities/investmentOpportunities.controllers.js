@@ -5,7 +5,8 @@ const { Op } = require("sequelize");
 
 const createInvestmentOpportunity = async (req, res) => {
   try {
-    const { title, description, image, url, sector, amount, investmentType } = req.body;
+    const { title, description, image, url, sector, amount, investmentType } =
+      req.body;
     var response = await InvestmentOpportunity.create({
       title,
       description,
@@ -13,7 +14,7 @@ const createInvestmentOpportunity = async (req, res) => {
       url,
       sector,
       amount,
-      investmentType
+      investmentType,
     });
     successResponse(res, response);
   } catch (error) {
@@ -59,9 +60,19 @@ const getAllInvestmentOpportunities = async (req, res) => {
       limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       where: {
-        title: {
-          [Op.like]: `%${req.keyword}%`,
-        },
+        [Op.and]: [
+          {
+            title: {
+              [Op.like]: `%${req.keyword}%`,
+            },
+          },
+          {
+            [Op.or]: [
+              { expireDate: null }, // Investment opportunities without expiry date
+              { expireDate: { [Op.gt]: new Date() } }, // Investment opportunities that haven't expired yet
+            ],
+          },
+        ],
       },
     });
     console.log("Investment Opportunities Count:", count);

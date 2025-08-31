@@ -223,50 +223,88 @@ const updateMyInfo = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const uuid = req.params.uuid; // Move this line to after getting user object
+    const uuid = req.params.uuid;
     let {
-      password,
+      newPassword,
+      currentPassword,
       ...otherFields // Use object destructuring to collect other fields
     } = req.body;
 
-    if (password && password.length < 15) {
-      const hashedPassword = bcrypt.hashSync(password, 10);
-      password = hashedPassword;
-    } else {
-      delete otherFields.password;
-    }
-    let image = null;
-    console.log(req.file);
-
     const user = req.user;
     let userDetails;
+    let hashedPassword = null;
+
     if (!uuid) {
+      // Self update - requires current password verification
       console.log("it run first");
       userDetails = await User.findOne({
         where: {
           id: user.id,
         },
       });
+
+      // If trying to change password, verify current password
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({
+            message: "Current password is required to change password",
+          });
+        }
+
+        const results = await bcrypt.compare(
+          currentPassword,
+          userDetails.password
+        );
+        if (!results) {
+          return res
+            .status(400)
+            .json({ message: "Current password is incorrect" });
+        }
+
+        // Validate new password length (assuming minimum 6 characters)
+        if (newPassword.length < 6) {
+          return res.status(400).json({
+            message: "New password must be at least 6 characters long",
+          });
+        }
+
+        hashedPassword = bcrypt.hashSync(newPassword, 10);
+      }
     } else {
+      // Admin updating another user
       console.log("it run this");
       userDetails = await User.findOne({
         where: {
           uuid,
         },
       });
-    }
-    console.log(userDetails);
-    if (req.file) {
-      image = await getUrl(req);
-    } else {
-      image = userDetails.image;
+
+      if (!userDetails) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // For admin updates, hash password if provided
+      if (newPassword) {
+        if (newPassword.length < 6) {
+          return res.status(400).json({
+            message: "New password must be at least 6 characters long",
+          });
+        }
+        hashedPassword = bcrypt.hashSync(newPassword, 10);
+      }
     }
 
-    const response = await userDetails.update({
-      password,
-      image,
+    // Prepare update object
+    const updateData = {
       ...otherFields,
-    });
+    };
+
+    // Only include password if it was provided and hashed
+    if (hashedPassword) {
+      updateData.password = hashedPassword;
+    }
+
+    const response = await userDetails.update(updateData);
 
     successResponse(res, response);
   } catch (error) {
@@ -554,6 +592,43 @@ const getEnterprenuers = async (req, res) => {
     const keyword = req.keyword || (req.query && req.query.keyword) || "";
     const like = "%" + keyword + "%";
 
+    // Revenue filtering parameters
+    const { minRevenue, maxRevenue } = req.query;
+
+    // Build Business where conditions
+    let businessWhereConditions = {
+      [Op.or]: [{ name: { [Op.like]: like } }, { email: { [Op.like]: like } }],
+    };
+
+    // Add revenue filters if provided
+    if (minRevenue || maxRevenue) {
+      let revenueConditions = {};
+
+      if (minRevenue && maxRevenue) {
+        revenueConditions = {
+          revenue: {
+            [Op.between]: [parseFloat(minRevenue), parseFloat(maxRevenue)],
+          },
+        };
+      } else if (minRevenue) {
+        revenueConditions = {
+          revenue: {
+            [Op.gte]: parseFloat(minRevenue),
+          },
+        };
+      } else if (maxRevenue) {
+        revenueConditions = {
+          revenue: {
+            [Op.lte]: parseFloat(maxRevenue),
+          },
+        };
+      }
+
+      businessWhereConditions = {
+        [Op.and]: [businessWhereConditions, revenueConditions],
+      };
+    }
+
     const response = await User.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
@@ -567,6 +642,7 @@ const getEnterprenuers = async (req, res) => {
               required: false,
             },
           ],
+          where: businessWhereConditions,
           required: false, // make Business optional so we can still find users without a business
         },
       ],
