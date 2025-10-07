@@ -50,6 +50,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
+      customerComment: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      adminComment: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      reviewerComment: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
     },
     {
       sequelize,

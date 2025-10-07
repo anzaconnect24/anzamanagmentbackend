@@ -1,12 +1,12 @@
-const { errorResponse, successResponse } = require("../../utils/responses")
-const {CratLegals,User} = require("../../models");
+const { errorResponse, successResponse } = require("../../utils/responses");
+const { CratLegals, User } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 const createLegal = async (req, res) => {
-  console.log('create legal api');
+  console.log("create legal api");
   try {
     const body = req.body;
     const id = req.user.id;
@@ -16,13 +16,13 @@ const createLegal = async (req, res) => {
 
     // Ensure allItems is an array
     if (!Array.isArray(allItems) || allItems.length === 0) {
-      console.log('Invalid data format');
-      return res.status(400).json({ message: 'Invalid data format' });
+      console.log("Invalid data format");
+      return res.status(400).json({ message: "Invalid data format" });
     }
 
     // Create records
     const responses = await Promise.all(
-      allItems.map(item =>
+      allItems.map((item) =>
         CratLegals.create({
           userId: id,
           subDomain: item.subDomain,
@@ -39,137 +39,136 @@ const createLegal = async (req, res) => {
   }
 };
 
-  
-  
-  const getLegalData = async (req, res) => {
-    try {
-        const id = req.user.id;
-
-        // Retrieve the data, including uuid and userId
-        const response = await CratLegals.findAll({
-            where: {
-                userId: id
-            },
-            attributes: ['uuid', 'userId', 'subDomain', 'score', 'rating','reviewer_comment','reviewCount','attachment', 'reviewer', 'comments']
-        });
-
-        successResponse(res, response);
-    } catch (error) {
-        errorResponse(res, error);
-    }
-}
-
-
-const updateLegallData = async (req, res) => {
-    console.log('Update API triggered');
-    try {
-      const body = req.body;
-      const id = req.user.id;
-  
-      console.log(body);
-  
-      // Ensure body is an object with arrays
-      if (typeof body !== 'object' || Array.isArray(body)) {
-        return res.status(400).json({ message: 'Invalid data format' });
-      }
-  
-      // Collect all items to update
-      const updatePromises = [];
-      for (const section of Object.keys(body)) {
-        for (const item of body[section]) {
-          updatePromises.push(
-            CratLegals.update(
-              {
-                score: item.score,
-                rating: item.rating,
-                description: item.description
-              },
-              {
-                where: {
-                  userId: id,
-                  subDomain: item.subDomain,
-                },
-              }
-            )
-          );
-        }
-      }
-  
-      const responses = await Promise.all(updatePromises);
-  
-      successResponse(res, responses);
-      console.log('Update successful:', responses);
-    } catch (error) {
-      errorResponse(res, error);
-      console.error('Error updating data:', error);
-    }
-  };
-
-
-const createPdfAttachment = async (req, res) => {
-  console.log('trying attachment');
+const getLegalData = async (req, res) => {
   try {
-      const { subDomain } = req.body; // Extract subDomain from the request body
-      const id = req.user.id;
-      let attachment = await getUrl(req);
-     console.log(req.body)
-
-
-      // Find the application by subDomain
-      const application = await CratLegals.findOne({
-          where: {
-              subDomain,
-              userId: id
-          }
-      });
-
-
-      if (!application) {
-        console.log(subDomain);
-        console.log(attachment);
-          return res.status(404).json({ message: 'Application not found' });
-      }
-
-      console.log(attachment);
-      // Update the record with the new attachment URL
-      const response = await CratLegals.update({
-          attachment: attachment,
-      }, {
-          where: {
-              subDomain 
-          }
-      });
-
-      successResponse(res, response);
-  } catch (error) {
-      errorResponse(res, error);
-  }
-};
-  
-const deletePdfAttachment = async (req, res) => {
-  console.log('delete api');
-  try {
-    const { subDomain, attachment } = req.body; 
     const id = req.user.id;
 
+    // Retrieve the data, including uuid and userId
+    const response = await CratLegals.findAll({
+      where: {
+        userId: id,
+      },
+    });
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const updateLegallData = async (req, res) => {
+  console.log("Update API triggered");
+  try {
+    const body = req.body;
+    const id = req.user.id;
+
+    console.log(body);
+
+    // Ensure body is an object with arrays
+    if (typeof body !== "object" || Array.isArray(body)) {
+      return res.status(400).json({ message: "Invalid data format" });
+    }
+
+    // Collect all items to update
+    const updatePromises = [];
+    for (const section of Object.keys(body)) {
+      for (const item of body[section]) {
+        updatePromises.push(
+          CratLegals.update(
+            {
+              score: item.score,
+              rating: item.rating,
+              description: item.description,
+            },
+            {
+              where: {
+                userId: id,
+                subDomain: item.subDomain,
+              },
+            }
+          )
+        );
+      }
+    }
+
+    const responses = await Promise.all(updatePromises);
+
+    successResponse(res, responses);
+    console.log("Update successful:", responses);
+  } catch (error) {
+    errorResponse(res, error);
+    console.error("Error updating data:", error);
+  }
+};
+
+const createPdfAttachment = async (req, res) => {
+  console.log("trying attachment");
+  try {
+    const { subDomain } = req.body; // Extract subDomain from the request body
+    const id = req.user.id;
+    let attachment = await getUrl(req);
     console.log(req.body);
 
- 
+    // Find the application by subDomain
     const application = await CratLegals.findOne({
       where: {
         subDomain,
         userId: id,
-      }
+      },
     });
 
     if (!application) {
-      return res.status(404).json({ message: 'Application not found' });
+      console.log(subDomain);
+      console.log(attachment);
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    console.log(attachment);
+    // Update the record with the new attachment URL
+    const response = await CratLegals.update(
+      {
+        attachment: attachment,
+      },
+      {
+        where: {
+          subDomain,
+        },
+      }
+    );
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const deletePdfAttachment = async (req, res) => {
+  console.log("delete api");
+  try {
+    const { subDomain, attachment } = req.body;
+    const id = req.user.id;
+
+    console.log(req.body);
+
+    const application = await CratLegals.findOne({
+      where: {
+        subDomain,
+        userId: id,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
     }
 
     // attachment has the URL, so extract the file name from the URL if necessary
     // For example: if attachment is "localhost:5001/files/testpdf.pdf", we need to extract "testpdf.pdf"
     const attachmentFileName = path.basename(attachment); // Extract file name from URL
-    const attachmentPath = path.join(__dirname, '../../files/', attachmentFileName);
+    const attachmentPath = path.join(
+      __dirname,
+      "../../files/",
+      attachmentFileName
+    );
     console.log(attachmentPath);
 
     // Remove the file from the filesystem
@@ -186,14 +185,17 @@ const deletePdfAttachment = async (req, res) => {
       { where: { subDomain, userId: id } }
     );
 
-    res.json({ message: 'Attachment deleted successfully' });
+    res.json({ message: "Attachment deleted successfully" });
   } catch (error) {
-    console.error('Error deleting attachment:', error);
-    res.status(500).json({ message: 'Error deleting attachment' });
+    console.error("Error deleting attachment:", error);
+    res.status(500).json({ message: "Error deleting attachment" });
   }
 };
 
-
 module.exports = {
-    createLegal,getLegalData,updateLegallData,createPdfAttachment, deletePdfAttachment
-}
+  createLegal,
+  getLegalData,
+  updateLegallData,
+  createPdfAttachment,
+  deletePdfAttachment,
+};
