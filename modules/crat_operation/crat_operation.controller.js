@@ -79,6 +79,8 @@ const updateOperationData = async (req, res) => {
               score: item.score,
               rating: item.rating,
               description: item.description,
+              customerComment: item.customerComment,
+              reviewerComment: item.reviewerComment,
             },
             {
               where: {
@@ -100,7 +102,29 @@ const updateOperationData = async (req, res) => {
     console.error("Error updating data:", error);
   }
 };
+const update = async (req, res) => {
+  console.log("Update API triggered");
+  try {
+    const body = req.body;
+    const { uuid } = req.params;
 
+    const cratOperation = await CratOperations.findOne({
+      where: {
+        uuid,
+      },
+    });
+
+    if (!cratOperation) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+    const response = await cratOperation.update(body);
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+    console.error("Error updating data:", error);
+  }
+};
 const createPdfAttachment = async (req, res) => {
   console.log("trying attachment");
   try {
@@ -195,6 +219,7 @@ module.exports = {
   createOperation,
   getOperationData,
   updateOperationData,
+  update,
   createPdfAttachment,
   deletePdfAttachment,
 };

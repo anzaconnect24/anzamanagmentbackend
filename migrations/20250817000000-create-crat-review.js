@@ -19,12 +19,6 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         unique: true, // One-to-one relationship
-        references: {
-          model: "users",
-          key: "id",
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE",
       },
       reviewer_id: {
         type: Sequelize.INTEGER,

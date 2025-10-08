@@ -63,28 +63,24 @@ const getReportData = async (req, res) => {
       where: {
         userId: id,
       },
-      attributes: ["uuid", "userId", "subDomain", "score"], // Only fetch subDomain, score, userId, and uuid
     });
 
     const markets = await CratMarkets.findAll({
       where: {
         userId: id,
       },
-      attributes: ["uuid", "userId", "subDomain", "score"], // Only fetch subDomain, score, userId, and uuid
     });
 
     const operations = await CratOperations.findAll({
       where: {
         userId: id,
       },
-      attributes: ["uuid", "userId", "subDomain", "score"], // Only fetch subDomain, score, userId, and uuid
     });
 
     const legals = await CratLegals.findAll({
       where: {
         userId: id,
       },
-      attributes: ["uuid", "userId", "subDomain", "score"], // Only fetch subDomain, score, userId, and uuid
     });
 
     // Combine all data into a single array

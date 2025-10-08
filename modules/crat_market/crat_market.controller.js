@@ -79,6 +79,8 @@ const updateMarketData = async (req, res) => {
               score: item.score,
               rating: item.rating,
               description: item.description,
+              customerComment: item.customerComment,
+              reviewerComment: item.reviewerComment,
             },
             {
               where: {
@@ -99,7 +101,29 @@ const updateMarketData = async (req, res) => {
     console.error("Error updating data:", error);
   }
 };
+const update = async (req, res) => {
+  console.log("Update API triggered");
+  try {
+    const body = req.body;
+    const { uuid } = req.params;
 
+    const cratMarket = await CratMarkets.findOne({
+      where: {
+        uuid,
+      },
+    });
+
+    if (!cratMarket) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+    const response = await cratMarket.update(body);
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+    console.error("Error updating data:", error);
+  }
+};
 const createPdfAttachment = async (req, res) => {
   try {
     const { subDomain } = req.body; // Extract subDomain from the request body
@@ -198,6 +222,7 @@ module.exports = {
   createMarket,
   getMarketData,
   updateMarketData,
+  update,
   createPdfAttachment,
   deletePdfAttachment,
 };

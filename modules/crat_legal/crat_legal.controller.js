@@ -79,6 +79,8 @@ const updateLegallData = async (req, res) => {
               score: item.score,
               rating: item.rating,
               description: item.description,
+              customerComment: item.customerComment,
+              reviewerComment: item.reviewerComment,
             },
             {
               where: {
@@ -100,7 +102,29 @@ const updateLegallData = async (req, res) => {
     console.error("Error updating data:", error);
   }
 };
+const update = async (req, res) => {
+  console.log("Update API triggered");
+  try {
+    const body = req.body;
+    const { uuid } = req.params;
 
+    const cratLegal = await CratLegals.findOne({
+      where: {
+        uuid,
+      },
+    });
+
+    if (!cratLegal) {
+      return res.status(404).json({ message: "Record not found" });
+    }
+    const response = await cratLegal.update(body);
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+    console.error("Error updating data:", error);
+  }
+};
 const createPdfAttachment = async (req, res) => {
   console.log("trying attachment");
   try {
@@ -198,4 +222,5 @@ module.exports = {
   updateLegallData,
   createPdfAttachment,
   deletePdfAttachment,
+  update,
 };
