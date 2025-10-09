@@ -132,10 +132,12 @@ const update = async (req, res) => {
   try {
     const body = req.body;
     const { uuid } = req.params;
+    const userId = req.user && req.user.id;
 
     const cratMarket = await CratMarkets.findOne({
       where: {
         uuid,
+        ...(userId ? { userId } : {}),
       },
     });
 
