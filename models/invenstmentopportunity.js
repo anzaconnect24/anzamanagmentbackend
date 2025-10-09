@@ -39,11 +39,11 @@ module.exports = (sequelize, DataTypes) => {
       },
       amount: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
+        allowNull: true,
       },
       investmentType: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       expireDate: {
         type: DataTypes.DATE,
