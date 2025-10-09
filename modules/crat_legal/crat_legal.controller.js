@@ -62,17 +62,23 @@ const updateLegallData = async (req, res) => {
     const body = req.body;
     const id = req.user.id;
 
-    console.log(body);
-
     // Ensure body is an object with arrays
     if (typeof body !== "object" || Array.isArray(body)) {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    // Collect all items to update
+    // Collect all items to update – prefer uuid if present, fallback to subDomain
     const updatePromises = [];
     for (const section of Object.keys(body)) {
       for (const item of body[section]) {
+        const where = { userId: id };
+        if (item.uuid) {
+          where.uuid = item.uuid;
+        } else if (item.subDomain) {
+          where.subDomain = item.subDomain; // legacy fallback
+        } else {
+          continue; // skip invalid item
+        }
         updatePromises.push(
           CratLegals.update(
             {
@@ -82,21 +88,14 @@ const updateLegallData = async (req, res) => {
               customerComment: item.customerComment,
               reviewerComment: item.reviewerComment,
             },
-            {
-              where: {
-                userId: id,
-                subDomain: item.subDomain,
-              },
-            }
+            { where }
           )
         );
       }
     }
 
     const responses = await Promise.all(updatePromises);
-
     successResponse(res, responses);
-    console.log("Update successful:", responses);
   } catch (error) {
     errorResponse(res, error);
     console.error("Error updating data:", error);
@@ -128,38 +127,21 @@ const update = async (req, res) => {
 const createPdfAttachment = async (req, res) => {
   console.log("trying attachment");
   try {
-    const { subDomain } = req.body; // Extract subDomain from the request body
+    const { subDomain, uuid } = req.body; // Prefer uuid if provided
     const id = req.user.id;
-    let attachment = await getUrl(req);
-    console.log(req.body);
+    const attachment = await getUrl(req);
 
-    // Find the application by subDomain
-    const application = await CratLegals.findOne({
-      where: {
-        subDomain,
-        userId: id,
-      },
-    });
+    const where = { userId: id };
+    if (uuid) where.uuid = uuid;
+    else if (subDomain) where.subDomain = subDomain;
+    else return res.status(400).json({ message: "uuid or subDomain required" });
 
+    const application = await CratLegals.findOne({ where });
     if (!application) {
-      console.log(subDomain);
-      console.log(attachment);
       return res.status(404).json({ message: "Application not found" });
     }
 
-    console.log(attachment);
-    // Update the record with the new attachment URL
-    const response = await CratLegals.update(
-      {
-        attachment: attachment,
-      },
-      {
-        where: {
-          subDomain,
-        },
-      }
-    );
-
+    const response = await application.update({ attachment });
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -169,46 +151,38 @@ const createPdfAttachment = async (req, res) => {
 const deletePdfAttachment = async (req, res) => {
   console.log("delete api");
   try {
-    const { subDomain, attachment } = req.body;
+    const { subDomain, uuid, attachment } = req.body;
     const id = req.user.id;
 
-    console.log(req.body);
+    const where = { userId: id };
+    if (uuid) where.uuid = uuid;
+    else if (subDomain) where.subDomain = subDomain;
+    else return res.status(400).json({ message: "uuid or subDomain required" });
 
-    const application = await CratLegals.findOne({
-      where: {
-        subDomain,
-        userId: id,
-      },
-    });
-
+    const application = await CratLegals.findOne({ where });
     if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    // attachment has the URL, so extract the file name from the URL if necessary
-    // For example: if attachment is "localhost:5001/files/testpdf.pdf", we need to extract "testpdf.pdf"
-    const attachmentFileName = path.basename(attachment); // Extract file name from URL
-    const attachmentPath = path.join(
-      __dirname,
-      "../../files/",
-      attachmentFileName
-    );
-    console.log(attachmentPath);
-
-    // Remove the file from the filesystem
-    if (fs.existsSync(attachmentPath)) {
-      fs.unlinkSync(attachmentPath);
-      console.log(`File ${attachmentPath} deleted successfully.`);
-    } else {
-      console.log(`File ${attachmentPath} does not exist.`);
+    // If a direct attachment URL was passed, attempt to remove underlying file (best-effort)
+    if (attachment) {
+      try {
+        const attachmentFileName = path.basename(attachment);
+        const attachmentPath = path.join(
+          __dirname,
+          "../../files/",
+          attachmentFileName
+        );
+        if (fs.existsSync(attachmentPath)) {
+          fs.unlinkSync(attachmentPath);
+          console.log(`File ${attachmentPath} deleted successfully.`);
+        }
+      } catch (fileErr) {
+        console.log("Non-fatal file deletion error:", fileErr.message);
+      }
     }
 
-    // Remove the attachment record from the database
-    await CratLegals.update(
-      { attachment: null },
-      { where: { subDomain, userId: id } }
-    );
-
+    await application.update({ attachment: null });
     res.json({ message: "Attachment deleted successfully" });
   } catch (error) {
     console.error("Error deleting attachment:", error);

@@ -11,7 +11,7 @@ const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
 const fs = require("fs");
-const user = require("../../models/user");
+// Removed unused direct user model import to avoid confusion with User model above
 
 const publishReport = async (req, res) => {
   console.log("publish triggered");
@@ -50,12 +50,9 @@ const getReportData = async (req, res) => {
     const { user_uuid } = req.query;
     console.log(user_uuid);
     let id = req.user.id;
-
     if (user_uuid) {
-      const user = await User.findOne({
-        uuid: user_uuid,
-      });
-      id = user.id;
+      const u = await User.findOne({ where: { uuid: user_uuid } });
+      if (u && u.id) id = u.id;
     }
 
     // Retrieve the data from all relevant tables
@@ -98,27 +95,24 @@ const getReportData = async (req, res) => {
 const scoreCalculation = async (req, res) => {
   try {
     const { user_uuid } = req.query;
-    let id;
     console.log(user_uuid);
-    let user;
-    if (user_uuid != "undefined") {
-      user = await User.findOne({
-        where: {
-          uuid: user_uuid,
-        },
+
+    // Always fetch the user record (by uuid if provided, else by logged-in id)
+    let userRecord;
+    if (user_uuid && user_uuid !== "undefined") {
+      userRecord = await User.findOne({
+        where: { uuid: user_uuid },
         include: [{ model: CratReview, as: "entrepreneurReview" }],
       });
-      // console.log(user)
-      id = user.id;
     } else {
-      id = req.user.id;
-    }
-    // Ensure that userId is available
-    if (!id) {
-      return errorResponse(res, "User ID is missing");
+      userRecord = await User.findOne({
+        where: { id: req.user.id },
+        include: [{ model: CratReview, as: "entrepreneurReview" }],
+      });
     }
 
-    console.log("id", id);
+    const id = userRecord?.id || req.user.id;
+    if (!id) return errorResponse(res, "User ID is missing");
 
     // Retrieve the data from all relevant tables based on userId
     const financials = await CratFinancials.findAll({
@@ -151,6 +145,9 @@ const scoreCalculation = async (req, res) => {
 
     // Helper function to calculate percentage and readiness status
     const calculatePercentage = (actualScore, targetScore) => {
+      if (!targetScore || targetScore <= 0) {
+        return { percentage: 0, status: "Not ready" };
+      }
       const percentage = (actualScore / targetScore) * 100;
       const status = percentage >= 70 ? "Ready" : "Not ready";
       return { percentage, status };
@@ -202,100 +199,50 @@ const scoreCalculation = async (req, res) => {
         : "Not ready";
 
     // Final response
-    console.log(user);
-    let response = {};
-    if (
-      user.entrepreneurReview &&
-      user.entrepreneurReview.status === "accepted"
-    ) {
-      response = {
-        commercial: {
-          actualScore: actualScores.market,
-          as_percentage: (actualScores.market / totalActualScore) * 100,
-          targetScore: targetScores.market,
-          ts_percentage: (targetScores.market / totalTargetScore) * 100,
-          percentage: marketResult.percentage,
-          status: marketResult.status,
-        },
-        financial: {
-          actualScore: actualScores.financials,
-          as_percentage: (actualScores.financials / totalActualScore) * 100,
-          targetScore: targetScores.financials,
-          ts_percentage: (targetScores.financials / totalTargetScore) * 100,
-          percentage: financialsResult.percentage,
-          status: financialsResult.status,
-        },
-        operations: {
-          actualScore: actualScores.operations,
-          as_percentage: (actualScores.operations / totalActualScore) * 100,
-          targetScore: targetScores.operations,
-          ts_percentage: (targetScores.operations / totalTargetScore) * 100,
-          percentage: operationsResult.percentage,
-          status: operationsResult.status,
-        },
-        legal: {
-          actualScore: actualScores.legals,
-          as_percentage: (actualScores.legals / totalActualScore) * 100,
-          targetScore: targetScores.legals,
-          ts_percentage: (targetScores.legals / totalTargetScore) * 100,
-          percentage: legalsResult.percentage,
-          status: legalsResult.status,
-        },
-        total: {
-          actualScore: totalActualScore,
-          as_percentage: 100,
-          targetScore: totalTargetScore,
-          ts_percentage: 100,
-          percentage: (totalActualScore / totalTargetScore) * 100,
-        },
-        general_status: generalStatus,
-      };
-    } else {
-      response = {
-        commercial: {
-          actualScore: 0,
-          as_percentage: 0,
-          targetScore: 0,
-          ts_percentage: 0,
-          percentage: 0,
-          status: "Not ready",
-        },
-        financial: {
-          actualScore: 0,
-          as_percentage: 0,
-          targetScore: 0,
-          ts_percentage: 0,
-          percentage: 0,
-          status: "Not ready",
-        },
-        operations: {
-          actualScore: 0,
-          as_percentage: 0,
-          targetScore: 0,
-          ts_percentage: 0,
-          percentage: 0,
-          status: "Not ready",
-        },
-        legal: {
-          actualScore: 0,
-          as_percentage: 0,
-          targetScore: 0,
-          ts_percentage: 0,
-          percentage: 0,
-          status: "Not ready",
-        },
-        total: {
-          actualScore: 0,
-          as_percentage: 0,
-          targetScore: 0,
-          ts_percentage: 0,
-          percentage: 0,
-        },
-        general_status: "Not ready",
-      };
-    }
-
-    // console.log(response);
+    const asPct = (part, total) => (total > 0 ? (part / total) * 100 : 0);
+    const response = {
+      commercial: {
+        actualScore: actualScores.market,
+        as_percentage: asPct(actualScores.market, totalActualScore),
+        targetScore: targetScores.market,
+        ts_percentage: asPct(targetScores.market, totalTargetScore),
+        percentage: marketResult.percentage,
+        status: marketResult.status,
+      },
+      financial: {
+        actualScore: actualScores.financials,
+        as_percentage: asPct(actualScores.financials, totalActualScore),
+        targetScore: targetScores.financials,
+        ts_percentage: asPct(targetScores.financials, totalTargetScore),
+        percentage: financialsResult.percentage,
+        status: financialsResult.status,
+      },
+      operations: {
+        actualScore: actualScores.operations,
+        as_percentage: asPct(actualScores.operations, totalActualScore),
+        targetScore: targetScores.operations,
+        ts_percentage: asPct(targetScores.operations, totalTargetScore),
+        percentage: operationsResult.percentage,
+        status: operationsResult.status,
+      },
+      legal: {
+        actualScore: actualScores.legals,
+        as_percentage: asPct(actualScores.legals, totalActualScore),
+        targetScore: targetScores.legals,
+        ts_percentage: asPct(targetScores.legals, totalTargetScore),
+        percentage: legalsResult.percentage,
+        status: legalsResult.status,
+      },
+      total: {
+        actualScore: totalActualScore,
+        as_percentage: 100,
+        targetScore: totalTargetScore,
+        ts_percentage: 100,
+        percentage: asPct(totalActualScore, totalTargetScore),
+      },
+      general_status: generalStatus,
+      review_status: userRecord?.entrepreneurReview?.status || null,
+    };
 
     // Send response
     successResponse(res, response);

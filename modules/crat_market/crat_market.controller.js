@@ -5,6 +5,18 @@ const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
 const fs = require("fs");
 
+// Helper to normalize incoming rating values to ENUM 'Yes' | 'No' | 'Maybe'
+const normalizeRating = (val) => {
+  if (val === null || val === undefined) return undefined;
+  const v = String(val).trim().toLowerCase();
+  if (["yes", "y", "true", "1"].includes(v)) return "Yes";
+  if (["no", "n", "false", "0"].includes(v)) return "No";
+  if (["maybe", "neutral", "m"].includes(v)) return "Maybe";
+  // Accept already proper case exactly
+  if (["Yes", "No", "Maybe"].includes(val)) return val;
+  return undefined; // invalid -> ignore
+};
+
 const createMarket = async (req, res) => {
   console.log("in here 1");
   try {
@@ -21,14 +33,15 @@ const createMarket = async (req, res) => {
 
     // Create records
     const responses = await Promise.all(
-      allItems.map((item) =>
-        CratMarkets.create({
+      allItems.map(async (item) => {
+        const rating = normalizeRating(item.rating) || "No"; // default to 'No' if invalid/empty
+        return CratMarkets.create({
           userId: id,
           subDomain: item.subDomain,
           score: item.score,
-          rating: item.rating,
-        })
-      )
+          rating,
+        });
+      })
     );
 
     successResponse(res, responses);
@@ -57,48 +70,61 @@ const getMarketData = async (req, res) => {
 };
 
 const updateMarketData = async (req, res) => {
-  console.log("Update API triggered");
+  /* Bulk update endpoint – now prefers uuid when provided for precision.
+     Falls back to (userId, subDomain) match for backward compatibility. */
   try {
     const body = req.body;
     const id = req.user.id;
 
-    console.log(body);
-
-    // Ensure body is an object with arrays
     if (typeof body !== "object" || Array.isArray(body)) {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
-    // Collect all items to update
+    // (normalizeRating helper reused)
+
     const updatePromises = [];
     for (const section of Object.keys(body)) {
-      for (const item of body[section]) {
-        updatePromises.push(
-          CratMarkets.update(
-            {
-              score: item.score,
-              rating: item.rating,
-              description: item.description,
-              customerComment: item.customerComment,
-              reviewerComment: item.reviewerComment,
-            },
-            {
-              where: {
-                userId: id,
-                subDomain: item.subDomain,
-              },
-            }
-          )
-        );
+      const items = body[section];
+      if (!Array.isArray(items)) continue;
+      for (const item of items) {
+        const rating = normalizeRating(item.rating);
+        const payload = {
+          score: item.score,
+          description: item.description,
+          customerComment: item.customerComment,
+          reviewerComment: item.reviewerComment,
+        };
+        if (rating) payload.rating = rating; // only set if valid
+
+        if (item.uuid) {
+          // Precise update by uuid + ownership check
+          updatePromises.push(
+            (async () => {
+              const record = await CratMarkets.findOne({
+                where: { uuid: item.uuid, userId: id },
+              });
+              if (!record)
+                return { uuid: item.uuid, updated: false, reason: "Not found" };
+              await record.update(payload);
+              return { uuid: item.uuid, updated: true };
+            })()
+          );
+        } else if (item.subDomain) {
+          updatePromises.push(
+            CratMarkets.update(payload, {
+              where: { userId: id, subDomain: item.subDomain },
+              returning: true,
+            })
+          );
+        }
       }
     }
 
-    const responses = await Promise.all(updatePromises);
-    successResponse(res, responses);
-    console.log("Update successful:", responses);
+    const results = await Promise.all(updatePromises);
+    successResponse(res, { updated: results.length, results });
   } catch (error) {
-    errorResponse(res, error);
     console.error("Error updating data:", error);
+    errorResponse(res, error);
   }
 };
 const update = async (req, res) => {
@@ -116,6 +142,12 @@ const update = async (req, res) => {
     if (!cratMarket) {
       return res.status(404).json({ message: "Record not found" });
     }
+    // If rating present, normalize before update
+    if (Object.prototype.hasOwnProperty.call(body, "rating")) {
+      const nr = normalizeRating(body.rating);
+      if (nr) body.rating = nr;
+      else delete body.rating; // prevent invalid ENUM write
+    }
     const response = await cratMarket.update(body);
 
     successResponse(res, response);
@@ -125,96 +157,62 @@ const update = async (req, res) => {
   }
 };
 const createPdfAttachment = async (req, res) => {
+  /* Updated to allow attaching by uuid (preferred). Falls back to subDomain for legacy calls. */
   try {
-    const { subDomain } = req.body; // Extract subDomain from the request body
-    const id = req.user.id;
-    let attachment = await getUrl(req);
-    console.log(id);
-
-    // Find the application by subDomain
-    const application = await CratMarkets.findOne({
-      where: {
-        subDomain,
-        userId: id,
-      },
-    });
-
-    if (!application) {
-      console.log(subDomain);
-      console.log(attachment);
-      return res.status(404).json({ message: "Application not found" });
+    const { uuid, subDomain } = req.body;
+    const userId = req.user.id;
+    if (!uuid && !subDomain) {
+      return res
+        .status(400)
+        .json({ message: "uuid is required (legacy subDomain supported)" });
     }
 
-    console.log(attachment);
-    // Update the record with the new attachment URL
-    const response = await CratMarkets.update(
-      {
-        attachment: attachment,
-      },
-      {
-        where: {
-          subDomain, // Ensure that only the correct record is updated
-        },
-      }
-    );
+    const fileUrl = await getUrl(req);
 
-    successResponse(res, response);
+    const where = uuid ? { uuid, userId } : { subDomain, userId };
+    const application = await CratMarkets.findOne({ where });
+    if (!application)
+      return res.status(404).json({ message: "Record not found" });
+
+    await application.update({ attachment: fileUrl });
+    successResponse(res, application);
   } catch (error) {
     errorResponse(res, error);
   }
 };
 
 const deletePdfAttachment = async (req, res) => {
-  console.log("deleting attachment");
   try {
-    const id = req.user.id;
-    const { subDomain, attachment } = req.body; // Extract subDomain, userId, and attachment from the request body
+    const userId = req.user.id;
+    const { uuid, subDomain, attachment } = req.body; // support both
+    if (!attachment)
+      return res.status(400).json({ message: "attachment URL is required" });
 
-    console.log("this is id:", id);
-    console.log(req.body);
+    const where = uuid ? { uuid, userId } : { subDomain, userId };
+    const application = await CratMarkets.findOne({ where });
+    if (!application)
+      return res.status(404).json({ message: "Record not found" });
 
-    // Find the application by subDomain and userId
-    const application = await CratMarkets.findOne({
-      where: {
-        subDomain,
-        userId: id,
-      },
-    });
-
-    if (!application) {
-      return res.status(404).json({ message: "Application not found" });
-    }
-
-    // attachment has the URL, so extract the file name from the URL if necessary
-    // For example: if attachment is "localhost:5001/files/testpdf.pdf", we need to extract "testpdf.pdf"
-    console.log("hereeee");
-    const attachmentFileName = path.basename(attachment); // Extract file name from URL
-    console.log("here", attachmentFileName);
+    const attachmentFileName = path.basename(attachment);
     const attachmentPath = path.join(
       __dirname,
       "../../files/",
       attachmentFileName
     );
-    console.log(attachmentPath);
-
-    // Remove the file from the filesystem
     if (fs.existsSync(attachmentPath)) {
-      fs.unlinkSync(attachmentPath);
-      console.log(`File ${attachmentPath} deleted successfully.`);
-    } else {
-      console.log(`File ${attachmentPath} does not exist.`);
+      try {
+        fs.unlinkSync(attachmentPath);
+      } catch (_) {}
     }
 
-    // Remove the attachment record from the database
-    await CratMarkets.update(
-      { attachment: null },
-      { where: { subDomain, userId: id } }
-    );
-
-    res.json({ message: "Attachment deleted successfully" });
+    await application.update({ attachment: null });
+    successResponse(res, {
+      message: "Attachment deleted",
+      uuid: application.uuid,
+    });
   } catch (error) {
     console.error("Error deleting attachment:", error);
-    res.status(500).json({ message: "Error deleting attachment" });
+    errorResponse(res, error);
   }
 };
 
