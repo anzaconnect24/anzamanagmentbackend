@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const { CratFinancials, User } = require("../../models");
+const { logCratUpdate } = require("../../utils/activity_logger");
 const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
@@ -62,18 +63,27 @@ const updateFinancialData = async (req, res) => {
   try {
     const body = req.body;
     const id = req.user.id;
+    const user = req.user;
 
     if (typeof body !== "object" || Array.isArray(body)) {
       return res.status(400).json({ message: "Invalid data format" });
     }
 
     const updatePromises = [];
+    const updatedSubDomains = [];
+
     for (const section of Object.keys(body)) {
       for (const item of body[section]) {
         const where = { userId: id };
         if (item.uuid) where.uuid = item.uuid;
         else if (item.subDomain) where.subDomain = item.subDomain;
         else continue;
+
+        // Track updated subdomains for logging
+        if (item.subDomain) {
+          updatedSubDomains.push(item.subDomain);
+        }
+
         updatePromises.push(
           CratFinancials.update(
             {
@@ -89,7 +99,19 @@ const updateFinancialData = async (req, res) => {
         );
       }
     }
+
     const responses = await Promise.all(updatePromises);
+
+    // Log the CRAT update
+    if (updatedSubDomains.length > 0) {
+      await logCratUpdate(
+        user.id,
+        "CratFinancials",
+        updatedSubDomains.join(", "),
+        user.name
+      );
+    }
+
     successResponse(res, responses);
   } catch (error) {
     errorResponse(res, error);

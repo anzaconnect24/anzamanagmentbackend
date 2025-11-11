@@ -19,6 +19,7 @@ const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
 const { successResponse, errorResponse } = require("../../utils/responses");
+const { logLogin } = require("../../utils/activity_logger");
 const bcrypt = require("bcrypt");
 const { Op, where, Sequelize } = require("sequelize");
 const sendSMS = require("../../utils/send_sms");
@@ -355,6 +356,10 @@ const loginUser = async (req, res) => {
           },
           include: [Business],
         });
+
+        // Log the successful login
+        await logLogin(response.id, response.name);
+
         const tokens = generateJwtTokens(response);
         res.status(200).json({
           status: true,

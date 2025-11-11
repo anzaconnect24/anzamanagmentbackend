@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const { CratLegals, User } = require("../../models");
+const { logCratUpdate } = require("../../utils/activity_logger");
 const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
@@ -61,6 +62,7 @@ const updateLegallData = async (req, res) => {
   try {
     const body = req.body;
     const id = req.user.id;
+    const user = req.user;
 
     // Ensure body is an object with arrays
     if (typeof body !== "object" || Array.isArray(body)) {
@@ -69,6 +71,8 @@ const updateLegallData = async (req, res) => {
 
     // Collect all items to update – prefer uuid if present, fallback to subDomain
     const updatePromises = [];
+    const updatedSubDomains = [];
+
     for (const section of Object.keys(body)) {
       for (const item of body[section]) {
         const where = { userId: id };
@@ -79,6 +83,12 @@ const updateLegallData = async (req, res) => {
         } else {
           continue; // skip invalid item
         }
+
+        // Track updated subdomains for logging
+        if (item.subDomain) {
+          updatedSubDomains.push(item.subDomain);
+        }
+
         updatePromises.push(
           CratLegals.update(
             {
@@ -95,6 +105,17 @@ const updateLegallData = async (req, res) => {
     }
 
     const responses = await Promise.all(updatePromises);
+
+    // Log the CRAT update
+    if (updatedSubDomains.length > 0) {
+      await logCratUpdate(
+        user.id,
+        "CratLegals",
+        updatedSubDomains.join(", "),
+        user.name
+      );
+    }
+
     successResponse(res, responses);
   } catch (error) {
     errorResponse(res, error);

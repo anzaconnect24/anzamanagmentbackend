@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const { CratMarkets, User } = require("../../models");
+const { logCratUpdate } = require("../../utils/activity_logger");
 const getUrl = require("../../utils/cloudinary_upload");
 const { sendEmail } = require("../../utils/send_email");
 const path = require("path");
@@ -75,6 +76,7 @@ const updateMarketData = async (req, res) => {
   try {
     const body = req.body;
     const id = req.user.id;
+    const user = req.user;
 
     if (typeof body !== "object" || Array.isArray(body)) {
       return res.status(400).json({ message: "Invalid data format" });
@@ -83,6 +85,8 @@ const updateMarketData = async (req, res) => {
     // (normalizeRating helper reused)
 
     const updatePromises = [];
+    const updatedSubDomains = [];
+
     for (const section of Object.keys(body)) {
       const items = body[section];
       if (!Array.isArray(items)) continue;
@@ -95,6 +99,11 @@ const updateMarketData = async (req, res) => {
           reviewerComment: item.reviewerComment,
         };
         if (rating) payload.rating = rating; // only set if valid
+
+        // Track updated subdomains for logging
+        if (item.subDomain) {
+          updatedSubDomains.push(item.subDomain);
+        }
 
         if (item.uuid) {
           // Precise update by uuid + ownership check
@@ -121,6 +130,17 @@ const updateMarketData = async (req, res) => {
     }
 
     const results = await Promise.all(updatePromises);
+
+    // Log the CRAT update
+    if (updatedSubDomains.length > 0) {
+      await logCratUpdate(
+        user.id,
+        "CratMarkets",
+        updatedSubDomains.join(", "),
+        user.name
+      );
+    }
+
     successResponse(res, { updated: results.length, results });
   } catch (error) {
     console.error("Error updating data:", error);
