@@ -212,6 +212,6 @@ app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(5002, () => {
-  console.log("Server started at port 5002");
+app.listen(5000, () => {
+  console.log("Server started at port 5000");
 });
