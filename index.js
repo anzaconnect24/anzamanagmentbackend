@@ -44,6 +44,7 @@ const Admin = require("./modules/admin/admin.routes");
 const ModulesRoutes = require("./modules/modules/modules.routes");
 const SlidesRoutes = require("./modules/slides/slides.routes");
 const CommentsRoutes = require("./modules/comments/comments.routes");
+const QuizRoutes = require("./modules/quiz/quiz.routes");
 const MentorProfileRoutes = require("./modules/mentor_profile/mentorProfile.routes");
 const StaffProfileRoutes = require("./modules/staff_profile/staffProfile.routes");
 const Seller = require("./modules/seller/seller.routes");
@@ -138,6 +139,7 @@ app.use("/role", rolesTag, RoleRoutes);
 app.use("/modules", modulesTag, ModulesRoutes);
 app.use("/comments", commentsTag, CommentsRoutes);
 app.use("/slides", slidesTag, SlidesRoutes);
+app.use("/quiz", QuizRoutes);
 app.use("/staff-profile", staffProfileTag, StaffProfileRoutes);
 app.use(
   "/investment-opportunities",
@@ -212,6 +214,6 @@ app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(5000, () => {
-  console.log("Server started at port 5000");
+app.listen(5001, () => {
+  console.log("Server started at port 5001");
 });
