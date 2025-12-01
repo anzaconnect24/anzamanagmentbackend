@@ -5,14 +5,23 @@ const { Op } = require("sequelize");
 
 const createInvestmentOpportunity = async (req, res) => {
   try {
-    const { title, description, image, url, sector, amount, investmentType } =
-      req.body;
+    const {
+      title,
+      description,
+      image,
+      url,
+      expireDate,
+      sector,
+      amount,
+      investmentType,
+    } = req.body;
     var response = await InvestmentOpportunity.create({
       title,
       description,
       image,
       url,
       sector,
+      expireDate,
       amount,
       investmentType,
     });
