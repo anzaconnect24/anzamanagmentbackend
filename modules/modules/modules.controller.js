@@ -1,17 +1,24 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { Module, User, Slide, SlideReader } = require("../../models");
+const { Module, User, Slide, SlideReader, Program } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const program = require("../../models/program");
 
 const createModule = async (req, res) => {
   try {
-    const { title, course, image, description } = req.body;
-
+    const { title, program_uuid, image, description } = req.body;
+    console.log(req.body);
+    const program = await Program.findOne({
+      where: {
+        uuid: program_uuid,
+      },
+    });
     const response = await Module.create({
       title,
-      course,
+      programId: program.id,
       image,
       description,
     });
+    console.log(response);
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -65,7 +72,12 @@ const deleteModule = async (req, res) => {
 
 const getModules = async (req, res) => {
   try {
-    const { course } = req.query;
+    const { program_uuid } = req.query;
+    const program = await Program.findOne({
+      where: {
+        uuid: program_uuid,
+      },
+    });
     const { count, rows } = await Module.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
@@ -87,7 +99,7 @@ const getModules = async (req, res) => {
         },
       ],
       where: {
-        course,
+        programId: program.id,
       },
     });
     successResponse(res, { count, data: rows, page: req.page });

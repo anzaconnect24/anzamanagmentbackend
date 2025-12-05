@@ -9,7 +9,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Slide.belongsTo(models.Module);
+      Slide.belongsTo(models.Module, {
+        foreignKey: "moduleId",
+        targetKey: "id",
+      });
       // Slide.belongsTo(models.User);
       Slide.hasMany(models.SlideReader);
     }

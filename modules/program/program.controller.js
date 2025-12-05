@@ -4,12 +4,12 @@ const { Op } = require("sequelize");
 
 const createProgram = async (req, res) => {
   try {
-    let { title, description, image, url } = req.body;
+    let { title, description, image, programCategory } = req.body;
     var response = await Program.create({
       title: title,
       description: description,
       image: image,
-      url: url,
+      programCategory: programCategory,
     });
 
     successResponse(res, response);
@@ -51,16 +51,18 @@ const deleteProgram = async (req, res) => {
 
 const getAllPrograms = async (req, res) => {
   try {
+    const { programCategory } = req.query;
+    const whereClause = {};
+
+    if (programCategory) {
+      whereClause.programCategory = programCategory;
+    }
+
     const { count, rows } = await Program.findAndCountAll({
-      offset: req.offset, //ruka ngapi
-      limit: req.limit, //leta ngapi
+      where: whereClause,
+      offset: req.offset,
+      limit: req.limit,
       order: [["createdAt", "DESC"]],
-      where: {
-        [Op.or]: [
-          { expireDate: null }, // Programs without expiry date
-          { expireDate: { [Op.gt]: new Date() } }, // Programs that haven't expired yet
-        ],
-      },
     });
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {

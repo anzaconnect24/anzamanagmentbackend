@@ -25,9 +25,9 @@ module.exports = {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      url: {
-        type: DataTypes.TEXT,
-        allowNull: true,
+      programCategory: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,

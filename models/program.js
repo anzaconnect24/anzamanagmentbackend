@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Program.hasMany(models.Module, {
+        foreignKey: "programId",
+        sourceKey: "id",
+      });
     }
   }
   Program.init(
@@ -29,13 +33,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      url: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-      expireDate: {
-        type: DataTypes.DATE,
-        allowNull: true,
+      programCategory: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
     },
     {

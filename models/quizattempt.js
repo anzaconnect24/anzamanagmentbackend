@@ -56,6 +56,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      gradingStatus: {
+        type: DataTypes.ENUM("auto_graded", "pending_grading", "graded"),
+        allowNull: false,
+        defaultValue: "auto_graded",
+      },
+      gradedBy: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      gradedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       sequelize,

@@ -51,6 +51,16 @@ router.get(
   validateJWT,
   quizController.getAttemptDetails
 );
+router.get(
+  "/admin/pending-grading",
+  validateJWT,
+  quizController.getPendingQuizzes
+);
+router.post(
+  "/admin/attempts/:attemptUuid/grade",
+  validateJWT,
+  quizController.gradeQuizAttempt
+);
 router.patch(
   "/admin/answers/:answerUuid/mark",
   validateJWT,

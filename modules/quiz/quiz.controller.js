@@ -10,6 +10,7 @@ const QuizAttempt = db.QuizAttempt;
 const QuizAnswer = db.QuizAnswer;
 const Module = db.Module;
 const User = db.User;
+const Business = db.Business;
 
 // Create a new quiz
 exports.createQuiz = async (req, res) => {
@@ -523,6 +524,7 @@ exports.submitQuiz = async (req, res) => {
 
     let totalPoints = 0;
     let earnedPoints = 0;
+    let hasDescriptionQuestions = false;
 
     // Process answers
     for (const answer of answers) {
@@ -565,6 +567,7 @@ exports.submitQuiz = async (req, res) => {
         }
       } else if (question.questionType === "description") {
         answerText = answer.answerText;
+        hasDescriptionQuestions = true;
         // Description questions need manual grading, so isCorrect is null
         isCorrect = null;
       }
@@ -579,27 +582,38 @@ exports.submitQuiz = async (req, res) => {
       });
     }
 
-    // Calculate score percentage
+    // Determine grading status
+    const gradingStatus = hasDescriptionQuestions
+      ? "pending_grading"
+      : "auto_graded";
+
+    // Calculate score percentage (only for auto-graded questions)
     const score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
-    const isPassed = score >= attempt.quiz.passingScore;
+    const isPassed = !hasDescriptionQuestions
+      ? score >= attempt.quiz.passingScore
+      : false;
 
     await attempt.update({
-      score,
+      score: hasDescriptionQuestions ? null : score,
       totalPoints,
-      earnedPoints,
+      earnedPoints: hasDescriptionQuestions ? null : earnedPoints,
       isPassed,
       submittedAt: new Date(),
+      gradingStatus,
     });
 
     res.status(200).json({
       success: true,
-      message: "Quiz submitted successfully",
+      message: hasDescriptionQuestions
+        ? "Quiz submitted successfully. Your answers will be reviewed by an instructor."
+        : "Quiz submitted successfully",
       data: {
-        score,
+        score: hasDescriptionQuestions ? null : score,
         totalPoints,
-        earnedPoints,
+        earnedPoints: hasDescriptionQuestions ? null : earnedPoints,
         isPassed,
         passingScore: attempt.quiz.passingScore,
+        gradingStatus,
       },
     });
   } catch (error) {
@@ -723,6 +737,7 @@ exports.downloadCertificate = async (req, res) => {
     const doc = new PDFDocument({
       layout: "landscape",
       size: "A4",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
     });
 
     const fileName = `certificate_${attempt.uuid}.pdf`;
@@ -732,53 +747,104 @@ exports.downloadCertificate = async (req, res) => {
     doc.pipe(writeStream);
 
     // Certificate design
-    doc.fontSize(50).font("Helvetica-Bold").text("Certificate of Achievement", {
-      align: "center",
-      underline: true,
-    });
+    const centerX = doc.page.width / 2;
+    const pageHeight = doc.page.height;
 
-    doc.moveDown(2);
+    // Add border
+    doc
+      .rect(30, 30, doc.page.width - 60, pageHeight - 60)
+      .lineWidth(3)
+      .strokeColor("#1e40af")
+      .stroke();
 
     doc
-      .fontSize(20)
+      .rect(35, 35, doc.page.width - 70, pageHeight - 70)
+      .lineWidth(1)
+      .strokeColor("#1e40af")
+      .stroke();
+
+    // Platform name at top
+    doc.y = 60;
+    doc
+      .fontSize(14)
       .font("Helvetica")
-      .text("This certifies that", { align: "center" });
+      .fillColor("#6b7280")
+      .text("ANZA CONNECT PLATFORM", { align: "center" });
 
-    doc.moveDown(1);
+    doc.moveDown(0.5);
 
+    // Certificate title
     doc
-      .fontSize(35)
+      .fontSize(42)
       .font("Helvetica-Bold")
-      .text(attempt.user.name || "User", {
+      .fillColor("#1e40af")
+      .text("Certificate of Achievement", {
         align: "center",
       });
 
     doc.moveDown(1);
 
-    doc
-      .fontSize(20)
-      .font("Helvetica")
-      .text("has successfully completed the quiz", { align: "center" });
-
-    doc.moveDown(1);
-
-    doc.fontSize(30).font("Helvetica-Bold").text(`${attempt.quiz.title}`, {
-      align: "center",
-    });
-
-    doc.moveDown(1);
-
-    doc
-      .fontSize(18)
-      .font("Helvetica")
-      .text(`Module: ${attempt.quiz.module.title}`, { align: "center" });
-
-    doc.moveDown(2);
-
+    // "This certifies that"
     doc
       .fontSize(16)
-      .text(`Score: ${attempt.score.toFixed(2)}%`, { align: "center" });
-    doc.fontSize(16).text(
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text("This certifies that", { align: "center" });
+
+    doc.moveDown(0.8);
+
+    // User name
+    doc
+      .fontSize(32)
+      .font("Helvetica-Bold")
+      .fillColor("#111827")
+      .text(attempt.user.name || "User", {
+        align: "center",
+      });
+
+    doc.moveDown(0.8);
+
+    // "has successfully completed"
+    doc
+      .fontSize(16)
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text("has successfully completed the quiz", { align: "center" });
+
+    doc.moveDown(0.8);
+
+    // Quiz title
+    doc
+      .fontSize(24)
+      .font("Helvetica-Bold")
+      .fillColor("#1e40af")
+      .text(`${attempt.quiz.title}`, {
+        align: "center",
+      });
+
+    doc.moveDown(0.5);
+
+    // Module name
+    doc
+      .fontSize(14)
+      .font("Helvetica-Oblique")
+      .fillColor("#6b7280")
+      .text(`Module: ${attempt.quiz.module.title}`, { align: "center" });
+
+    doc.moveDown(1.5);
+
+    // Score and Date
+    doc
+      .fontSize(14)
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text(`Score: ${Number(attempt.score || 0).toFixed(1)}%`, {
+        align: "center",
+      });
+
+    doc.moveDown(0.3);
+
+    doc.text(
       `Date: ${new Date(attempt.submittedAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -864,6 +930,12 @@ exports.getAllAttempts = async (req, res) => {
           model: User,
           as: "user",
           attributes: ["id", "uuid", "name", "email", "phone"],
+          include: [
+            {
+              model: Business,
+              required: false, // Make it optional
+            },
+          ],
         },
         {
           model: QuizAnswer,
@@ -1227,6 +1299,183 @@ exports.bulkMarkAnswers = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error bulk marking answers",
+      error: error.message,
+    });
+  }
+};
+
+// Get all pending quizzes for grading (Admin/Instructor only)
+exports.getPendingQuizzes = async (req, res) => {
+  try {
+    const { page = 1, limit = 20, moduleId, quizId } = req.query;
+    const offset = (page - 1) * limit;
+
+    const whereClause = {
+      gradingStatus: "pending_grading",
+      submittedAt: { [db.Sequelize.Op.ne]: null },
+    };
+
+    if (moduleId) {
+      const module = await Module.findOne({ where: { uuid: moduleId } });
+      if (module) {
+        const quizzes = await Quiz.findAll({ where: { moduleId: module.id } });
+        whereClause.quizId = quizzes.map((q) => q.id);
+      }
+    }
+
+    if (quizId) {
+      const quiz = await Quiz.findOne({ where: { uuid: quizId } });
+      if (quiz) {
+        whereClause.quizId = quiz.id;
+      }
+    }
+
+    const { count, rows: attempts } = await QuizAttempt.findAndCountAll({
+      where: whereClause,
+      include: [
+        {
+          model: Quiz,
+          as: "quiz",
+          include: [
+            {
+              model: Module,
+              as: "module",
+            },
+          ],
+        },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "uuid", "name", "email", "phone"],
+        },
+      ],
+      order: [["submittedAt", "ASC"]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: attempts,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(count / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching pending quizzes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching pending quizzes",
+      error: error.message,
+    });
+  }
+};
+
+// Grade a quiz attempt (Admin/Instructor only)
+exports.gradeQuizAttempt = async (req, res) => {
+  try {
+    const { attemptUuid } = req.params;
+    const { answers } = req.body; // Array of {answerUuid, isCorrect, pointsEarned, feedback}
+    const graderId = req.user.id;
+
+    const attempt = await QuizAttempt.findOne({
+      where: { uuid: attemptUuid },
+      include: [
+        {
+          model: Quiz,
+          as: "quiz",
+        },
+      ],
+    });
+
+    if (!attempt) {
+      return res.status(404).json({
+        success: false,
+        message: "Quiz attempt not found",
+      });
+    }
+
+    if (attempt.gradingStatus !== "pending_grading") {
+      return res.status(400).json({
+        success: false,
+        message:
+          "This quiz has already been graded or does not require grading",
+      });
+    }
+
+    // Update each answer with grading info
+    for (const answerGrade of answers) {
+      const answer = await QuizAnswer.findOne({
+        where: { uuid: answerGrade.answerUuid },
+        include: [
+          {
+            model: QuizQuestion,
+            as: "question",
+          },
+        ],
+      });
+
+      if (answer && answer.attemptId === attempt.id) {
+        await answer.update({
+          isCorrect: answerGrade.isCorrect,
+          pointsEarned: answerGrade.pointsEarned,
+          feedback: answerGrade.feedback || null,
+        });
+      }
+    }
+
+    // Recalculate total score
+    const allAnswers = await QuizAnswer.findAll({
+      where: { attemptId: attempt.id },
+      include: [
+        {
+          model: QuizQuestion,
+          as: "question",
+        },
+      ],
+    });
+
+    let totalPoints = 0;
+    let earnedPoints = 0;
+
+    allAnswers.forEach((ans) => {
+      totalPoints += ans.question.points;
+      if (ans.isCorrect !== null && ans.isCorrect) {
+        earnedPoints += ans.pointsEarned || 0;
+      }
+    });
+
+    const score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
+    const isPassed = score >= attempt.quiz.passingScore;
+
+    await attempt.update({
+      score,
+      totalPoints,
+      earnedPoints,
+      isPassed,
+      gradingStatus: "graded",
+      gradedBy: graderId,
+      gradedAt: new Date(),
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Quiz graded successfully",
+      data: {
+        score,
+        totalPoints,
+        earnedPoints,
+        isPassed,
+      },
+    });
+  } catch (error) {
+    console.error("Error grading quiz:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error grading quiz",
       error: error.message,
     });
   }

@@ -9,7 +9,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Module.hasMany(models.Slide);
+      Module.hasMany(models.Slide, {
+        foreignKey: "moduleId",
+        sourceKey: "id",
+      });
+      Module.belongsTo(models.Program, {
+        foreignKey: "programId",
+        targetKey: "id",
+      });
     }
   }
   Module.init(
@@ -18,9 +25,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
-      course: {
-        type: DataTypes.STRING,
+      programId: {
+        type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          model: "Programs",
+          key: "id",
+        },
       },
       image: {
         type: DataTypes.STRING,
