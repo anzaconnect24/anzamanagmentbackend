@@ -21,6 +21,7 @@ const AttachmentRoutes = require("./modules/attachment/attachment.routes");
 const BusinessRoutes = require("./modules/business/business.routes");
 const BusinessReviewRoutes = require("./modules/business_review/business_review.routes");
 const ProgramRoutes = require("./modules/program/program.routes");
+const ProgramApplicationRoutes = require("./modules/programApplication/programApplication.routes");
 const BusinessInvestmentRequestRoutes = require("./modules/business_investment_request/business_investment_request.routes");
 const BusinessInvestmentRequestReviewRoutes = require("./modules/business_investment_request_review/business_investment_request_review.routes");
 const InvestorProfileRoutes = require("./modules/investor_profile/investor_profile.routes");
@@ -162,6 +163,7 @@ app.use(
 );
 app.use("/mentor-reports", mentorReportsTag, MentorReportRoutes);
 app.use("/programs", programsTag, ProgramRoutes);
+app.use("/program-applications", ProgramApplicationRoutes);
 app.use("/investor_profile", investorProfilesTag, InvestorProfileRoutes);
 app.use("/conversation", conversationsTag, ConversationRoutes);
 app.use("/pitch_material", pitchMaterialsTag, PitchMaterialRoutes);
@@ -214,6 +216,6 @@ app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(5000, () => {
-  console.log("Server started at port 5000");
+app.listen(5001, () => {
+  console.log("Server started at port 5001");
 });
