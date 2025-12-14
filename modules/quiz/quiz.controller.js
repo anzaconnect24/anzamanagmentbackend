@@ -11,6 +11,7 @@ const QuizAnswer = db.QuizAnswer;
 const Module = db.Module;
 const User = db.User;
 const Business = db.Business;
+const Program = db.Program;
 
 // Create a new quiz
 exports.createQuiz = async (req, res) => {
@@ -681,6 +682,358 @@ exports.getUserAttempts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching user attempts",
+      error: error.message,
+    });
+  }
+};
+
+// Download certificate for completing all quizzes in a program
+exports.downloadProgramCertificate = async (req, res) => {
+  try {
+    const { programUuid } = req.params;
+    const userId = req.user.id;
+
+    // Get the program
+    const program = await Program.findOne({
+      where: { uuid: programUuid },
+    });
+
+    if (!program) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    // Get all modules for this program
+    const modules = await Module.findAll({
+      where: { programId: program.id },
+    });
+
+    if (modules.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No modules found in this program",
+      });
+    }
+
+    // Get all quizzes for these modules
+    const quizzes = await Quiz.findAll({
+      where: {
+        moduleId: modules.map((m) => m.id),
+        isPublished: true,
+      },
+    });
+
+    if (quizzes.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No quizzes found in this program",
+      });
+    }
+
+    // Check if user has completed and passed all quizzes
+    const userAttempts = await QuizAttempt.findAll({
+      where: {
+        userId,
+        quizId: quizzes.map((q) => q.id),
+        submittedAt: { [db.Sequelize.Op.ne]: null },
+      },
+    });
+
+    // Check if all quizzes are attempted and passed
+    const passedQuizIds = userAttempts
+      .filter((attempt) => attempt.isPassed)
+      .map((attempt) => attempt.quizId);
+
+    const allQuizIds = quizzes.map((q) => q.id);
+    const missingQuizzes = allQuizIds.filter(
+      (id) => !passedQuizIds.includes(id)
+    );
+
+    if (missingQuizzes.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "You must complete and pass all quizzes in this program to get the certificate",
+        missingQuizzes: missingQuizzes.length,
+        totalQuizzes: allQuizIds.length,
+      });
+    }
+
+    // Get user details
+    const user = await User.findOne({
+      where: { id: userId },
+    });
+
+    // Calculate average score
+    const totalScore = userAttempts.reduce(
+      (sum, attempt) => sum + (attempt.score || 0),
+      0
+    );
+    const averageScore = totalScore / userAttempts.length;
+
+    // Create PDF certificate
+    const doc = new PDFDocument({
+      layout: "landscape",
+      size: "A4",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
+    });
+
+    const fileName = `program_certificate_${programUuid}_${userId}.pdf`;
+    const filePath = path.join(__dirname, "../../files", fileName);
+
+    const writeStream = fs.createWriteStream(filePath);
+    doc.pipe(writeStream);
+
+    // Certificate design
+    const centerX = doc.page.width / 2;
+    const pageHeight = doc.page.height;
+
+    // Add border
+    doc
+      .rect(30, 30, doc.page.width - 60, pageHeight - 60)
+      .lineWidth(3)
+      .strokeColor("#1e40af")
+      .stroke();
+
+    doc
+      .rect(35, 35, doc.page.width - 70, pageHeight - 70)
+      .lineWidth(1)
+      .strokeColor("#1e40af")
+      .stroke();
+
+    // Platform name at top
+    doc.y = 60;
+    doc
+      .fontSize(14)
+      .font("Helvetica")
+      .fillColor("#6b7280")
+      .text("ANZA CONNECT PLATFORM", { align: "center" });
+
+    doc.moveDown(0.5);
+
+    // Certificate title
+    doc
+      .fontSize(42)
+      .font("Helvetica-Bold")
+      .fillColor("#1e40af")
+      .text("Certificate of Completion", {
+        align: "center",
+      });
+
+    doc.moveDown(1);
+
+    // "This certifies that"
+    doc
+      .fontSize(16)
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text("This certifies that", { align: "center" });
+
+    doc.moveDown(0.8);
+
+    // User name
+    doc
+      .fontSize(32)
+      .font("Helvetica-Bold")
+      .fillColor("#111827")
+      .text(user.name || "User", {
+        align: "center",
+      });
+
+    doc.moveDown(0.8);
+
+    // "has successfully completed"
+    doc
+      .fontSize(16)
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text(
+        "has successfully completed all modules and quizzes in the program",
+        {
+          align: "center",
+        }
+      );
+
+    doc.moveDown(0.8);
+
+    // Program title
+    doc
+      .fontSize(24)
+      .font("Helvetica-Bold")
+      .fillColor("#1e40af")
+      .text(`${program.title}`, {
+        align: "center",
+      });
+
+    doc.moveDown(1.5);
+
+    // Program stats
+    doc
+      .fontSize(14)
+      .font("Helvetica")
+      .fillColor("#374151")
+      .text(`Modules Completed: ${modules.length}`, {
+        align: "center",
+      });
+
+    doc.moveDown(0.3);
+
+    doc.text(`Quizzes Passed: ${quizzes.length}`, {
+      align: "center",
+    });
+
+    doc.moveDown(0.3);
+
+    doc.text(`Average Score: ${averageScore.toFixed(1)}%`, {
+      align: "center",
+    });
+
+    doc.moveDown(0.3);
+
+    doc.text(
+      `Date: ${new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}`,
+      { align: "center" }
+    );
+
+    doc.end();
+
+    writeStream.on("finish", () => {
+      res.download(filePath, fileName, (err) => {
+        if (err) {
+          console.error("Error downloading certificate:", err);
+          res.status(500).json({
+            success: false,
+            message: "Error downloading certificate",
+          });
+        }
+        // Optional: Delete file after download
+        // fs.unlinkSync(filePath);
+      });
+    });
+  } catch (error) {
+    console.error("Error generating program certificate:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating program certificate",
+      error: error.message,
+    });
+  }
+};
+
+// Check program completion status
+exports.checkProgramCompletion = async (req, res) => {
+  try {
+    const { programUuid } = req.params;
+    const userId = req.user.id;
+
+    // Get the program
+    const program = await Program.findOne({
+      where: { uuid: programUuid },
+    });
+
+    if (!program) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    // Get all modules for this program
+    const modules = await Module.findAll({
+      where: { programId: program.id },
+    });
+
+    // Get all quizzes for these modules
+    const quizzes = await Quiz.findAll({
+      where: {
+        moduleId: modules.map((m) => m.id),
+        isPublished: true,
+      },
+      include: [
+        {
+          model: Module,
+          as: "module",
+          attributes: ["id", "uuid", "title"],
+        },
+      ],
+    });
+
+    if (quizzes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          isCompleted: false,
+          totalQuizzes: 0,
+          passedQuizzes: 0,
+          averageScore: 0,
+          quizzes: [],
+        },
+      });
+    }
+
+    // Check if user has completed and passed all quizzes
+    const userAttempts = await QuizAttempt.findAll({
+      where: {
+        userId,
+        quizId: quizzes.map((q) => q.id),
+        submittedAt: { [db.Sequelize.Op.ne]: null },
+      },
+      include: [
+        {
+          model: Quiz,
+          as: "quiz",
+          attributes: ["id", "uuid", "title"],
+        },
+      ],
+    });
+
+    // Check which quizzes are passed
+    const passedQuizIds = userAttempts
+      .filter((attempt) => attempt.isPassed)
+      .map((attempt) => attempt.quizId);
+
+    const quizStatuses = quizzes.map((quiz) => {
+      const attempt = userAttempts.find((a) => a.quizId === quiz.id);
+      return {
+        quizId: quiz.uuid,
+        quizTitle: quiz.title,
+        moduleTitle: quiz.module.title,
+        attempted: !!attempt,
+        passed: passedQuizIds.includes(quiz.id),
+        score: attempt ? attempt.score : null,
+      };
+    });
+
+    const totalScore = userAttempts.reduce(
+      (sum, attempt) => sum + (attempt.score || 0),
+      0
+    );
+    const averageScore =
+      userAttempts.length > 0 ? totalScore / userAttempts.length : 0;
+
+    const isCompleted = passedQuizIds.length === quizzes.length;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        isCompleted,
+        totalQuizzes: quizzes.length,
+        passedQuizzes: passedQuizIds.length,
+        averageScore: averageScore.toFixed(1),
+        quizzes: quizStatuses,
+      },
+    });
+  } catch (error) {
+    console.error("Error checking program completion:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error checking program completion",
       error: error.message,
     });
   }

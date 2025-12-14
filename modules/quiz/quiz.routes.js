@@ -44,6 +44,18 @@ router.get(
   quizController.downloadCertificate
 );
 
+// Program certificates
+router.get(
+  "/programs/:programUuid/certificate",
+  validateJWT,
+  quizController.downloadProgramCertificate
+);
+router.get(
+  "/programs/:programUuid/completion",
+  validateJWT,
+  quizController.checkProgramCompletion
+);
+
 // Admin endpoints
 router.get("/admin/attempts", validateJWT, quizController.getAllAttempts);
 router.get(
