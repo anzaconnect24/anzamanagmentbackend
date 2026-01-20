@@ -193,10 +193,37 @@ const getReportDataById = async (req, res) => {
     });
 
     // Combine all data into a single array
-    const response = [...financials, ...markets, ...operations, ...legals];
+    const allData = [...financials, ...markets, ...operations, ...legals];
+
+    // Deduplicate records: for each subDomain, keep only the record with the highest score
+    // If scores are equal, keep the most recently updated one
+    const deduplicatedData = {};
+
+    allData.forEach((record) => {
+      const key = record.subDomain;
+      const existing = deduplicatedData[key];
+
+      if (!existing) {
+        // First occurrence of this subDomain
+        deduplicatedData[key] = record;
+      } else {
+        // Compare scores and updatedAt to decide which to keep
+        const shouldReplace =
+          record.score > existing.score ||
+          (record.score === existing.score &&
+            new Date(record.updatedAt) > new Date(existing.updatedAt));
+
+        if (shouldReplace) {
+          deduplicatedData[key] = record;
+        }
+      }
+    });
+
+    // Convert back to array
+    const response = Object.values(deduplicatedData);
 
     // Log the response for preview
-    console.log(response);
+    console.log("Deduplicated response:", response);
 
     // Send the response
     successResponse(res, response);
