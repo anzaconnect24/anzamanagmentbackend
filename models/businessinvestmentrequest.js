@@ -12,7 +12,14 @@ module.exports = (sequelize, DataTypes) => {
       BusinessInvestmentRequest.hasOne(models.BusinessInvestmentRequestReview, {
         onDelete: "cascade",
       });
-      BusinessInvestmentRequest.belongsTo(models.User);
+      BusinessInvestmentRequest.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "entrepreneur",
+      });
+      BusinessInvestmentRequest.belongsTo(models.User, {
+        foreignKey: "investorId",
+        as: "investor",
+      });
       BusinessInvestmentRequest.belongsTo(models.Business);
     }
   }
@@ -25,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
       userId: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      investorId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       businessId: {
         type: DataTypes.STRING,
@@ -59,7 +70,14 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       status: {
-        type: DataTypes.ENUM("waiting", "accepted", "rejected", "closed"),
+        type: DataTypes.ENUM(
+          "waiting",
+          "accepted",
+          "rejected",
+          "closed",
+          "in-progress",
+          "completed",
+        ),
         defaultValue: "waiting",
         allowNull: false,
       },
@@ -67,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "BusinessInvestmentRequest",
-    }
+    },
   );
   return BusinessInvestmentRequest;
 };

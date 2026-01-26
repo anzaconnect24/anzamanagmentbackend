@@ -10,6 +10,7 @@ const {
   Program,
   BusinessInvestmentRequestDocument,
   InvestorProfile,
+  Notification,
 } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where, Op } = require("sequelize");
@@ -24,11 +25,21 @@ const createBusinessInvestmentRequest = async (req, res) => {
       dueDiligenceDate,
       helpFromAnza,
       additionalInfo,
+      investor_uuid,
     } = req.body;
     const user = req.user;
     const business = await Business.findOne({
       where: { uuid: business_uuid },
     });
+
+    // Find investor if investor_uuid is provided
+    let investor = null;
+    if (investor_uuid) {
+      investor = await User.findOne({
+        where: { uuid: investor_uuid },
+      });
+    }
+
     const response = await BusinessInvestmentRequest.create({
       userId: user.id,
       investmentAmount,
@@ -38,7 +49,18 @@ const createBusinessInvestmentRequest = async (req, res) => {
       additionalInfo,
       helpFromAnza,
       businessId: business.id,
+      investorId: investor ? investor.id : null,
     });
+
+    // Send notification to investor if specified
+    if (investor) {
+      await Notification.create({
+        to: "Investor",
+        userId: investor.id,
+        message: `${user.firstName} ${user.lastName} has submitted an investment request for ${business.name}`,
+      });
+    }
+
     admin = await User.findOne({ where: { role: "Admin" } });
     sendEmail(req, res, admin, "business_investment_request");
     successResponse(res, response);
@@ -446,6 +468,268 @@ const getReviewersStatus = async (req, res) => {
   }
 };
 
+// Get all investment requests for a specific investor
+const getInvestorInvestmentRequests = async (req, res) => {
+  try {
+    let { page, limit, status } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
+    const investor = req.user;
+
+    let whereClause = {
+      investorId: investor.id,
+    };
+
+    // Filter by status if provided
+    if (status) {
+      whereClause.status = status;
+    }
+
+    const { count, rows } = await BusinessInvestmentRequest.findAndCountAll({
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      where: whereClause,
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+    const totalPages =
+      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
+    successResponse(res, { count, data: rows, page, totalPages });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Approve investment request (investor shows interest)
+const approveInvestmentRequest = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const investor = req.user;
+
+    const investmentRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+        },
+        Business,
+      ],
+    });
+
+    if (!investmentRequest) {
+      return errorResponse(res, { message: "Investment request not found" });
+    }
+
+    // Update status to in-progress
+    await investmentRequest.update({
+      status: "in-progress",
+      investorId: investor.id,
+    });
+
+    // Create notification for entrepreneur
+    await Notification.create({
+      to: "Entrepreneur",
+      userId: investmentRequest.entrepreneur.id,
+      message: `${investor.firstName} ${investor.lastName} has shown interest in your investment request for ${investmentRequest.Business.name}`,
+    });
+
+    successResponse(res, investmentRequest);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Reject investment request
+const rejectInvestmentRequest = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const investor = req.user;
+    const { reason } = req.body;
+
+    const investmentRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+        },
+        Business,
+      ],
+    });
+
+    if (!investmentRequest) {
+      return errorResponse(res, { message: "Investment request not found" });
+    }
+
+    // Update status to rejected
+    await investmentRequest.update({
+      status: "rejected",
+      feedback: reason || "Investment request rejected",
+    });
+
+    // Create notification for entrepreneur
+    await Notification.create({
+      to: "Entrepreneur",
+      userId: investmentRequest.entrepreneur.id,
+      message: `${investor.firstName} ${investor.lastName} has rejected your investment request for ${investmentRequest.Business.name}`,
+    });
+
+    successResponse(res, investmentRequest);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Complete investment (mark as completed)
+const completeInvestment = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const investor = req.user;
+
+    const investmentRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+        },
+        Business,
+      ],
+    });
+
+    if (!investmentRequest) {
+      return errorResponse(res, { message: "Investment request not found" });
+    }
+
+    // Update status to completed
+    await investmentRequest.update({
+      status: "completed",
+    });
+
+    // Create notification for entrepreneur
+    await Notification.create({
+      to: "Entrepreneur",
+      userId: investmentRequest.entrepreneur.id,
+      message: `Investment process completed for ${investmentRequest.Business.name}`,
+    });
+
+    successResponse(res, investmentRequest);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Get in-progress investments
+const getInProgressInvestments = async (req, res) => {
+  try {
+    let { page, limit } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
+    const investor = req.user;
+
+    const { count, rows } = await BusinessInvestmentRequest.findAndCountAll({
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      where: {
+        investorId: investor.id,
+        status: "in-progress",
+      },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+    const totalPages =
+      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
+    successResponse(res, { count, data: rows, page, totalPages });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Get dropped investments (rejected)
+const getDroppedInvestments = async (req, res) => {
+  try {
+    let { page, limit } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
+    const investor = req.user;
+
+    const { count, rows } = await BusinessInvestmentRequest.findAndCountAll({
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      where: {
+        investorId: investor.id,
+        status: "rejected",
+      },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+    const totalPages =
+      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
+    successResponse(res, { count, data: rows, page, totalPages });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Get completed investments
+const getCompletedInvestments = async (req, res) => {
+  try {
+    let { page, limit } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
+    const investor = req.user;
+
+    const { count, rows } = await BusinessInvestmentRequest.findAndCountAll({
+      offset: offset,
+      limit: limit,
+      order: [["createdAt", "DESC"]],
+      where: {
+        investorId: investor.id,
+        status: "completed",
+      },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+    const totalPages =
+      count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
+    successResponse(res, { count, data: rows, page, totalPages });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   createBusinessInvestmentRequest,
   updateBusinessInvestmentRequest,
@@ -461,4 +745,11 @@ module.exports = {
   postBusinessInvestmentRequestDocument,
   getInvestorWaitingBusinessInvestmentRequests,
   getInvestorClosedBusinessInvestmentRequests,
+  getInvestorInvestmentRequests,
+  approveInvestmentRequest,
+  rejectInvestmentRequest,
+  completeInvestment,
+  getInProgressInvestments,
+  getDroppedInvestments,
+  getCompletedInvestments,
 };

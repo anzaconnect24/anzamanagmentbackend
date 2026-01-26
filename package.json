@@ -24,5 +24,8 @@
   },
   "devDependencies": {
     "swagger-autogen": "^2.23.7"
+  },
+  "overrides": {
+    "buffer-equal-constant-time": "npm:buffer-equal@^0.0.2"
   }
 }
