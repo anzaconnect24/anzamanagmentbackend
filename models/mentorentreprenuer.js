@@ -37,6 +37,24 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         allowNull: true,
       },
+      googleMeetLink: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      appointmentDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      appointmentStatus: {
+        type: DataTypes.ENUM("pending", "accepted", "rejected", "completed"),
+        allowNull: true,
+        defaultValue: "pending",
+      },
+      menteeAccepted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
@@ -47,11 +65,15 @@ module.exports = (sequelize, DataTypes) => {
           "mentorId",
           "approved",
           "entreprenuerId",
+          "googleMeetLink",
+          "appointmentDate",
+          "appointmentStatus",
+          "menteeAccepted",
           "createdAt",
         ],
       },
       modelName: "MentorEntreprenuer",
-    }
+    },
   );
   return MentorEntreprenuer;
 };

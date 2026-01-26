@@ -1,5 +1,10 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { MentorshipApplication, User,MentorProfile } = require("../../models");
+const {
+  MentorshipApplication,
+  User,
+  MentorProfile,
+  Notification,
+} = require("../../models");
 const { Op } = require("sequelize");
 
 const createMentorshipApplication = async (req, res) => {
@@ -26,6 +31,20 @@ const createMentorshipApplication = async (req, res) => {
       mentorshipModes,
       availability,
     });
+
+    // Send notification to mentor
+    await Notification.create({
+      userId: mentor.id,
+      to: "Mentor",
+      message: `${req.user.name} has submitted a mentorship application. Please review it in your dashboard.`,
+    });
+
+    // Send notification to admin
+    await Notification.create({
+      to: "Admin",
+      message: `New mentorship application from ${req.user.name} to ${mentor.name}.`,
+    });
+
     console.log(response);
     successResponse(res, response);
   } catch (error) {
@@ -50,39 +69,40 @@ const getAllMentorshipApplications = async (req, res) => {
 };
 const getEntreprenuerMentorshipApplications = async (req, res) => {
   try {
-    const {uuid} = req.params;
-    const user  = await User.findOne({
-      where:{
-        uuid
-      }
-    })
+    const { uuid } = req.params;
+    const user = await User.findOne({
+      where: {
+        uuid,
+      },
+    });
     const { count, rows } = await MentorshipApplication.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
       order: [["createdAt", "DESC"]],
-      include:[{
-        model:User,
-        as:"mentor",
-        where:{
-          name:{
-            [Op.like]:`%${req.keyword}%`
-          }
+      include: [
+        {
+          model: User,
+          as: "mentor",
+          where: {
+            name: {
+              [Op.like]: `%${req.keyword}%`,
+            },
+          },
+          include: [MentorProfile],
         },
-        include:[MentorProfile]
-      },
-      {
-        model:User,
-        as:"entrepreneur",
-        where:{
-          id:user.id
+        {
+          model: User,
+          as: "entrepreneur",
+          where: {
+            id: user.id,
+          },
+          required: true,
         },
-        required:true
-      }],
+      ],
       attributes: {
         exclude: ["id"],
       },
     });
-
 
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {

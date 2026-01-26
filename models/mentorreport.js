@@ -45,11 +45,52 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      meetingDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      meetingDuration: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      topicsDiscussed: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      progressMade: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      challengesFaced: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      actionItems: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      nextMeetingDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      overallProgress: {
+        type: DataTypes.ENUM(
+          "excellent",
+          "good",
+          "satisfactory",
+          "needs-improvement",
+        ),
+        allowNull: true,
+      },
+      recommendations: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       sequelize,
       modelName: "MentorReport",
-    }
+    },
   );
   return MentorReport;
 };
