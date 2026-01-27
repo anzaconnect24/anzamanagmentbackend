@@ -118,6 +118,7 @@ const updateOperationData = async (req, res) => {
     console.error("Error updating data:", error);
   }
 };
+
 const update = async (req, res) => {
   console.log("Update API triggered");
   try {
@@ -152,6 +153,7 @@ const update = async (req, res) => {
     console.error("Error updating data:", error);
   }
 };
+
 const createPdfAttachment = async (req, res) => {
   console.log("trying attachment");
   try {
