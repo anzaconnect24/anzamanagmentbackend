@@ -29,8 +29,8 @@ const createLegal = async (req, res) => {
           subDomain: item.subDomain,
           score: item.score,
           rating: item.rating,
-        })
-      )
+        }),
+      ),
     );
 
     successResponse(res, responses);
@@ -98,8 +98,8 @@ const updateLegallData = async (req, res) => {
               customerComment: item.customerComment,
               reviewerComment: item.reviewerComment,
             },
-            { where }
-          )
+            { where },
+          ),
         );
       }
     }
@@ -112,7 +112,7 @@ const updateLegallData = async (req, res) => {
         user.id,
         "CratLegals",
         updatedSubDomains.join(", "),
-        user.name
+        user.name,
       );
     }
 
@@ -128,12 +128,21 @@ const update = async (req, res) => {
     const body = req.body;
     const { uuid } = req.params;
     const userId = req.user && req.user.id;
+    const userRole = req.user && req.user.role;
+
+    // Staff/Reviewers can update any record (for reviewer comments)
+    // Entrepreneurs can only update their own records
+    const whereClause = {
+      uuid,
+    };
+
+    // Only add userId filter if user is not Staff (reviewers should access all records)
+    if (userRole !== "Staff" && userId) {
+      whereClause.userId = userId;
+    }
 
     const cratLegal = await CratLegals.findOne({
-      where: {
-        uuid,
-        ...(userId ? { userId } : {}),
-      },
+      where: whereClause,
     });
 
     if (!cratLegal) {
@@ -194,7 +203,7 @@ const deletePdfAttachment = async (req, res) => {
         const attachmentPath = path.join(
           __dirname,
           "../../files/",
-          attachmentFileName
+          attachmentFileName,
         );
         if (fs.existsSync(attachmentPath)) {
           fs.unlinkSync(attachmentPath);

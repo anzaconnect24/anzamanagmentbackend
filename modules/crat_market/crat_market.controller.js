@@ -42,7 +42,7 @@ const createMarket = async (req, res) => {
           score: item.score,
           rating,
         });
-      })
+      }),
     );
 
     successResponse(res, responses);
@@ -116,14 +116,14 @@ const updateMarketData = async (req, res) => {
                 return { uuid: item.uuid, updated: false, reason: "Not found" };
               await record.update(payload);
               return { uuid: item.uuid, updated: true };
-            })()
+            })(),
           );
         } else if (item.subDomain) {
           updatePromises.push(
             CratMarkets.update(payload, {
               where: { userId: id, subDomain: item.subDomain },
               returning: true,
-            })
+            }),
           );
         }
       }
@@ -137,7 +137,7 @@ const updateMarketData = async (req, res) => {
         user.id,
         "CratMarkets",
         updatedSubDomains.join(", "),
-        user.name
+        user.name,
       );
     }
 
@@ -153,12 +153,21 @@ const update = async (req, res) => {
     const body = req.body;
     const { uuid } = req.params;
     const userId = req.user && req.user.id;
+    const userRole = req.user && req.user.role;
+
+    // Staff/Reviewers can update any record (for reviewer comments)
+    // Entrepreneurs can only update their own records
+    const whereClause = {
+      uuid,
+    };
+
+    // Only add userId filter if user is not Staff (reviewers should access all records)
+    if (userRole !== "Staff" && userId) {
+      whereClause.userId = userId;
+    }
 
     const cratMarket = await CratMarkets.findOne({
-      where: {
-        uuid,
-        ...(userId ? { userId } : {}),
-      },
+      where: whereClause,
     });
 
     if (!cratMarket) {
@@ -219,7 +228,7 @@ const deletePdfAttachment = async (req, res) => {
     const attachmentPath = path.join(
       __dirname,
       "../../files/",
-      attachmentFileName
+      attachmentFileName,
     );
     if (fs.existsSync(attachmentPath)) {
       try {
