@@ -22,6 +22,8 @@ const {
   getInProgressInvestments,
   getDroppedInvestments,
   getCompletedInvestments,
+  entrepreneurApproveInvestorRequest,
+  entrepreneurRejectInvestorRequest,
 } = require("./business_investment_request.controller");
 
 const router = Router();
@@ -56,6 +58,18 @@ router.get("/investor/completed", validateJWT, getCompletedInvestments); // Get 
 router.patch("/investor/approve/:uuid", validateJWT, approveInvestmentRequest); // Approve request (show interest)
 router.patch("/investor/reject/:uuid", validateJWT, rejectInvestmentRequest); // Reject request
 router.patch("/investor/complete/:uuid", validateJWT, completeInvestment); // Mark as completed
+
+// Entrepreneur action routes
+router.patch(
+  "/entrepreneur/approve/:uuid",
+  validateJWT,
+  entrepreneurApproveInvestorRequest,
+); // Entrepreneur approves investor request
+router.patch(
+  "/entrepreneur/reject/:uuid",
+  validateJWT,
+  entrepreneurRejectInvestorRequest,
+); // Entrepreneur rejects investor request
 
 router.get("/waiting", validateJWT, getWaitingBusinessInvestmentRequests);
 router.get("/accepted", validateJWT, getAcceptedBusinessInvestmentRequests);

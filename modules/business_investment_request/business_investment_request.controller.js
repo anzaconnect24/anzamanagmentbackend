@@ -760,3 +760,117 @@ module.exports = {
   getDroppedInvestments,
   getCompletedInvestments,
 };
+
+// Entrepreneur approves investor's investment request
+const entrepreneurApproveInvestorRequest = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const entrepreneur = req.user;
+
+    const investmentRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid, userId: entrepreneur.id },
+      include: [
+        {
+          model: User,
+          as: "investor",
+        },
+        Business,
+      ],
+    });
+
+    if (!investmentRequest) {
+      return errorResponse(res, {
+        message: "Investment request not found or unauthorized",
+      });
+    }
+
+    // Update status to accepted
+    await investmentRequest.update({
+      status: "accepted",
+    });
+
+    // Create notification for investor
+    if (investmentRequest.investorId) {
+      await Notification.create({
+        to: "Investor",
+        userId: investmentRequest.investorId,
+        message: `Your investment request for ${investmentRequest.Business.name} has been approved by the entrepreneur`,
+      });
+    }
+
+    successResponse(res, investmentRequest);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Entrepreneur rejects investor's investment request
+const entrepreneurRejectInvestorRequest = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const entrepreneur = req.user;
+    const { reason } = req.body;
+
+    const investmentRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid, userId: entrepreneur.id },
+      include: [
+        {
+          model: User,
+          as: "investor",
+        },
+        Business,
+      ],
+    });
+
+    if (!investmentRequest) {
+      return errorResponse(res, {
+        message: "Investment request not found or unauthorized",
+      });
+    }
+
+    // Update status to rejected
+    await investmentRequest.update({
+      status: "rejected",
+      feedback: reason || "Investment request declined by entrepreneur",
+    });
+
+    // Create notification for investor
+    if (investmentRequest.investorId) {
+      await Notification.create({
+        to: "Investor",
+        userId: investmentRequest.investorId,
+        message: `Your investment request for ${investmentRequest.Business.name} has been declined`,
+      });
+    }
+
+    successResponse(res, investmentRequest);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+module.exports = {
+  createBusinessInvestmentRequest,
+  updateBusinessInvestmentRequest,
+  deleteBusinessInvestmentRequest,
+  getUserBusinessInvestmentRequest,
+  getAllBusinessInvestmentRequests,
+  getReviewersStatus,
+  getWaitingBusinessInvestmentRequests,
+  getAcceptedBusinessInvestmentRequests,
+  getRejectedBusinessInvestmentRequests,
+  getBusinessInvestmentRequestDetails,
+  deleteProgramRequirement,
+  postBusinessInvestmentRequestDocument,
+  getInvestorWaitingBusinessInvestmentRequests,
+  getInvestorClosedBusinessInvestmentRequests,
+  getInvestorInvestmentRequests,
+  approveInvestmentRequest,
+  rejectInvestmentRequest,
+  completeInvestment,
+  getInProgressInvestments,
+  getDroppedInvestments,
+  getCompletedInvestments,
+  entrepreneurApproveInvestorRequest,
+  entrepreneurRejectInvestorRequest,
+};
