@@ -197,11 +197,17 @@ const deleteProgramRequirement = async (req, res) => {
 const getAllBusinessInvestmentRequests = async (req, res) => {
   // res.status(200).json({"k":"v"});
   try {
-    let { page, limit } = req.query;
+    let { page, limit, status } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
     const offset = (page - 1) * limit;
     const user = req.user;
+
+    // Build where clause for filtering
+    const whereClause = {};
+    if (status) {
+      whereClause.status = status;
+    }
 
     const { count, rows } = await BusinessInvestmentRequest.findAndCountAll({
       offset: offset, //ruka ngapi
@@ -211,16 +217,20 @@ const getAllBusinessInvestmentRequests = async (req, res) => {
       attributes: {
         exclude: ["UserId"],
       },
-      where: {
-        userId: user.id,
-      },
+      where: whereClause,
       include: [
         {
           model: User,
           as: "investor",
           include: InvestorProfile,
         },
-        Business,
+        {
+          model: Business,
+          required: true,
+          where: {
+            userId: user.id, // Filter by entrepreneur's businesses
+          },
+        },
       ],
     });
     const totalPages =
