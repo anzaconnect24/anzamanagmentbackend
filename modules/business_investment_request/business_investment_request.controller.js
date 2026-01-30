@@ -219,7 +219,7 @@ const getAllBusinessInvestmentRequests = async (req, res) => {
         {
           model: User,
           as: "investor",
-          // include: InvestorProfile,
+          include: [InvestorProfile],
         },
         {
           model: Business,
@@ -774,6 +774,8 @@ const entrepreneurApproveInvestorRequest = async (req, res) => {
     const uuid = req.params.uuid;
     const entrepreneur = req.user;
 
+    console.log("Approving investment request:", uuid, "by entrepreneur:", entrepreneur.id);
+
     const investmentRequest = await BusinessInvestmentRequest.findOne({
       where: { uuid, userId: entrepreneur.id },
       include: [
@@ -786,15 +788,20 @@ const entrepreneurApproveInvestorRequest = async (req, res) => {
     });
 
     if (!investmentRequest) {
+      console.log("Investment request not found for uuid:", uuid, "and userId:", entrepreneur.id);
       return errorResponse(res, {
         message: "Investment request not found or unauthorized",
-      });
+      }, 404);
     }
+
+    console.log("Found investment request, current status:", investmentRequest.status);
 
     // Update status to accepted
     await investmentRequest.update({
       status: "accepted",
     });
+
+    console.log("Updated status to accepted, new status:", investmentRequest.status);
 
     // Create notification for investor
     if (investmentRequest.investorId) {
@@ -805,8 +812,22 @@ const entrepreneurApproveInvestorRequest = async (req, res) => {
       });
     }
 
-    successResponse(res, investmentRequest);
+    // Fetch updated record with all includes
+    const updatedRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "investor",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+
+    successResponse(res, updatedRequest);
   } catch (error) {
+    console.error("Error approving investment request:", error);
     errorResponse(res, error);
   }
 };
@@ -818,6 +839,8 @@ const entrepreneurRejectInvestorRequest = async (req, res) => {
     const entrepreneur = req.user;
     const { reason } = req.body;
 
+    console.log("Rejecting investment request:", uuid, "by entrepreneur:", entrepreneur.id);
+
     const investmentRequest = await BusinessInvestmentRequest.findOne({
       where: { uuid, userId: entrepreneur.id },
       include: [
@@ -830,16 +853,21 @@ const entrepreneurRejectInvestorRequest = async (req, res) => {
     });
 
     if (!investmentRequest) {
+      console.log("Investment request not found for uuid:", uuid, "and userId:", entrepreneur.id);
       return errorResponse(res, {
         message: "Investment request not found or unauthorized",
-      });
+      }, 404);
     }
+
+    console.log("Found investment request, current status:", investmentRequest.status);
 
     // Update status to rejected
     await investmentRequest.update({
       status: "rejected",
       feedback: reason || "Investment request declined by entrepreneur",
     });
+
+    console.log("Updated status to rejected, new status:", investmentRequest.status);
 
     // Create notification for investor
     if (investmentRequest.investorId) {
@@ -850,8 +878,22 @@ const entrepreneurRejectInvestorRequest = async (req, res) => {
       });
     }
 
-    successResponse(res, investmentRequest);
+    // Fetch updated record with all includes
+    const updatedRequest = await BusinessInvestmentRequest.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "investor",
+          include: [InvestorProfile],
+        },
+        Business,
+      ],
+    });
+
+    successResponse(res, updatedRequest);
   } catch (error) {
+    console.error("Error rejecting investment request:", error);
     errorResponse(res, error);
   }
 };
