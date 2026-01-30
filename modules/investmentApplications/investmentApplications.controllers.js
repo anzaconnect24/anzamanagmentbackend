@@ -325,7 +325,6 @@ const getInterestedInvestors = async (req, res) => {
         {
           model: User,
           as: "Investor",
-          attributes: ["uuid", "firstName", "lastName", "email", "phone"],
           required: true,
         },
       ],
