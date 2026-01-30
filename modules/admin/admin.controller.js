@@ -194,11 +194,22 @@ const getUserCounts = async (req, res) => {
 
     let investorsInterested;
     let myInvestors;
+    let investmentsMade;
     if (business) {
-      investorsInterested = await InvestmentInterest.count({
+      // Count investors who have shown interest in this entrepreneur's business
+      investorsInterested = await BusinessInvestmentRequest.count({
         where: {
           businessId: business.id,
-          from: "investor",
+          investorId: { [Op.ne]: null }, // Has an investor
+          status: { [Op.in]: ["waiting", "accepted", "in-progress"] }, // Active interest
+        },
+      });
+      // Count completed investments for this entrepreneur's business
+      investmentsMade = await BusinessInvestmentRequest.count({
+        where: {
+          businessId: business.id,
+          investorId: { [Op.ne]: null }, // Has an investor
+          status: "completed", // Completed investments
         },
       });
       myInvestors = await InvestmentInterest.count({
@@ -272,6 +283,7 @@ const getUserCounts = async (req, res) => {
       myEnterprenuers,
       myInvestors,
       investorsInterested,
+      investmentsMade: investmentsMade || 0,
       enterprenuersInterested,
       videos,
       documents,
