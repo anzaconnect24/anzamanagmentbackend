@@ -1,5 +1,6 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { InvestmentApplication, User } = require("../../models");
+const { InvestmentApplication, User, Business } = require("../../models");
+const { Op } = require("sequelize");
 
 const createInvestmentApplication = async (req, res) => {
   user = req.user;
@@ -295,6 +296,109 @@ const getInterestedEntrepreneurs = async (req, res) => {
   }
 };
 
+// Get interested investors for entrepreneur's businesses
+const getInterestedInvestors = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { status } = req.query;
+
+    const whereClause = {
+      entreprenuerId: userId,
+      investorStatus: {
+        [Op.ne]: "pending", // Not pending means investor has shown interest
+      },
+    };
+
+    if (status) {
+      whereClause.investorStatus = status;
+    }
+
+    const { count, rows } = await InvestmentApplication.findAndCountAll({
+      where: whereClause,
+      offset: req.offset,
+      limit: req.limit,
+      order: [["createdAt", "DESC"]],
+      attributes: {
+        exclude: ["id", "investorId", "entreprenuerId"],
+      },
+      include: [
+        {
+          model: User,
+          as: "Investor",
+          attributes: ["uuid", "firstName", "lastName", "email", "phone"],
+          required: true,
+        },
+        {
+          model: Business,
+          attributes: ["uuid", "name", "sector", "description"],
+        },
+      ],
+    });
+
+    successResponse(res, { count, data: rows, page: req.page });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Entrepreneur approves investor's interest
+const entrepreneurApproveInvestor = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const userId = req.user.id;
+
+    const application = await InvestmentApplication.findOne({
+      where: {
+        uuid,
+        entreprenuerId: userId,
+      },
+    });
+
+    if (!application) {
+      return errorResponse(res, "Investment application not found", 404);
+    }
+
+    // Update investor status to approved
+    application.investorStatus = "approved";
+    application.investorResponse = "Entrepreneur approved your interest";
+    application.respondedAt = new Date();
+    await application.save();
+
+    successResponse(res, application);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Entrepreneur rejects investor's interest
+const entrepreneurRejectInvestor = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const userId = req.user.id;
+
+    const application = await InvestmentApplication.findOne({
+      where: {
+        uuid,
+        entreprenuerId: userId,
+      },
+    });
+
+    if (!application) {
+      return errorResponse(res, "Investment application not found", 404);
+    }
+
+    // Update investor status to rejected
+    application.investorStatus = "rejected";
+    application.investorResponse = "Entrepreneur declined your interest";
+    application.respondedAt = new Date();
+    await application.save();
+
+    successResponse(res, application);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   createInvestmentApplication,
   getInvestmentApplication,
@@ -306,4 +410,7 @@ module.exports = {
   investorRejectApplication,
   markInvestmentCompleted,
   getInterestedEntrepreneurs,
+  getInterestedInvestors,
+  entrepreneurApproveInvestor,
+  entrepreneurRejectInvestor,
 };

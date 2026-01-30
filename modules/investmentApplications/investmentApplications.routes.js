@@ -11,6 +11,9 @@ const {
   investorRejectApplication,
   markInvestmentCompleted,
   getInterestedEntrepreneurs,
+  getInterestedInvestors,
+  entrepreneurApproveInvestor,
+  entrepreneurRejectInvestor,
 } = require("./investmentApplications.controllers");
 const { getPagination } = require("../../utils/getPagination");
 
@@ -22,6 +25,12 @@ router.get(
   getPagination,
   getInterestedEntrepreneurs,
 );
+router.get(
+  "/interested-investors",
+  validateJWT,
+  getPagination,
+  getInterestedInvestors,
+);
 router.get("/:uuid", validateJWT, getInvestmentApplication);
 router.get("/", validateJWT, getPagination, getAllInvestmentApplications);
 router.patch("/:uuid", validateJWT, updateInvestmentApplication);
@@ -32,5 +41,13 @@ router.patch("/:uuid/show-interest", validateJWT, investorShowInterest);
 router.patch("/:uuid/approve", validateJWT, investorApproveApplication);
 router.patch("/:uuid/reject", validateJWT, investorRejectApplication);
 router.patch("/:uuid/complete", validateJWT, markInvestmentCompleted);
+
+// Entrepreneur action routes
+router.patch(
+  "/:uuid/approve-investor",
+  validateJWT,
+  entrepreneurApproveInvestor,
+);
+router.patch("/:uuid/reject-investor", validateJWT, entrepreneurRejectInvestor);
 
 module.exports = router;
