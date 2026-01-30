@@ -219,7 +219,7 @@ const getAllBusinessInvestmentRequests = async (req, res) => {
         {
           model: User,
           as: "investor",
-          include: InvestorProfile,
+          // include: InvestorProfile,
         },
         {
           model: Business,
