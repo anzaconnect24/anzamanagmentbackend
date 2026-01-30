@@ -302,6 +302,9 @@ const getInterestedInvestors = async (req, res) => {
     const userId = req.user.id;
     const { status } = req.query;
 
+    console.log("Getting interested investors for entrepreneur ID:", userId);
+    console.log("Filter status:", status);
+
     const whereClause = {
       entreprenuerId: userId,
       investorStatus: {
@@ -312,6 +315,8 @@ const getInterestedInvestors = async (req, res) => {
     if (status) {
       whereClause.investorStatus = status;
     }
+
+    console.log("Where clause:", JSON.stringify(whereClause));
 
     const { count, rows } = await InvestmentApplication.findAndCountAll({
       where: whereClause,
@@ -330,8 +335,11 @@ const getInterestedInvestors = async (req, res) => {
       ],
     });
 
+    console.log(`Found ${count} interested investors for entrepreneur`);
+
     successResponse(res, { count, data: rows, page: req.page });
   } catch (error) {
+    console.error("Error in getInterestedInvestors:", error);
     errorResponse(res, error);
   }
 };

@@ -19,6 +19,8 @@ const { getPagination } = require("../../utils/getPagination");
 
 const router = Router();
 router.post("/", validateJWT, createInvestmentApplication);
+
+// Special routes must come before /:uuid
 router.get(
   "/interested-entrepreneurs",
   validateJWT,
@@ -31,6 +33,8 @@ router.get(
   getPagination,
   getInterestedInvestors,
 );
+
+// Generic routes
 router.get("/:uuid", validateJWT, getInvestmentApplication);
 router.get("/", validateJWT, getPagination, getAllInvestmentApplications);
 router.patch("/:uuid", validateJWT, updateInvestmentApplication);
