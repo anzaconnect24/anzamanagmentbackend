@@ -217,6 +217,7 @@ const getAllBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: InvestorProfile,
         },
         Business,
@@ -254,6 +255,7 @@ const getInvestorWaitingBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: InvestorProfile,
         },
         Business,
@@ -291,6 +293,7 @@ const getInvestorClosedBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: InvestorProfile,
         },
         Business,
@@ -322,6 +325,7 @@ const getWaitingBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           // include:[InvestorProfile]
         },
         Business,
@@ -351,6 +355,7 @@ const getAcceptedBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: InvestorProfile,
         },
         Business,
@@ -380,6 +385,7 @@ const getRejectedBusinessInvestmentRequests = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: InvestorProfile,
         },
         Business,
@@ -405,6 +411,7 @@ const getBusinessInvestmentRequestDetails = async (req, res) => {
       include: [
         {
           model: User,
+          as: "investor",
           include: [InvestorProfile],
         },
         {

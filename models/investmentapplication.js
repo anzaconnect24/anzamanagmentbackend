@@ -9,6 +9,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      InvestmentApplication.belongsTo(models.User, {
+        foreignKey: "investorId",
+        as: "Investor",
+      });
+      InvestmentApplication.belongsTo(models.User, {
+        foreignKey: "entreprenuerId",
+        as: "Entrepreneur",
+      });
     }
   }
   InvestmentApplication.init(
@@ -41,11 +49,29 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      status: {
+        type: DataTypes.ENUM("pending", "in_progress", "completed", "dropped"),
+        allowNull: false,
+        defaultValue: "pending",
+      },
+      investorStatus: {
+        type: DataTypes.ENUM("pending", "interested", "approved", "rejected"),
+        allowNull: false,
+        defaultValue: "pending",
+      },
+      investorResponse: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      respondedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       sequelize,
       modelName: "InvestmentApplication",
-    }
+    },
   );
   return InvestmentApplication;
 };
