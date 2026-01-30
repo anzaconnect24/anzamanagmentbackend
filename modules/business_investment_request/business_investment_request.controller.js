@@ -782,13 +782,16 @@ const entrepreneurApproveInvestorRequest = async (req, res) => {
     );
 
     const investmentRequest = await BusinessInvestmentRequest.findOne({
-      where: { uuid, userId: entrepreneur.id },
+      where: { uuid },
       include: [
         {
           model: User,
           as: "investor",
         },
-        Business,
+        {
+          model: Business,
+          where: { userId: entrepreneur.id },
+        },
       ],
     });
 
@@ -796,7 +799,7 @@ const entrepreneurApproveInvestorRequest = async (req, res) => {
       console.log(
         "Investment request not found for uuid:",
         uuid,
-        "and userId:",
+        "or business not owned by entrepreneur:",
         entrepreneur.id,
       );
       return errorResponse(
@@ -867,13 +870,16 @@ const entrepreneurRejectInvestorRequest = async (req, res) => {
     );
 
     const investmentRequest = await BusinessInvestmentRequest.findOne({
-      where: { uuid, userId: entrepreneur.id },
+      where: { uuid },
       include: [
         {
           model: User,
           as: "investor",
         },
-        Business,
+        {
+          model: Business,
+          where: { userId: entrepreneur.id },
+        },
       ],
     });
 
@@ -881,7 +887,7 @@ const entrepreneurRejectInvestorRequest = async (req, res) => {
       console.log(
         "Investment request not found for uuid:",
         uuid,
-        "and userId:",
+        "or business not owned by entrepreneur:",
         entrepreneur.id,
       );
       return errorResponse(
