@@ -1,5 +1,5 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { InvestmentApplication, User, Business } = require("../../models");
+const { InvestmentApplication, User } = require("../../models");
 const { Op } = require("sequelize");
 
 const createInvestmentApplication = async (req, res) => {
@@ -327,10 +327,6 @@ const getInterestedInvestors = async (req, res) => {
           as: "Investor",
           attributes: ["uuid", "firstName", "lastName", "email", "phone"],
           required: true,
-        },
-        {
-          model: Business,
-          attributes: ["uuid", "name", "sector", "description"],
         },
       ],
     });
