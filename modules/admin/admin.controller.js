@@ -192,26 +192,42 @@ const getUserCounts = async (req, res) => {
         where: closedInvestmentOptions,
       });
 
-    let investorsInterested;
+    // Count investors interested across ALL entrepreneur's businesses
+    const investorsInterested = await BusinessInvestmentRequest.count({
+      where: {
+        investorId: { [Op.ne]: null }, // Has an investor
+        status: { [Op.in]: ["waiting", "accepted", "in-progress"] }, // Active interest
+      },
+      include: [
+        {
+          model: Business,
+          required: true,
+          where: {
+            userId: user.id, // Filter by entrepreneur's businesses
+          },
+        },
+      ],
+    });
+
+    // Count completed investments across ALL entrepreneur's businesses
+    const investmentsMade = await BusinessInvestmentRequest.count({
+      where: {
+        investorId: { [Op.ne]: null }, // Has an investor
+        status: "completed", // Completed investments
+      },
+      include: [
+        {
+          model: Business,
+          required: true,
+          where: {
+            userId: user.id, // Filter by entrepreneur's businesses
+          },
+        },
+      ],
+    });
+
     let myInvestors;
-    let investmentsMade;
     if (business) {
-      // Count investors who have shown interest in this entrepreneur's business
-      investorsInterested = await BusinessInvestmentRequest.count({
-        where: {
-          businessId: business.id,
-          investorId: { [Op.ne]: null }, // Has an investor
-          status: { [Op.in]: ["waiting", "accepted", "in-progress"] }, // Active interest
-        },
-      });
-      // Count completed investments for this entrepreneur's business
-      investmentsMade = await BusinessInvestmentRequest.count({
-        where: {
-          businessId: business.id,
-          investorId: { [Op.ne]: null }, // Has an investor
-          status: "completed", // Completed investments
-        },
-      });
       myInvestors = await InvestmentInterest.count({
         where: {
           businessId: business.id,
