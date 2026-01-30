@@ -214,9 +214,6 @@ const getAllBusinessInvestmentRequests = async (req, res) => {
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       // distinct:true,
-      attributes: {
-        exclude: ["UserId"],
-      },
       where: whereClause,
       include: [
         {
