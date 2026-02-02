@@ -5,6 +5,7 @@ const {
   Business,
   BusinessSector,
   Notification,
+  MentorshipApplication,
 } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
@@ -108,22 +109,28 @@ const getEntreprenuerMentors = async (req, res) => {
 };
 const getUnapprovedMentorEntreprenuers = async (req, res) => {
   try {
-    const response = await MentorEntreprenuer.findAll({
+    const user = req.user;
+    const response = await MentorshipApplication.findAll({
       attributes: [
         "id",
         "uuid",
         "mentorId",
-        "approved",
         "entreprenuerId",
+        "status",
+        "challenges",
+        "mentorshipAreas",
+        "mentorshipMode",
+        "availability",
         "createdAt",
       ],
       where: {
-        approved: false,
+        status: "PENDING",
+        mentorId: user.id,
       },
       include: [
         {
           model: User,
-          as: "Entreprenuer",
+          as: "entrepreneur",
           include: [
             {
               model: Business,
@@ -133,7 +140,7 @@ const getUnapprovedMentorEntreprenuers = async (req, res) => {
         },
         {
           model: User,
-          as: "Mentor",
+          as: "mentor",
         },
       ],
     });
