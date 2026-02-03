@@ -6,6 +6,7 @@ const {
   createMentorEntreprenuer,
   deleteMentorEntreprenuer,
   getMentorEntreprenuers,
+  setupMentorEntreprenuerMeeting,
   getUnapprovedMentorEntreprenuers,
   updateMentorEntreprenuer,
   getEntreprenuerMentors,
@@ -21,7 +22,11 @@ router.get("/entreprenuer/:uuid", validateJWT, getEntreprenuerMentors);
 router.get("/unapproved/", validateJWT, getUnapprovedMentorEntreprenuers);
 router.delete("/:uuid", validateJWT, deleteMentorEntreprenuer);
 router.patch("/:uuid", validateJWT, updateMentorEntreprenuer);
-router.post("/:uuid/setup-meeting", validateJWT, setupMeeting);
+router.post(
+  "/:uuid/setup-meeting",
+  validateJWT,
+  setupMentorEntreprenuerMeeting,
+);
 router.post("/:uuid/accept-appointment", validateJWT, acceptAppointment);
 router.post("/:uuid/reject-appointment", validateJWT, rejectAppointment);
 router.post("/:uuid/complete-meeting", validateJWT, completeMeeting);

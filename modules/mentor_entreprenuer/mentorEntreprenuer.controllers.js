@@ -59,7 +59,18 @@ const getMentorEntreprenuers = async (req, res) => {
     });
 
     const response = await MentorEntreprenuer.findAll({
-      attributes: ["id", "uuid", "mentorId", "entreprenuerId", "createdAt"],
+      attributes: [
+        "id",
+        "uuid",
+        "mentorId",
+        "entreprenuerId",
+        "approved",
+        "googleMeetLink",
+        "appointmentDate",
+        "appointmentStatus",
+        "menteeAccepted",
+        "createdAt",
+      ],
       where: {
         mentorId: mentor.id,
       },
@@ -107,6 +118,57 @@ const getEntreprenuerMentors = async (req, res) => {
     errorResponse(res, error);
   }
 };
+// Set up Google Meet link and appointment date for MentorEntreprenuer
+const setupMentorEntreprenuerMeeting = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { googleMeetLink, appointmentDate } = req.body;
+
+    const mentorEntreprenuer = await MentorEntreprenuer.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+        },
+        {
+          model: User,
+          as: "Mentor",
+        },
+      ],
+    });
+
+    if (!mentorEntreprenuer) {
+      return errorResponse(
+        res,
+        "Mentor-Entrepreneur relationship not found",
+        404,
+      );
+    }
+
+    // Update with Google Meet link and appointment date
+    await mentorEntreprenuer.update({
+      googleMeetLink,
+      appointmentDate,
+      appointmentStatus: "pending",
+    });
+
+    // Send notification to entrepreneur
+    await Notification.create({
+      userId: mentorEntreprenuer.Entreprenuer.id,
+      to: "Enterprenuer",
+      message: `Your mentor ${mentorEntreprenuer.Mentor.name} has scheduled a meeting for ${new Date(appointmentDate).toLocaleDateString()}. Please check your mentorship dashboard to accept.`,
+    });
+
+    successResponse(res, {
+      message: "Meeting scheduled successfully",
+      mentorEntreprenuer,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getUnapprovedMentorEntreprenuers = async (req, res) => {
   try {
     const user = req.user;
