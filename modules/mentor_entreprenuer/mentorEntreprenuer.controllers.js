@@ -6,6 +6,7 @@ const {
   BusinessSector,
   Notification,
   MentorshipApplication,
+  MentorProfile,
 } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 
@@ -102,7 +103,18 @@ const getEntreprenuerMentors = async (req, res) => {
     });
 
     const response = await MentorEntreprenuer.findAll({
-      attributes: ["id", "uuid", "mentorId", "entreprenuerId", "createdAt"],
+      attributes: [
+        "id",
+        "uuid",
+        "mentorId",
+        "entreprenuerId",
+        "approved",
+        "googleMeetLink",
+        "appointmentDate",
+        "appointmentStatus",
+        "menteeAccepted",
+        "createdAt",
+      ],
       where: {
         entreprenuerId: entreprenuer.id,
       },
@@ -110,6 +122,7 @@ const getEntreprenuerMentors = async (req, res) => {
         {
           model: User,
           as: "Mentor",
+          include: [MentorProfile],
         },
       ],
     });
