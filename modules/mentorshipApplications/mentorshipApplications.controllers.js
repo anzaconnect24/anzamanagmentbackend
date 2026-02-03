@@ -4,6 +4,7 @@ const {
   User,
   MentorProfile,
   Notification,
+  MentorEntreprenuer,
 } = require("../../models");
 const { Op } = require("sequelize");
 
@@ -22,6 +23,26 @@ const createMentorshipApplication = async (req, res) => {
         uuid: mentor_uuid,
       },
     });
+
+    // Check if entrepreneur already has a PENDING or ACCEPTED application to this mentor
+    const existingApplication = await MentorshipApplication.findOne({
+      where: {
+        mentorId: mentor.id,
+        entreprenuerId: req.user.id,
+        status: {
+          [Op.in]: ["PENDING", "ACCEPTED"],
+        },
+      },
+    });
+
+    if (existingApplication) {
+      return errorResponse(res, {
+        message:
+          existingApplication.status === "ACCEPTED"
+            ? "You already have an accepted mentorship with this mentor."
+            : "You already have a pending mentorship application with this mentor. Please wait for a response.",
+      });
+    }
 
     const response = await MentorshipApplication.create({
       mentorId: mentor.id,
@@ -135,7 +156,42 @@ const updateMentorshipApplication = async (req, res) => {
         uuid,
       },
     });
+
     const response = await mentorshipapplication.update(req.body);
+
+    // If status is being changed to ACCEPTED, create MentorEntreprenuer record
+    if (req.body.status === "ACCEPTED") {
+      // Check if MentorEntreprenuer record already exists
+      const existingRelationship = await MentorEntreprenuer.findOne({
+        where: {
+          mentorId: mentorshipapplication.mentorId,
+          entreprenuerId: mentorshipapplication.entreprenuerId,
+        },
+      });
+
+      if (!existingRelationship) {
+        await MentorEntreprenuer.create({
+          mentorId: mentorshipapplication.mentorId,
+          entreprenuerId: mentorshipapplication.entreprenuerId,
+          approved: true,
+        });
+
+        // Send notification to entrepreneur
+        const mentor = await User.findOne({
+          where: { id: mentorshipapplication.mentorId },
+        });
+        const entrepreneur = await User.findOne({
+          where: { id: mentorshipapplication.entreprenuerId },
+        });
+
+        await Notification.create({
+          userId: entrepreneur.id,
+          to: "Enterprenuer",
+          message: `Your mentorship request has been approved by ${mentor.name}. You can now access your mentor dashboard.`,
+        });
+      }
+    }
+
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
