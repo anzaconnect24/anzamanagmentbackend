@@ -97,6 +97,9 @@ const getEntreprenuerMentorshipApplications = async (req, res) => {
       },
     });
     const { count, rows } = await MentorshipApplication.findAndCountAll({
+      where: {
+        status: "PENDING",
+      },
       offset: req.offset,
       limit: req.limit,
       order: [["createdAt", "DESC"]],
