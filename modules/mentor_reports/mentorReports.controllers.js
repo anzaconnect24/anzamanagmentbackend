@@ -19,6 +19,17 @@ const createMentorReport = async (req, res) => {
       nextMeetingDate,
       overallProgress,
       recommendations,
+      sessionOverview,
+      menteeEngagementRating,
+      menteeEngagementComments,
+      significantProgress,
+      progressDetails,
+      areasForImprovement,
+      nextSteps,
+      supportNeeded,
+      supportDetails,
+      overallFeedback,
+      sessionRating,
     } = req.body;
 
     const url = req.file ? await getUrl(req) : null;
@@ -49,6 +60,18 @@ const createMentorReport = async (req, res) => {
       nextMeetingDate,
       overallProgress,
       recommendations,
+      sessionOverview,
+      menteeEngagementRating,
+      menteeEngagementComments,
+      significantProgress:
+        significantProgress === "true" || significantProgress === true,
+      progressDetails,
+      areasForImprovement,
+      nextSteps,
+      supportNeeded: supportNeeded === "true" || supportNeeded === true,
+      supportDetails,
+      overallFeedback,
+      sessionRating: sessionRating ? parseInt(sessionRating) : null,
     });
 
     // Send notification to entrepreneur

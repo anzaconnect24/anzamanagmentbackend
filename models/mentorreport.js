@@ -86,6 +86,54 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      sessionOverview: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      menteeEngagementRating: {
+        type: DataTypes.ENUM("excellent", "good", "fair", "needs-improvement"),
+        allowNull: true,
+      },
+      menteeEngagementComments: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      significantProgress: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
+      progressDetails: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      areasForImprovement: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      nextSteps: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      supportNeeded: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+      },
+      supportDetails: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      overallFeedback: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      sessionRating: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          min: 1,
+          max: 5,
+        },
+      },
     },
     {
       sequelize,

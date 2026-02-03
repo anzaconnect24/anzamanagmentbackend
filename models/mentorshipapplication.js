@@ -9,11 +9,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      MentorshipApplication.belongsTo(models.User,{
-        as:"mentor",
-        foreignKey:"mentorId",
-        targetKey:"id"
-      })
+      MentorshipApplication.belongsTo(models.User, {
+        as: "mentor",
+        foreignKey: "mentorId",
+        targetKey: "id",
+      });
       MentorshipApplication.belongsTo(models.User, {
         as: "entrepreneur",
         foreignKey: "entreprenuerId",
@@ -55,11 +55,29 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         defaultValue: "PENDING",
       },
+      googleMeetLink: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      appointmentDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      appointmentStatus: {
+        type: DataTypes.ENUM("pending", "accepted", "rejected", "completed"),
+        allowNull: true,
+        defaultValue: "pending",
+      },
+      menteeAccepted: {
+        type: DataTypes.BOOLEAN,
+        allowNull: true,
+        defaultValue: false,
+      },
     },
     {
       sequelize,
       modelName: "MentorshipApplication",
-    }
+    },
   );
   return MentorshipApplication;
 };

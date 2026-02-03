@@ -157,6 +157,98 @@ const deleteMentorshipApplication = async (req, res) => {
   }
 };
 
+// Set up Google Meet link and appointment date
+const setupMeeting = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { googleMeetLink, appointmentDate } = req.body;
+
+    const mentorshipApplication = await MentorshipApplication.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+        },
+        {
+          model: User,
+          as: "mentor",
+        },
+      ],
+    });
+
+    if (!mentorshipApplication) {
+      return errorResponse(res, "Mentorship application not found", 404);
+    }
+
+    // Update with Google Meet link and appointment date
+    await mentorshipApplication.update({
+      googleMeetLink,
+      appointmentDate,
+      appointmentStatus: "pending",
+    });
+
+    // Send notification to entrepreneur
+    await Notification.create({
+      userId: mentorshipApplication.entrepreneur.id,
+      to: "Enterprenuer",
+      message: `Your mentor ${mentorshipApplication.mentor.name} has scheduled a meeting for ${new Date(appointmentDate).toLocaleDateString()}. Please check your mentorship dashboard to accept.`,
+    });
+
+    successResponse(res, {
+      message: "Meeting scheduled successfully",
+      mentorshipApplication,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Mentee accepts appointment
+const acceptAppointment = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+
+    const mentorshipApplication = await MentorshipApplication.findOne({
+      where: { uuid },
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+        },
+        {
+          model: User,
+          as: "mentor",
+        },
+      ],
+    });
+
+    if (!mentorshipApplication) {
+      return errorResponse(res, "Mentorship application not found", 404);
+    }
+
+    // Update mentee acceptance
+    await mentorshipApplication.update({
+      menteeAccepted: true,
+      appointmentStatus: "accepted",
+    });
+
+    // Send notification to mentor
+    await Notification.create({
+      userId: mentorshipApplication.mentor.id,
+      to: "Mentor",
+      message: `${mentorshipApplication.entrepreneur.name} has accepted the meeting scheduled for ${new Date(mentorshipApplication.appointmentDate).toLocaleDateString()}.`,
+    });
+
+    successResponse(res, {
+      message: "Appointment accepted successfully",
+      mentorshipApplication,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   createMentorshipApplication,
   getMentorshipApplication,
@@ -164,4 +256,6 @@ module.exports = {
   deleteMentorshipApplication,
   getEntreprenuerMentorshipApplications,
   updateMentorshipApplication,
+  setupMeeting,
+  acceptAppointment,
 };
