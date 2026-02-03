@@ -95,13 +95,16 @@ const createMentorReport = async (req, res) => {
 const getMentorReports = async (req, res) => {
   try {
     const { uuid } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
     const mentor = await User.findOne({
       where: {
         uuid,
       },
     });
 
-    const response = await MentorReport.findAll({
+    const { count, rows } = await MentorReport.findAndCountAll({
       order: [["createdAt", "DESC"]],
       where: {
         mentorId: mentor.id,
@@ -113,15 +116,29 @@ const getMentorReports = async (req, res) => {
           include: [Business],
         },
       ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
-    successResponse(res, response);
+
+    successResponse(res, {
+      reports: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (error) {
     errorResponse(res, error);
   }
 };
 const getAllReports = async (req, res) => {
   try {
-    const response = await MentorReport.findAll({
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await MentorReport.findAndCountAll({
       order: [["createdAt", "DESC"]],
       include: [
         {
@@ -134,8 +151,19 @@ const getAllReports = async (req, res) => {
           as: "Mentor",
         },
       ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
-    successResponse(res, response);
+
+    successResponse(res, {
+      reports: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (error) {
     errorResponse(res, error);
   }
@@ -143,12 +171,16 @@ const getAllReports = async (req, res) => {
 const getEntreprenuerReports = async (req, res) => {
   try {
     const { uuid } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
     const entreprenuer = await User.findOne({
       where: {
         uuid,
       },
     });
-    const response = await MentorReport.findAll({
+
+    const { count, rows } = await MentorReport.findAndCountAll({
       order: [["createdAt", "DESC"]],
       where: {
         entreprenuerId: entreprenuer.id,
@@ -159,8 +191,19 @@ const getEntreprenuerReports = async (req, res) => {
           as: "Mentor",
         },
       ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
     });
-    successResponse(res, response);
+
+    successResponse(res, {
+      reports: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
   } catch (error) {
     errorResponse(res, error);
   }
