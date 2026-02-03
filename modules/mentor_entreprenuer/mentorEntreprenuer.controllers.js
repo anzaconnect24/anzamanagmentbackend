@@ -408,6 +408,7 @@ const completeMeeting = async (req, res) => {
 module.exports = {
   createMentorEntreprenuer,
   getMentorEntreprenuers,
+  setupMentorEntreprenuerMeeting,
   getEntreprenuerMentors,
   updateMentorEntreprenuer,
   getUnapprovedMentorEntreprenuers,
