@@ -80,8 +80,13 @@ const getReportData = async (req, res) => {
       },
     });
 
-    // Combine all data into a single array
-    const allData = [...financials, ...markets, ...operations, ...legals];
+    // Combine all data into a single array, converting to plain objects
+    const allData = [
+      ...financials.map((f) => f.toJSON()),
+      ...markets.map((m) => m.toJSON()),
+      ...operations.map((o) => o.toJSON()),
+      ...legals.map((l) => l.toJSON()),
+    ];
 
     // Deduplicate records: for each subDomain, keep only the record with the highest score
     // If scores are equal, keep the most recently updated one
@@ -110,8 +115,11 @@ const getReportData = async (req, res) => {
     // Convert back to array
     const response = Object.values(deduplicatedData);
 
-    // Log the response for preview
-    // console.log(response);
+    // Log the response for preview to verify attachment is included
+    console.log(
+      "Sample record with attachment:",
+      response.find((r) => r.attachment) || response[0],
+    );
 
     successResponse(res, response);
   } catch (error) {
