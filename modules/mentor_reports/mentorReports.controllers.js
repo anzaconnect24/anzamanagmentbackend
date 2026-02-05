@@ -233,6 +233,63 @@ const getMentorReport = async (req, res) => {
     errorResponse(res, error);
   }
 };
+const getMentorEntrepreneurReports = async (req, res) => {
+  try {
+    const { mentorUuid, entrepreneurUuid } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const offset = (page - 1) * limit;
+
+    const mentor = await User.findOne({
+      where: {
+        uuid: mentorUuid,
+      },
+    });
+
+    const entrepreneur = await User.findOne({
+      where: {
+        uuid: entrepreneurUuid,
+      },
+    });
+
+    if (!mentor || !entrepreneur) {
+      return errorResponse(res, new Error("Mentor or Entrepreneur not found"));
+    }
+
+    const { count, rows } = await MentorReport.findAndCountAll({
+      order: [["createdAt", "DESC"]],
+      where: {
+        mentorId: mentor.id,
+        entreprenuerId: entrepreneur.id,
+      },
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+          include: [Business],
+        },
+        {
+          model: User,
+          as: "Mentor",
+        },
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    });
+
+    successResponse(res, {
+      reports: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit),
+      },
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const deleteMentorReport = async (req, res) => {
   try {
     const uuid = req.params.uuid;
@@ -254,5 +311,6 @@ module.exports = {
   getAllReports,
   getMentorReport,
   getEntreprenuerReports,
+  getMentorEntrepreneurReports,
   deleteMentorReport,
 };
