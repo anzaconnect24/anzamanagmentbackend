@@ -45,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
           "in_review",
           "reviewed",
           "accepted",
-          "rejected"
+          "rejected",
         ),
         defaultValue: "pending",
         allowNull: false,
@@ -80,7 +80,7 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "CratReview",
       tableName: "crat_reviews",
-    }
+    },
   );
 
   return CratReview;
