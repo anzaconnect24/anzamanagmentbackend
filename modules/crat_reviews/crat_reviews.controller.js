@@ -18,7 +18,7 @@ class CratReviewController {
       if (existingReview) {
         return errorResponse(
           res,
-          "You already have a CRAT review. Only one review per entrepreneur is allowed."
+          "You already have a CRAT review. Only one review per entrepreneur is allowed.",
         );
       }
 
@@ -78,7 +78,12 @@ class CratReviewController {
         {
           model: User,
           as: "entrepreneur",
-          include: [Business],
+          include: [
+            {
+              model: Business,
+              required: true,
+            },
+          ],
           where: search
             ? {
                 [Op.or]: [
@@ -165,7 +170,12 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
-            include: [Business],
+            include: [
+              {
+                model: Business,
+                required: true,
+              },
+            ],
           },
           {
             model: User,
