@@ -48,10 +48,12 @@ class CratReviewController {
           {
             model: User,
             as: "entrepreneur",
+            required: true,
           },
           {
             model: User,
             as: "reviewer",
+            required: false,
           },
         ],
       });
@@ -78,6 +80,7 @@ class CratReviewController {
         {
           model: User,
           as: "entrepreneur",
+          required: true,
           include: [
             {
               model: Business,
@@ -96,8 +99,7 @@ class CratReviewController {
         {
           model: User,
           as: "reviewer",
-
-          required: false,
+          required: true,
         },
       ];
 
