@@ -84,7 +84,7 @@ class CratReviewController {
           include: [
             {
               model: Business,
-              required: true,
+              required: false, // Changed to false - entrepreneurs may not have Business yet
             },
           ],
           where: search
@@ -99,7 +99,7 @@ class CratReviewController {
         {
           model: User,
           as: "reviewer",
-          required: true,
+          required: false, // Changed to false - pending reviews don't have reviewers
         },
       ];
 
