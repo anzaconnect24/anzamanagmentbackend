@@ -76,6 +76,15 @@ class CratReviewController {
         whereCondition.status = status;
       }
 
+      // Add search condition using nested field syntax
+      if (search) {
+        whereCondition[Op.or] = [
+          { "$entrepreneur.name$": { [Op.like]: `%${search}%` } },
+          { "$entrepreneur.email$": { [Op.like]: `%${search}%` } },
+          { "$entrepreneur.Business.name$": { [Op.like]: `%${search}%` } },
+        ];
+      }
+
       const include = [
         {
           model: User,
@@ -87,14 +96,6 @@ class CratReviewController {
               required: false, // Changed to false - entrepreneurs may not have Business yet
             },
           ],
-          where: search
-            ? {
-                [Op.or]: [
-                  { name: { [Op.like]: `%${search}%` } },
-                  { email: { [Op.like]: `%${search}%` } },
-                ],
-              }
-            : undefined,
         },
         {
           model: User,
