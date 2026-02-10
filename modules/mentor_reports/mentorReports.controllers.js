@@ -81,6 +81,13 @@ const createMentorReport = async (req, res) => {
       message: `${mentor.name} has submitted a mentorship report. Check your dashboard to view it.`,
     });
 
+    // Send email to startup (5. Post session follow up)
+    await sendEmail(req, res, entreprenuer, "session_followup", {
+      sessionDate: meetingDate
+        ? new Date(meetingDate).toLocaleDateString()
+        : "recent session",
+    });
+
     // Send notification to admin
     await Notification.create({
       to: "Admin",

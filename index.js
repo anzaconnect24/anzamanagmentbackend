@@ -57,6 +57,7 @@ const StatsRoutes = require("./modules/stats/stats.routes");
 const InvestmentOpportunities = require("./modules/investmentOpportunities/investmentOpportunities.routes");
 const MentorshipApplicationRoutes = require("./modules/mentorshipApplications/mentorshipApplications.routes");
 const InvestmentApplicationRoutes = require("./modules/investmentApplications/investmentApplications.routes");
+const BusinessToolsRoutes = require("./modules/business_tools/business_tools.routes");
 const {
   usersTag,
   statsTag,
@@ -126,12 +127,12 @@ app.use("/user", usersTag, UserRoutes);
 app.use(
   "/investment-applications",
   investmentApplicationTag,
-  InvestmentApplicationRoutes
+  InvestmentApplicationRoutes,
 );
 app.use(
   "/mentorship-applications",
   mentorshipApplicationsTag,
-  MentorshipApplicationRoutes
+  MentorshipApplicationRoutes,
 );
 app.use("/user", usersTag, UserRoutes);
 app.use("/stats", statsTag, StatsRoutes);
@@ -145,7 +146,7 @@ app.use("/staff-profile", staffProfileTag, StaffProfileRoutes);
 app.use(
   "/investment-opportunities",
   investmentOpportunitiesTag,
-  InvestmentOpportunities
+  InvestmentOpportunities,
 );
 app.use("/mentor-profile", mentorProfileTag, MentorProfileRoutes);
 app.use("/permission", permissionsTag, PermissionRoutes);
@@ -159,7 +160,7 @@ app.use("/business_review", businessReviewsTag, BusinessReviewRoutes);
 app.use(
   "/mentor-entreprenuers",
   mentorEntrepreneursTag,
-  MentorEntreprenuerRoutes
+  MentorEntreprenuerRoutes,
 );
 app.use("/mentor-reports", mentorReportsTag, MentorReportRoutes);
 app.use("/programs", programsTag, ProgramRoutes);
@@ -170,19 +171,19 @@ app.use("/pitch_material", pitchMaterialsTag, PitchMaterialRoutes);
 app.use(
   "/business_investment_request",
   businessInvestmentRequestsTag,
-  BusinessInvestmentRequestRoutes
+  BusinessInvestmentRequestRoutes,
 );
 app.use(
   "/business_investment_request_review",
   businessInvestmentRequestReviewsTag,
-  BusinessInvestmentRequestReviewRoutes
+  BusinessInvestmentRequestReviewRoutes,
 );
 app.use("/business_document", businessDocumentsTag, BusinessDocumentRoutes);
 app.use("/log", logsTag, LogRoutes);
 app.use(
   "/investment_interest",
   investmentInterestsTag,
-  InvestmentInterestRoutes
+  InvestmentInterestRoutes,
 );
 app.use("/success-stories", successStoriesTag, SuccessStoryRoutes);
 app.use("/product", productsTag, ProductRoutes);
@@ -203,6 +204,7 @@ app.use("/crat_operation", cratOperationsTag, CratOperationRoutes);
 app.use("/crat_general", cratGeneralTag, CratGeneralRoutes);
 app.use("/crat_reviews", cratReviewsTag, CratReviewRoutes);
 app.use("/reviewer", reviewsTag, CratReviewerRoutes);
+app.use("/business_tools", BusinessToolsRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {
   try {

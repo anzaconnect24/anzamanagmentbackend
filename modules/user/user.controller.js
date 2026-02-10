@@ -42,13 +42,13 @@ const sendMessage = async (req, res) => {
           switch (type) {
             case "all":
               promises.push(
-                sendSMS(addPrefixToPhoneNumber(user.phone), message)
+                sendSMS(addPrefixToPhoneNumber(user.phone), message),
               );
               promises.push(sendMail(user.email, subject, message));
               break;
             case "sms":
               promises.push(
-                sendSMS(addPrefixToPhoneNumber(user.phone), message)
+                sendSMS(addPrefixToPhoneNumber(user.phone), message),
               );
               break;
             case "mail":
@@ -70,13 +70,13 @@ const sendMessage = async (req, res) => {
           switch (type) {
             case "all":
               promises.push(
-                sendSMS(addPrefixToPhoneNumber(user.phone), message)
+                sendSMS(addPrefixToPhoneNumber(user.phone), message),
               );
               promises.push(sendMail(user.email, subject, message));
               break;
             case "sms":
               promises.push(
-                sendSMS(addPrefixToPhoneNumber(user.phone), message)
+                sendSMS(addPrefixToPhoneNumber(user.phone), message),
               );
               break;
             case "mail":
@@ -254,7 +254,7 @@ const updateUser = async (req, res) => {
 
         const results = await bcrypt.compare(
           currentPassword,
-          userDetails.password
+          userDetails.password,
         );
         if (!results) {
           return res
@@ -305,7 +305,20 @@ const updateUser = async (req, res) => {
       updateData.password = hashedPassword;
     }
 
+    // Track if role is being changed
+    const oldRole = userDetails.role;
+    const roleChanged = otherFields.role && otherFields.role !== oldRole;
+
     const response = await userDetails.update(updateData);
+
+    // Send email if role was changed (9. Role change notification)
+    if (roleChanged && uuid) {
+      await sendEmail(req, res, userDetails, "role_changed", {
+        oldRole: oldRole,
+        newRole: otherFields.role,
+        reason: req.body.roleChangeReason || "Administrative action",
+      });
+    }
 
     successResponse(res, response);
   } catch (error) {
@@ -330,8 +343,26 @@ const deleteUser = async (req, res) => {
 };
 const inviteUser = async (req, res) => {
   try {
-    const user = { email: req.body.email };
-    const response = await sendEmail(req, res, user, "user_invitation");
+    const { email, name } = req.body;
+    const inviteCode = Math.random().toString(36).substring(2, 15);
+    const user = {
+      email: email,
+      name: name || email,
+    };
+
+    // Send email (8. Admin invitation)
+    const response = await sendEmail(
+      req,
+      res,
+      user,
+      "admin_platform_invitation",
+      {
+        recipientName: name || "there",
+        invitedBy: req.user?.name || "Anza Admin",
+        inviteCode: inviteCode,
+      },
+    );
+
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -696,13 +727,13 @@ const getMentorEntreprenuers = async (req, res) => {
         include: [
           [
             Sequelize.literal(
-              `CASE WHEN EXISTS (SELECT 1 FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\`) THEN 1 ELSE 0 END`
+              `CASE WHEN EXISTS (SELECT 1 FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\`) THEN 1 ELSE 0 END`,
             ),
             "isAssigned",
           ],
           [
             Sequelize.literal(
-              `(SELECT \`uuid\` FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\` LIMIT 1)`
+              `(SELECT \`uuid\` FROM \`MentorEntreprenuers\` WHERE \`mentorId\` = ${mentor.id} AND \`entreprenuerId\` = \`User\`.\`id\` LIMIT 1)`,
             ),
             "mentorEntreprenuerUUID",
           ],

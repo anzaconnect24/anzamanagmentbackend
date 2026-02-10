@@ -1,6 +1,7 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { InvestmentApplication, User } = require("../../models");
+const { InvestmentApplication, User, Business } = require("../../models");
 const { Op } = require("sequelize");
+const { sendEmail } = require("../../utils/send_email");
 
 const createInvestmentApplication = async (req, res) => {
   user = req.user;
@@ -26,6 +27,18 @@ const createInvestmentApplication = async (req, res) => {
       pitchdeck,
       offerToInvestor,
     });
+
+    // Send email to investor (7. Startup interest to investor)
+    const startupBusiness = await Business.findOne({
+      where: { userId: req.user.id },
+    });
+    await sendEmail(req, res, investor, "startup_interest_to_investor", {
+      startupName: req.user.name,
+      businessName: startupBusiness?.name || req.user.name,
+      sector: startupBusiness?.sector || "N/A",
+      amount: amount ? `$${amount}` : "To be discussed",
+    });
+
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -146,6 +159,10 @@ const investorShowInterest = async (req, res) => {
 
     const application = await InvestmentApplication.findOne({
       where: { uuid },
+      include: [
+        { model: User, as: "Entrepreneur" },
+        { model: User, as: "Investor" },
+      ],
     });
 
     if (!application) {
@@ -160,6 +177,13 @@ const investorShowInterest = async (req, res) => {
     const response = await application.update({
       investorStatus: "interested",
       respondedAt: new Date(),
+    });
+
+    // Send email to startup (6. Investor interest)
+    const investorProfile = await User.findOne({ where: { id: userId } });
+    await sendEmail(req, res, application.Entrepreneur, "investor_interest", {
+      investorName: investorProfile.name,
+      investmentFocus: "Strategic investment opportunities",
     });
 
     successResponse(res, response);

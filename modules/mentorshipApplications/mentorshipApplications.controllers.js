@@ -7,6 +7,7 @@ const {
   MentorEntreprenuer,
 } = require("../../models");
 const { Op } = require("sequelize");
+const { sendEmail } = require("../../utils/send_email");
 
 const createMentorshipApplication = async (req, res) => {
   user = req.user;
@@ -58,6 +59,18 @@ const createMentorshipApplication = async (req, res) => {
       userId: mentor.id,
       to: "Mentor",
       message: `${req.user.name} has submitted a mentorship application. Please review it in your dashboard.`,
+    });
+
+    // Send email to mentor (3. Founder outreach to mentor)
+    const startupBusiness = await req.user.getBusiness();
+    await sendEmail(req, res, mentor, "startup_outreach_to_mentor", {
+      startupName: req.user.name,
+      startupBio:
+        startupBusiness?.description || "Emerging startup seeking guidance",
+      challenges: challenges || "N/A",
+      mentorshipAreas: Array.isArray(mentorshipAreas)
+        ? mentorshipAreas.join(", ")
+        : mentorshipAreas || "N/A",
     });
 
     // Send notification to admin
@@ -192,6 +205,17 @@ const updateMentorshipApplication = async (req, res) => {
           to: "Enterprenuer",
           message: `Your mentorship request has been approved by ${mentor.name}. You can now access your mentor dashboard.`,
         });
+
+        // Send email to startup (2. Mentor outreach/acceptance confirmation)
+        const mentorProfile = await MentorProfile.findOne({
+          where: { userId: mentor.id },
+        });
+        await sendEmail(req, res, entrepreneur, "mentor_outreach_to_startup", {
+          mentorName: mentor.name,
+          mentorBio: mentorProfile?.bio || "Experienced mentor in your field",
+          expertise:
+            mentorProfile?.expertise || "Business development and strategy",
+        });
       }
     }
 
@@ -254,6 +278,20 @@ const setupMeeting = async (req, res) => {
       message: `Your mentor ${mentorshipApplication.mentor.name} has scheduled a meeting for ${new Date(appointmentDate).toLocaleDateString()}. Please check your mentorship dashboard to accept.`,
     });
 
+    // Send email to startup (4. Session scheduling)
+    await sendEmail(
+      req,
+      res,
+      mentorshipApplication.entrepreneur,
+      "session_scheduled",
+      {
+        sessionDate: new Date(appointmentDate).toLocaleString(),
+        mode: "Virtual",
+        withPerson: mentorshipApplication.mentor.name,
+        meetingLink: googleMeetLink,
+      },
+    );
+
     successResponse(res, {
       message: "Meeting scheduled successfully",
       mentorshipApplication,
@@ -298,6 +336,20 @@ const acceptAppointment = async (req, res) => {
       to: "Mentor",
       message: `${mentorshipApplication.entrepreneur.name} has accepted the meeting scheduled for ${new Date(mentorshipApplication.appointmentDate).toLocaleDateString()}.`,
     });
+
+    // Send email to mentor (4. Session confirmation)
+    await sendEmail(
+      req,
+      res,
+      mentorshipApplication.mentor,
+      "session_confirmed",
+      {
+        confirmedBy: mentorshipApplication.entrepreneur.name,
+        sessionDate: new Date(
+          mentorshipApplication.appointmentDate,
+        ).toLocaleString(),
+      },
+    );
 
     successResponse(res, {
       message: "Appointment accepted successfully",
