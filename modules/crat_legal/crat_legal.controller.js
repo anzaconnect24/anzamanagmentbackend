@@ -130,14 +130,14 @@ const update = async (req, res) => {
     const userId = req.user && req.user.id;
     const userRole = req.user && req.user.role;
 
-    // Staff/Reviewers can update any record (for reviewer comments)
+    // Staff/Admin/Reviewers can update any record (for reviewer comments)
     // Entrepreneurs can only update their own records
     const whereClause = {
       uuid,
     };
 
-    // Only add userId filter if user is not Staff (reviewers should access all records)
-    if (userRole !== "Staff" && userId) {
+    // Only add userId filter if user is not Staff or Admin (reviewers/admins should access all records)
+    if (userRole !== "Staff" && userRole !== "Admin" && userId) {
       whereClause.userId = userId;
     }
 
