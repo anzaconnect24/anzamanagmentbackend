@@ -280,33 +280,44 @@ const findBusiness = async (req, res) => {
   try {
     const { uuid } = req.params;
     const user = req.user;
-    let response = await Business.findOne({
-      where: {
-        uuid,
-      },
-      attributes: {
-        exclude: ["userId", "businessSectorId"],
-      },
+
+    // Run business fetch and mentor check in parallel for speed
+    const businessPromise = Business.findOne({
+      where: { uuid },
+      attributes: { exclude: ["userId", "businessSectorId"] },
       include: [
-        { model: User,include:[
-          { model: CratMarkets },
-          { model: CratFinancials },
-          { model: CratOperations },
-          { model: CratLegals },
-        ] },
+        {
+          model: User,
+          // Only fetch the columns the UI actually needs — skip CRAT rows entirely
+          // (CRAT data is loaded on the dedicated CRAT report page)
+          attributes: ["id", "uuid", "name", "email", "phone", "activated"],
+        },
         { model: BusinessSector },
         { model: BusinessDocument },
       ],
     });
-    const checkMentor = await MentorEntreprenuer.findOne({
+
+    // checkMentor is only relevant for Mentor role; run it in parallel and
+    // silently return null for all other roles to avoid unnecessary failures
+    const mentorPromise = MentorEntreprenuer.findOne({
       attributes: ["id", "mentorId", "entreprenuerId"],
-      where: {
-        mentorId: user.id,
-        entreprenuerId: response.User.id,
-      },
-    });
-    const sanitizedResponse = response.toJSON(); // Converts Sequelize object to plain object
-    sanitizedResponse.linkedWithMentor = !!checkMentor;
+      where: { mentorId: user.id },
+    }).catch(() => null);
+
+    const [response, checkMentor] = await Promise.all([
+      businessPromise,
+      mentorPromise,
+    ]);
+
+    if (!response) {
+      return errorResponse(res, new Error("Business not found"));
+    }
+
+    const sanitizedResponse = response.toJSON();
+    // A mentor is linked if their mentor record references this entrepreneur
+    sanitizedResponse.linkedWithMentor =
+      !!checkMentor &&
+      checkMentor.entreprenuerId === sanitizedResponse.User?.id;
 
     successResponse(res, sanitizedResponse);
   } catch (error) {
