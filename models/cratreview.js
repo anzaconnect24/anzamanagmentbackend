@@ -28,7 +28,12 @@ module.exports = (sequelize, DataTypes) => {
       entrepreneur_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        unique: true, // One-to-one relationship
+        // unique constraint removed to support multiple version cycles
+      },
+      version: {
+        type: DataTypes.INTEGER,
+        defaultValue: 1,
+        allowNull: false,
       },
       reviewer_id: {
         type: DataTypes.INTEGER,

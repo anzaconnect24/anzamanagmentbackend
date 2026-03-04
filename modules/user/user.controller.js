@@ -921,6 +921,10 @@ const getUserDetails = async (req, res) => {
       },
       include: [
         {
+          model: Business,
+          include: [BusinessSector],
+        },
+        {
           model: CratMarkets,
         },
         {

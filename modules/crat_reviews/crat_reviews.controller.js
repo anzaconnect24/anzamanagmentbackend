@@ -8,25 +8,61 @@ class CratReviewController {
     try {
       const { entrepreneur_id } = req.body;
 
-      // Check if entrepreneur already has ANY review (one-to-one relationship)
-      const existingReview = await CratReview.findOne({
-        where: {
-          entrepreneur_id,
-        },
+      // Fetch all existing reviews for this entrepreneur
+      const allReviews = await CratReview.findAll({
+        where: { entrepreneur_id },
+        order: [["createdAt", "DESC"]],
       });
 
-      if (existingReview) {
+      // Block if there is already an active (non-terminal) review
+      const activeReview = allReviews.find((r) =>
+        ["pending", "assigned", "in_review"].includes(r.status),
+      );
+      if (activeReview) {
         return errorResponse(
           res,
-          "You already have a CRAT review. Only one review per entrepreneur is allowed.",
+          "You already have an active CRAT review in progress. Please wait for it to be completed before starting a new version.",
         );
       }
 
+      // If there are previous reviews, enforce a 30-day cooldown from the last terminal date
+      if (allReviews.length > 0) {
+        const latestReview = allReviews[0]; // already sorted DESC
+        const terminalDate =
+          latestReview.finalized_at || latestReview.reviewed_at;
+
+        if (terminalDate) {
+          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+          const elapsed = Date.now() - new Date(terminalDate).getTime();
+          if (elapsed < THIRTY_DAYS_MS) {
+            const daysLeft = Math.ceil(
+              (THIRTY_DAYS_MS - elapsed) / (24 * 60 * 60 * 1000),
+            );
+            return errorResponse(
+              res,
+              `You must wait ${daysLeft} more day(s) before starting a new version cycle (30-day cooldown applies).`,
+            );
+          }
+        }
+      }
+
+      // Determine the next version number
+      const nextVersion = allReviews.length + 1;
+
       const cratReview = await CratReview.create({
         entrepreneur_id,
+        version: nextVersion,
         status: "pending",
         submitted_at: new Date(),
       });
+
+      // If this is a new version (not the first), reset the entrepreneur's publishStatus to "Draft"
+      if (nextVersion > 1) {
+        await User.update(
+          { publishStatus: "Draft" },
+          { where: { id: entrepreneur_id } },
+        );
+      }
 
       // Create notification for admins
       const admins = await User.findAll({
@@ -37,7 +73,7 @@ class CratReviewController {
         await Notification.create({
           user_id: admin.id,
           title: "New CRAT Review Application",
-          message: `A new CRAT review has been submitted by an entrepreneur and needs assignment.`,
+          message: `A new CRAT review (Version ${nextVersion}) has been submitted by an entrepreneur and needs assignment.`,
           type: "crat_review",
           reference_id: cratReview.uuid,
         });
@@ -304,6 +340,21 @@ class CratReviewController {
         reviewed_at: new Date(),
       });
 
+      // Set the entrepreneur's publishStatus to "Reviewed" so PDF becomes available
+      await User.update(
+        { publishStatus: "Reviewed" },
+        { where: { id: cratReview.entrepreneur_id } },
+      );
+
+      // Notify the entrepreneur that their review is complete
+      await Notification.create({
+        user_id: cratReview.entrepreneur_id,
+        title: "CRAT Review Completed",
+        message: `Your CRAT review (Version ${cratReview.version}) has been completed by a reviewer. You can now download your Capital Readiness Assessment Report.`,
+        type: "crat_review_completed",
+        reference_id: cratReview.uuid,
+      });
+
       // Create notification for admins
       const admins = await User.findAll({
         where: { role: "Admin" },
@@ -313,7 +364,7 @@ class CratReviewController {
         await Notification.create({
           user_id: admin.id,
           title: "CRAT Review Completed",
-          message: `A CRAT review has been completed by staff and needs final approval.`,
+          message: `A CRAT review (Version ${cratReview.version}) has been completed by staff and needs final approval.`,
           type: "crat_review_completed",
           reference_id: cratReview.uuid,
         });
