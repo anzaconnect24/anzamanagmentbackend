@@ -13,6 +13,7 @@ const {
   passwordReset,
   sendMessage,
   getUserDetails,
+  getUserBusiness,
   getUserCounts,
   getMyDetails,
   getUsersByRole,
@@ -51,7 +52,7 @@ router.get("/investors/interested", validateJWT, getInterestedInvestors);
 router.get(
   "/enterprenuers/interested",
   validateJWT,
-  getInterestedEnterprenuers
+  getInterestedEnterprenuers,
 );
 router.get("/admins", validateJWT, getAdmins);
 router.get("/mentors", validateJWT, getMentors);
@@ -59,6 +60,7 @@ router.get("/reviewers", validateJWT, getPagination, getReviewers);
 router.get("/enterprenuers", validateJWT, getPagination, getEnterprenuers);
 router.get("/enterprenuers/mentor/:uuid", validateJWT, getMentorEntreprenuers);
 router.get("/", validateJWT, getPagination, getUsers);
+router.get("/:uuid/business", validateJWT, getUserBusiness); // Lightweight endpoint
 router.get("/:uuid", validateJWT, getUserDetails);
 router.get("/role/:uuid", validateJWT, getUsersByRole);
 

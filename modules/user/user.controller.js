@@ -952,6 +952,27 @@ const getUserDetails = async (req, res) => {
   }
 };
 
+// Lightweight endpoint for getting just user + business info (faster than getUserDetails)
+const getUserBusiness = async (req, res) => {
+  try {
+    const uuid = req.params.uuid;
+    const user = await User.findOne({
+      where: {
+        uuid,
+      },
+      include: [
+        {
+          model: Business,
+          include: [BusinessSector],
+        },
+      ],
+    });
+    successResponse(res, user);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getHash = async (req, res) => {
   try {
     const password = bcrypt.hashSync("password", 10);
@@ -976,6 +997,7 @@ module.exports = {
   pushSMS,
   inviteUser,
   getUserDetails,
+  getUserBusiness,
   getUsers,
   getMentorEntreprenuers,
   getAdmins,
