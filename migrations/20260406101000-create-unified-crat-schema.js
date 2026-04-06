@@ -44,6 +44,10 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
+      required_attachment: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
       sort_order: {
         type: Sequelize.INTEGER,
         allowNull: false,

@@ -1,5 +1,6 @@
 const { Op } = require("sequelize");
 const { errorResponse, successResponse } = require("../../utils/responses");
+const getUrl = require("../../utils/cloudinary_upload");
 const {
   Business,
   BusinessSector,
@@ -32,20 +33,37 @@ const ensureRole = (res, predicate, message) => {
   return true;
 };
 
-const isFintechSector = (name = "") => {
-  const sector = String(name).toLowerCase();
-  return sector.includes("fintech") || sector.includes("financial technology");
+const isFintechSector = (...values) => {
+  const text = values
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+    .join(" ");
+
+  if (!text) return false;
+
+  if (text.includes("fintech") || text.includes("fin-tech")) return true;
+  if (text.includes("financial technology")) return true;
+  if (text.includes("financial") && text.includes("technology")) return true;
+
+  return false;
 };
 
 const resolveLegalVariant = async (businessId) => {
   const business = await Business.findByPk(businessId, {
+    attributes: ["name", "otherIndustry", "description"],
     include: [{ model: BusinessSector, attributes: ["name"] }],
   });
 
   if (!business) return "default";
 
   const sectorName = business.BusinessSector?.name || "";
-  return isFintechSector(sectorName) ? "fintech" : "default";
+  const otherIndustry = business.otherIndustry || "";
+  const businessName = business.name || "";
+  const description = business.description || "";
+
+  return isFintechSector(sectorName, otherIndustry, businessName, description)
+    ? "fintech"
+    : "default";
 };
 
 const getOrCreateAssessment = async (businessId, entrepreneurId) => {
@@ -242,6 +260,7 @@ const getCatalog = async (req, res) => {
         questionTextSw: q.question_text_sw,
         guidanceEn: q.guidance_en,
         guidanceSw: q.guidance_sw,
+        requiredAttachment: q.required_attachment,
         sortOrder: q.sort_order,
       });
     }
@@ -303,6 +322,7 @@ const getCurrentAssessment = async (req, res) => {
         questionCode: answer.CratQuestionCatalog?.question_code,
         domain: answer.domain,
         score: answer.score,
+        attachment: answer.evidence,
         evidence: answer.evidence,
         entrepreneurComment: answer.entrepreneur_comment,
         reviewerComment: answer.reviewer_comment,
@@ -405,6 +425,80 @@ const submitAssessment = async (req, res) => {
   }
 };
 
+const uploadEntrepreneurAttachment = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (
+      !ensureRole(
+        res,
+        isEntrepreneur(requester.role),
+        "Only entrepreneurs can upload attachments",
+      )
+    ) {
+      return;
+    }
+
+    const assessmentId = Number(req.params.assessmentId);
+    const questionId = Number(req.params.questionId);
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ status: false, message: "File is required" });
+    }
+
+    const assessment = await CratAssessment.findByPk(assessmentId);
+    if (!assessment || assessment.entrepreneur_id !== requester.id) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Assessment not found" });
+    }
+
+    if (!["draft", "admin_rejected"].includes(assessment.status)) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Assessment is not editable" });
+    }
+
+    const question = await CratQuestionCatalog.findByPk(questionId);
+    if (!question) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Question not found" });
+    }
+
+    const attachmentUrl = await getUrl(req);
+
+    const existingAnswer = await CratAnswer.findOne({
+      where: {
+        assessment_id: assessment.id,
+        question_id: question.id,
+      },
+    });
+
+    if (existingAnswer) {
+      await existingAnswer.update({ evidence: attachmentUrl });
+    } else {
+      await CratAnswer.create({
+        assessment_id: assessment.id,
+        business_id: assessment.business_id,
+        question_id: question.id,
+        domain: question.domain,
+        score: 0,
+        evidence: attachmentUrl,
+      });
+    }
+
+    successResponse(res, {
+      message: "Attachment uploaded",
+      questionId,
+      attachment: attachmentUrl,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getAdminQueue = async (req, res) => {
   try {
     const requester = req.user;
@@ -427,7 +521,7 @@ const getAdminQueue = async (req, res) => {
         {
           model: User,
           as: "entrepreneur",
-          attributes: ["id", "name", "email"],
+          attributes: ["id", "uuid", "name", "email"],
         },
         {
           model: User,
@@ -521,12 +615,10 @@ const saveReviewerScores = async (req, res) => {
     for (const item of scores) {
       const score = Number(item.score);
       if (!Number.isInteger(score) || score < 0 || score > 5) {
-        return res
-          .status(400)
-          .json({
-            status: false,
-            message: "Score must be an integer from 0 to 5",
-          });
+        return res.status(400).json({
+          status: false,
+          message: "Score must be an integer from 0 to 5",
+        });
       }
 
       const existingAnswer = await CratAnswer.findOne({
@@ -608,12 +700,10 @@ const approveAssessment = async (req, res) => {
     }
 
     if (assessment.status !== "review_submitted") {
-      return res
-        .status(400)
-        .json({
-          status: false,
-          message: "Assessment must be review_submitted before approval",
-        });
+      return res.status(400).json({
+        status: false,
+        message: "Assessment must be review_submitted before approval",
+      });
     }
 
     const report = await computeAssessmentScores(assessment.id);
@@ -695,7 +785,13 @@ const getReviewerAssignments = async (req, res) => {
       where: {
         assigned_reviewer_id: requester.id,
         status: {
-          [Op.in]: ["assigned", "in_review", "admin_rejected"],
+          [Op.in]: [
+            "assigned",
+            "in_review",
+            "admin_rejected",
+            "review_submitted",
+            "published",
+          ],
         },
       },
       include: [
@@ -780,6 +876,7 @@ module.exports = {
   getCatalog,
   getCurrentAssessment,
   saveEntrepreneurAnswers,
+  uploadEntrepreneurAttachment,
   submitAssessment,
   getAdminQueue,
   assignReviewer,

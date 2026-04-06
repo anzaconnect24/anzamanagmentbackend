@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const { validateJWT } = require("../../utils/validateJWT");
+const upload = require("../../utils/upload");
 const controller = require("./crat.controller");
 
 const router = Router();
@@ -14,6 +15,12 @@ router.put(
   "/assessments/:assessmentId/answers",
   validateJWT,
   controller.saveEntrepreneurAnswers,
+);
+router.post(
+  "/assessments/:assessmentId/answers/:questionId/attachment",
+  upload.single("file"),
+  validateJWT,
+  controller.uploadEntrepreneurAttachment,
 );
 router.post(
   "/assessments/:assessmentId/submit",
