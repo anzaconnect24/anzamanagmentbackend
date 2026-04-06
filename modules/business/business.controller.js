@@ -7,10 +7,6 @@ const {
   MentorEntreprenuer,
   Sequelize,
   BusinessDocument,
-  CratMarkets,
-  CratFinancials,
-  CratOperations,
-  CratLegals,
 } = require("../../models");
 const { where, Op } = require("sequelize");
 

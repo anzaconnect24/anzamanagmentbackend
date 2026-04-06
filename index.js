@@ -4,13 +4,7 @@ const bodyParser = require("body-parser");
 const swaggerUi = require("swagger-ui-express");
 
 const UserRoutes = require("./modules/user/user.routes");
-const CratMarketRoutes = require("./modules/crat_market/crat_market.routes");
-const CratFinancialRoutes = require("./modules/crat_financial/crat_financial.routes");
-const CratLegalRoutes = require("./modules/crat_legal/crat_legal.routes");
-const CratOperationRoutes = require("./modules/crat_operation/crat_operation.routes");
-const CratGeneralRoutes = require("./modules/crat_general/crat_general.routes");
-const CratReviewerRoutes = require("./modules/reviewer/crat_reviewer.routes");
-const CratReviewRoutes = require("./modules/crat_reviews/crat_reviews.routes");
+const CratRoutes = require("./modules/crat/crat.routes");
 const RoleRoutes = require("./modules/role/role.routes");
 const PermissionRoutes = require("./modules/permission/permission.routes");
 const UserRoleRoutes = require("./modules/user_role/user_role.routes");
@@ -93,12 +87,7 @@ const {
   adminTag,
   sellersTag,
   subscriptionsTag,
-  cratFinancialTag,
-  cratMarketTag,
-  cratLegalTag,
-  cratOperationsTag,
-  cratGeneralTag,
-  cratReviewsTag,
+  cratTag,
   staffProfileTag,
   mentorProfileTag,
   investmentApplicationTag,
@@ -197,13 +186,7 @@ app.use("/payment", paymentsTag, Payments);
 app.use("/admin", adminTag, Admin);
 app.use("/seller", sellersTag, Seller);
 app.use("/subscription", subscriptionsTag, Subscription);
-app.use("/crat_market", cratMarketTag, CratMarketRoutes);
-app.use("/crat_financial", cratFinancialTag, CratFinancialRoutes);
-app.use("/crat_legal", cratLegalTag, CratLegalRoutes);
-app.use("/crat_operation", cratOperationsTag, CratOperationRoutes);
-app.use("/crat_general", cratGeneralTag, CratGeneralRoutes);
-app.use("/crat_reviews", cratReviewsTag, CratReviewRoutes);
-app.use("/reviewer", reviewsTag, CratReviewerRoutes);
+app.use("/crat", cratTag, CratRoutes);
 app.use("/business_tools", BusinessToolsRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {

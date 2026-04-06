@@ -22,6 +22,9 @@
     "socket.io": "^4.7.4",
     "swagger-ui-express": "^5.0.1"
   },
+  "scripts": {
+    "seed:crat-catalog": "node scripts/seed_crat_catalog.js"
+  },
   "devDependencies": {
     "swagger-autogen": "^2.23.7"
   },

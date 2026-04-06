@@ -52,18 +52,22 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(models.InvestmentInterest, { onDelete: "cascade" });
       User.hasMany(models.PitchMaterialViewer, { onDelete: "cascade" });
 
-      User.hasMany(models.CratFinancials, { foreignKey: "userId" });
-      User.hasMany(models.CratMarkets, { foreignKey: "userId" });
-      User.hasMany(models.CratOperations, { foreignKey: "userId" });
-      User.hasMany(models.CratLegals, { foreignKey: "userId" });
-      User.hasOne(models.MentorProfile, { onDelete: "CASCADE", scope: true });
-      User.hasOne(models.CratReview, {
+      User.hasMany(models.CratAssessment, {
         foreignKey: "entrepreneur_id",
-        as: "entrepreneurReview",
+        as: "cratEntrepreneurAssessments",
       });
-      User.hasMany(models.CratReview, {
-        foreignKey: "reviewer_id",
-        as: "reviewerReviews",
+      User.hasMany(models.CratAssessment, {
+        foreignKey: "assigned_reviewer_id",
+        as: "cratReviewerAssessments",
+      });
+      User.hasMany(models.CratAnswer, {
+        foreignKey: "reviewed_by",
+        as: "cratReviewedAnswers",
+      });
+      User.hasOne(models.MentorProfile, { onDelete: "CASCADE", scope: true });
+      User.hasMany(models.CratScoreSnapshot, {
+        foreignKey: "generated_by",
+        as: "cratGeneratedSnapshots",
       });
     }
   }
@@ -117,7 +121,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "User",
-    }
+    },
   );
   return User;
 };

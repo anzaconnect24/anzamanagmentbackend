@@ -15,6 +15,14 @@ module.exports = (sequelize, DataTypes) => {
         onDelete: "CASCADE",
         scope: true,
       });
+      Business.hasMany(models.CratAssessment, {
+        foreignKey: "business_id",
+        onDelete: "CASCADE",
+      });
+      Business.hasMany(models.CratAnswer, {
+        foreignKey: "business_id",
+        onDelete: "CASCADE",
+      });
     }
   }
 
@@ -177,7 +185,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "Business",
-    }
+    },
   );
 
   return Business;
