@@ -109,7 +109,7 @@ const updateBusiness = async (req, res) => {
     const uuid = req.params.uuid;
     const payload = { ...req.body };
     let document;
-    const { documentName } = req.body;
+    const { documentName, business_sector_uuid } = req.body;
 
     if (req.file) {
       document = await getUrl(req);
@@ -123,6 +123,21 @@ const updateBusiness = async (req, res) => {
         payload.companyProfile = document;
       }
     }
+
+    // Handle business sector update
+    if (business_sector_uuid) {
+      const businessSector = await BusinessSector.findOne({
+        where: {
+          uuid: business_sector_uuid,
+        },
+      });
+      if (businessSector) {
+        payload.businessSectorId = businessSector.id;
+      }
+      // Remove the UUID from payload as it's not a valid database field
+      delete payload.business_sector_uuid;
+    }
+
     let business = await Business.findOne({
       where: {
         uuid,

@@ -198,6 +198,37 @@ const sendEmail = async (req, res, user, status, extraData = {}) => {
           '!,<br>An investor has just applied to invest on a business, <a href="https://anzamanagementsystem.vercel.app/">You can take action(accept/reject) here</a>';
         response = await sendMail(user, subject, message, status);
         break;
+
+      // New email templates for program applications
+
+      // 1. Admin Two-Factor Authentication
+      case "admin_2fa":
+        subject = "Your Anza Admin Login Verification Code";
+        message = `Hello ${user.name}!,<br><br>You are attempting to log in to the Anza Management System.<br><br><strong>Your verification code is:</strong><br><br><h2 style="color: #2563eb; letter-spacing: 5px; font-family: monospace;">${extraData.code}</h2><br>This code will expire in <strong>10 minutes</strong>.<br><br>If you did not attempt to log in, please contact our support team immediately.<br><br><strong>Security Notice:</strong> Never share this code with anyone. Anza staff will never ask for your verification code.<br><br>Best regards,<br>The Anza Security Team`;
+        response = await sendMail(user, subject, message, status);
+        break;
+
+      // 2. Reviewer Assignment Notification
+      case "reviewer_assigned":
+        subject = "New Application Assigned for Review";
+        message = `Hello ${user.name}!,<br><br>You have been assigned a new application to review.<br><br><strong>Application Details:</strong><br><strong>Applicant:</strong> ${extraData.applicantName || "N/A"}<br><strong>Program:</strong> ${extraData.programName || "N/A"}<br><strong>Application ID:</strong> ${extraData.applicationId || "N/A"}<br><strong>Submitted:</strong> ${extraData.submittedDate || new Date().toLocaleDateString()}<br><br>${extraData.additionalInfo ? `<strong>Additional Information:</strong><br>${extraData.additionalInfo}<br><br>` : ""}<a href="https://programs.anzaconnect.co.tz/dashboard/reviews/${extraData.applicationUuid || ""}">Review Application Now</a><br><br>Please complete your review at your earliest convenience.<br><br>Best regards,<br>The Anza Team`;
+        response = await sendMail(user, subject, message, status);
+        break;
+
+      // 3. Application Published Notification (to applicant)
+      case "application_published":
+        subject = "Your Application Review is Complete";
+        message = `Hello ${user.name}!,<br><br>Great news! Your application has been reviewed and published.<br><br><strong>Application Details:</strong><br><strong>Program:</strong> ${extraData.programName || "N/A"}<br><strong>Application ID:</strong> ${extraData.applicationId || "N/A"}<br><strong>Status:</strong> <span style="color: #16a34a; font-weight: bold;">${extraData.status || "Published"}</span><br><strong>Review Completed:</strong> ${extraData.reviewDate || new Date().toLocaleDateString()}<br><br>${extraData.reviewComments ? `<strong>Reviewer Comments:</strong><br><p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #2563eb;">${extraData.reviewComments}</p><br>` : ""}${extraData.nextSteps ? `<strong>Next Steps:</strong><br>${extraData.nextSteps}<br><br>` : ""}<a href="https://programs.anzaconnect.co.tz/dashboard/applications/${extraData.applicationUuid || ""}">View Your Application</a><br><br>Thank you for your submission. We look forward to working with you!<br><br>Best regards,<br>The Anza Team`;
+        response = await sendMail(user, subject, message, status);
+        break;
+
+      // 4. New Application Notification (to admins and company role users)
+      case "new_application_submitted":
+        subject = "New Program Application Received";
+        message = `Hello ${user.name}!,<br><br>A new application has been submitted to the platform.<br><br><strong>Application Details:</strong><br><strong>Applicant:</strong> ${extraData.applicantName || "N/A"}<br><strong>Email:</strong> ${extraData.applicantEmail || "N/A"}<br><strong>Program:</strong> ${extraData.programName || "N/A"}<br><strong>Application ID:</strong> ${extraData.applicationId || "N/A"}<br><strong>Submitted:</strong> ${extraData.submittedDate || new Date().toLocaleDateString()}<br><br>${extraData.businessName ? `<strong>Business:</strong> ${extraData.businessName}<br><br>` : ""}${extraData.applicationSummary ? `<strong>Summary:</strong><br><p style="background: #f3f4f6; padding: 15px; border-left: 4px solid #2563eb;">${extraData.applicationSummary}</p><br>` : ""}<a href="https://programs.anzaconnect.co.tz/dashboard/applications/${extraData.applicationUuid || ""}">Review Application</a><br><br>Please review this application and assign a reviewer if appropriate.<br><br>Best regards,<br>The Anza Team`;
+        response = await sendMail(user, subject, message, status);
+        break;
+
       default:
         break;
     }

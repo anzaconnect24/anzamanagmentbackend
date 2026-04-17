@@ -9,3 +9,6 @@ build
 
 .DS_Store
 package-lock.json
+
+# Google OAuth credentials - sensitive
+client_secret_*.json
