@@ -4,7 +4,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     // Change allowNull on amount to true
     await queryInterface.changeColumn("InvestmentOpportunities", "amount", {
-      type: Sequelize.DECIMAL(10, 2),
+      type: Sequelize.DECIMAL(15, 2),
       allowNull: true,
     });
 
@@ -15,14 +15,14 @@ module.exports = {
       {
         type: Sequelize.STRING,
         allowNull: true,
-      }
+      },
     );
   },
 
   async down(queryInterface, Sequelize) {
     // Revert allowNull to false for amount
     await queryInterface.changeColumn("InvestmentOpportunities", "amount", {
-      type: Sequelize.DECIMAL(10, 2),
+      type: Sequelize.DECIMAL(15, 2),
       allowNull: false,
     });
 
@@ -33,7 +33,7 @@ module.exports = {
       {
         type: Sequelize.STRING,
         allowNull: false,
-      }
+      },
     );
   },
 };

@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       amount: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true,
       },
       investmentType: {
@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "InvestmentOpportunity",
-    }
+    },
   );
   return InvestmentOpportunity;
 };
