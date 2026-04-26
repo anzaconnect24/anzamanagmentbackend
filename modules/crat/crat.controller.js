@@ -958,7 +958,9 @@ const getPublishedReport = async (req, res) => {
 const getAdminCatalog = async (req, res) => {
   try {
     const requester = req.user;
-    if (!ensureRole(res, isAdmin(requester.role), "Only admin can manage catalog")) {
+    if (
+      !ensureRole(res, isAdmin(requester.role), "Only admin can manage catalog")
+    ) {
       return;
     }
 
@@ -985,7 +987,13 @@ const getAdminCatalog = async (req, res) => {
 const createQuestion = async (req, res) => {
   try {
     const requester = req.user;
-    if (!ensureRole(res, isAdmin(requester.role), "Only admin can create questions")) {
+    if (
+      !ensureRole(
+        res,
+        isAdmin(requester.role),
+        "Only admin can create questions",
+      )
+    ) {
       return;
     }
 
@@ -1005,13 +1013,19 @@ const createQuestion = async (req, res) => {
     if (!domain || !question_code || !question_text_en) {
       return res
         .status(400)
-        .json({ status: false, message: "domain, question_code, and question_text_en are required" });
+        .json({
+          status: false,
+          message: "domain, question_code, and question_text_en are required",
+        });
     }
 
     if (!VALID_DOMAINS.includes(domain)) {
       return res
         .status(400)
-        .json({ status: false, message: `domain must be one of: ${VALID_DOMAINS.join(", ")}` });
+        .json({
+          status: false,
+          message: `domain must be one of: ${VALID_DOMAINS.join(", ")}`,
+        });
     }
 
     const question = await CratQuestionCatalog.create({
@@ -1042,7 +1056,13 @@ const createQuestion = async (req, res) => {
 const updateQuestion = async (req, res) => {
   try {
     const requester = req.user;
-    if (!ensureRole(res, isAdmin(requester.role), "Only admin can update questions")) {
+    if (
+      !ensureRole(
+        res,
+        isAdmin(requester.role),
+        "Only admin can update questions",
+      )
+    ) {
       return;
     }
 
@@ -1083,7 +1103,13 @@ const updateQuestion = async (req, res) => {
 const toggleQuestionActive = async (req, res) => {
   try {
     const requester = req.user;
-    if (!ensureRole(res, isAdmin(requester.role), "Only admin can toggle questions")) {
+    if (
+      !ensureRole(
+        res,
+        isAdmin(requester.role),
+        "Only admin can toggle questions",
+      )
+    ) {
       return;
     }
 
@@ -1107,7 +1133,9 @@ const toggleQuestionActive = async (req, res) => {
 const executeAiReview = async (req, res) => {
   try {
     const requester = req.user;
-    if (!ensureRole(res, isAdmin(requester.role), "Only admin can run AI review")) {
+    if (
+      !ensureRole(res, isAdmin(requester.role), "Only admin can run AI review")
+    ) {
       return;
     }
 
@@ -1187,9 +1215,7 @@ const executeAiReview = async (req, res) => {
     for (const domain of VALID_DOMAINS) {
       const items = domainSections[domain] || [];
       if (items.length === 0) continue;
-      promptParts.push(
-        `\n## ${domain.replace(/_/g, " ").toUpperCase()}\n`,
-      );
+      promptParts.push(`\n## ${domain.replace(/_/g, " ").toUpperCase()}\n`);
       for (const item of items) {
         promptParts.push(`**${item.code}**: ${item.question}`);
         promptParts.push(`Score: ${item.score}/5`);
@@ -1223,7 +1249,10 @@ const executeAiReview = async (req, res) => {
     if (!apiKey) {
       return res
         .status(503)
-        .json({ status: false, message: "OpenAI API key not configured on server" });
+        .json({
+          status: false,
+          message: "OpenAI API key not configured on server",
+        });
     }
 
     const openai = new OpenAI({ apiKey });
@@ -1257,6 +1286,8 @@ const executeAiReview = async (req, res) => {
     errorResponse(res, error);
   }
 };
+
+module.exports = {
   getCatalog,
   getCurrentAssessment,
   saveEntrepreneurAnswers,
