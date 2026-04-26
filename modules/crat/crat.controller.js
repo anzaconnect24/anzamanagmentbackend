@@ -1,6 +1,7 @@
 const { Op } = require("sequelize");
 const { errorResponse, successResponse } = require("../../utils/responses");
 const getUrl = require("../../utils/cloudinary_upload");
+const OpenAI = require("openai");
 const {
   Business,
   BusinessSector,
@@ -8,6 +9,7 @@ const {
   CratAssessment,
   CratAnswer,
   CratScoreSnapshot,
+  CratAssessmentReviewer,
   User,
   sequelize,
 } = require("../../models");
@@ -261,6 +263,7 @@ const getCatalog = async (req, res) => {
         guidanceEn: q.guidance_en,
         guidanceSw: q.guidance_sw,
         requiredAttachment: q.required_attachment,
+        aiPrompt: q.ai_prompt,
         sortOrder: q.sort_order,
       });
     }
@@ -528,6 +531,17 @@ const getAdminQueue = async (req, res) => {
           as: "assignedReviewer",
           attributes: ["id", "name", "email"],
         },
+        {
+          model: CratAssessmentReviewer,
+          as: "assignedReviewers",
+          include: [
+            {
+              model: User,
+              as: "reviewer",
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
       ],
       order: [["updatedAt", "DESC"]],
     });
@@ -552,13 +566,34 @@ const assignReviewer = async (req, res) => {
     }
 
     const assessmentId = Number(req.params.assessmentId);
-    const { reviewerId } = req.body;
+    // Accept either a single reviewerId (legacy) or an array of reviewerIds
+    let reviewerIds = req.body.reviewerIds || [];
+    if (!Array.isArray(reviewerIds) && req.body.reviewerId) {
+      reviewerIds = [req.body.reviewerId];
+    }
+    reviewerIds = [...new Set(reviewerIds.map(Number).filter(Boolean))];
 
-    const reviewer = await User.findByPk(reviewerId);
-    if (!reviewer || !isReviewer(reviewer.role)) {
+    if (reviewerIds.length === 0) {
       return res
         .status(400)
-        .json({ status: false, message: "Invalid reviewer" });
+        .json({ status: false, message: "At least one reviewer required" });
+    }
+
+    const reviewers = await User.findAll({
+      where: { id: { [Op.in]: reviewerIds } },
+    });
+
+    if (reviewers.length !== reviewerIds.length) {
+      return res
+        .status(400)
+        .json({ status: false, message: "One or more reviewers not found" });
+    }
+
+    const invalidReviewers = reviewers.filter((r) => !isReviewer(r.role));
+    if (invalidReviewers.length > 0) {
+      return res
+        .status(400)
+        .json({ status: false, message: "All assignees must have Staff role" });
     }
 
     const assessment = await CratAssessment.findByPk(assessmentId);
@@ -568,12 +603,36 @@ const assignReviewer = async (req, res) => {
         .json({ status: false, message: "Assessment not found" });
     }
 
-    await assessment.update({
-      assigned_reviewer_id: reviewerId,
-      status: "assigned",
+    await sequelize.transaction(async (transaction) => {
+      // Remove previous reviewer assignments for this assessment
+      await CratAssessmentReviewer.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
+      // Create new reviewer assignments
+      await CratAssessmentReviewer.bulkCreate(
+        reviewerIds.map((rid) => ({
+          assessment_id: assessmentId,
+          reviewer_id: rid,
+          assigned_by: requester.id,
+        })),
+        { transaction },
+      );
+
+      // Keep assigned_reviewer_id as first reviewer for backward compat
+      await assessment.update(
+        {
+          assigned_reviewer_id: reviewerIds[0],
+          status: "assigned",
+        },
+        { transaction },
+      );
     });
 
-    successResponse(res, { message: "Reviewer assigned" });
+    successResponse(res, {
+      message: `${reviewerIds.length} reviewer(s) assigned`,
+    });
   } catch (error) {
     errorResponse(res, error);
   }
@@ -599,9 +658,18 @@ const saveReviewerScores = async (req, res) => {
     }
 
     if (assessment.assigned_reviewer_id !== requester.id) {
-      return res
-        .status(403)
-        .json({ status: false, message: "Not assigned to you" });
+      // Also check the join table (for multi-reviewer support)
+      const joinRecord = await CratAssessmentReviewer.findOne({
+        where: {
+          assessment_id: assessmentId,
+          reviewer_id: requester.id,
+        },
+      });
+      if (!joinRecord) {
+        return res
+          .status(403)
+          .json({ status: false, message: "Not assigned to you" });
+      }
     }
 
     if (
@@ -666,9 +734,17 @@ const submitReviewerAssessment = async (req, res) => {
     const assessment = await CratAssessment.findByPk(assessmentId);
 
     if (!assessment || assessment.assigned_reviewer_id !== requester.id) {
-      return res
-        .status(404)
-        .json({ status: false, message: "Assessment not found" });
+      // Also check the join table
+      const joinRecord = assessment
+        ? await CratAssessmentReviewer.findOne({
+            where: { assessment_id: assessmentId, reviewer_id: requester.id },
+          })
+        : null;
+      if (!assessment || !joinRecord) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Assessment not found" });
+      }
     }
 
     await assessment.update({
@@ -783,7 +859,6 @@ const getReviewerAssignments = async (req, res) => {
 
     const assessments = await CratAssessment.findAll({
       where: {
-        assigned_reviewer_id: requester.id,
         status: {
           [Op.in]: [
             "assigned",
@@ -799,6 +874,12 @@ const getReviewerAssignments = async (req, res) => {
           model: User,
           as: "entrepreneur",
           attributes: ["id", "name", "email"],
+        },
+        {
+          model: CratAssessmentReviewer,
+          as: "assignedReviewers",
+          where: { reviewer_id: requester.id },
+          required: true,
         },
       ],
       order: [["updatedAt", "DESC"]],
@@ -872,7 +953,310 @@ const getPublishedReport = async (req, res) => {
   }
 };
 
-module.exports = {
+// ─── Admin Catalog Management ─────────────────────────────────────────────────
+
+const getAdminCatalog = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can manage catalog")) {
+      return;
+    }
+
+    const { domain, variant, active } = req.query;
+    const where = {};
+    if (domain) where.domain = domain;
+    if (variant) where.variant = variant;
+    if (active !== undefined) where.is_active = active === "true";
+
+    const questions = await CratQuestionCatalog.findAll({
+      where,
+      order: [
+        ["domain", "ASC"],
+        ["sort_order", "ASC"],
+      ],
+    });
+
+    successResponse(res, questions);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const createQuestion = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can create questions")) {
+      return;
+    }
+
+    const {
+      domain,
+      variant = "default",
+      question_code,
+      question_text_en,
+      question_text_sw,
+      guidance_en,
+      guidance_sw,
+      required_attachment,
+      ai_prompt,
+      sort_order = 0,
+    } = req.body;
+
+    if (!domain || !question_code || !question_text_en) {
+      return res
+        .status(400)
+        .json({ status: false, message: "domain, question_code, and question_text_en are required" });
+    }
+
+    if (!VALID_DOMAINS.includes(domain)) {
+      return res
+        .status(400)
+        .json({ status: false, message: `domain must be one of: ${VALID_DOMAINS.join(", ")}` });
+    }
+
+    const question = await CratQuestionCatalog.create({
+      domain,
+      variant,
+      question_code,
+      question_text_en,
+      question_text_sw: question_text_sw || null,
+      guidance_en: guidance_en || null,
+      guidance_sw: guidance_sw || null,
+      required_attachment: required_attachment || null,
+      ai_prompt: ai_prompt || null,
+      sort_order,
+      is_active: true,
+    });
+
+    successResponse(res, question);
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res
+        .status(400)
+        .json({ status: false, message: "question_code must be unique" });
+    }
+    errorResponse(res, error);
+  }
+};
+
+const updateQuestion = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can update questions")) {
+      return;
+    }
+
+    const questionId = Number(req.params.questionId);
+    const question = await CratQuestionCatalog.findByPk(questionId);
+    if (!question) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Question not found" });
+    }
+
+    const allowedFields = [
+      "question_text_en",
+      "question_text_sw",
+      "guidance_en",
+      "guidance_sw",
+      "required_attachment",
+      "ai_prompt",
+      "sort_order",
+      "is_active",
+      "variant",
+    ];
+
+    const updates = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    }
+
+    await question.update(updates);
+    successResponse(res, question);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const toggleQuestionActive = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can toggle questions")) {
+      return;
+    }
+
+    const questionId = Number(req.params.questionId);
+    const question = await CratQuestionCatalog.findByPk(questionId);
+    if (!question) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Question not found" });
+    }
+
+    await question.update({ is_active: !question.is_active });
+    successResponse(res, { is_active: question.is_active });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// ─── Backend AI Review ────────────────────────────────────────────────────────
+
+const executeAiReview = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can run AI review")) {
+      return;
+    }
+
+    const assessmentId = Number(req.params.assessmentId);
+
+    const assessment = await CratAssessment.findByPk(assessmentId, {
+      include: [
+        {
+          model: User,
+          as: "entrepreneur",
+          attributes: ["id", "name", "email"],
+        },
+      ],
+    });
+
+    if (!assessment) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Assessment not found" });
+    }
+
+    // Load all answers with their questions (including per-question ai_prompt)
+    const answers = await CratAnswer.findAll({
+      where: { assessment_id: assessmentId },
+      include: [
+        {
+          model: CratQuestionCatalog,
+          attributes: [
+            "id",
+            "domain",
+            "question_code",
+            "question_text_en",
+            "ai_prompt",
+            "sort_order",
+          ],
+        },
+      ],
+      order: [
+        [CratQuestionCatalog, "domain", "ASC"],
+        [CratQuestionCatalog, "sort_order", "ASC"],
+      ],
+    });
+
+    // Build domain-grouped view of Q&A with per-question ai_prompts
+    const domainSections = {};
+    for (const answer of answers) {
+      const q = answer.CratQuestionCatalog;
+      if (!q) continue;
+      const domain = q.domain;
+      if (!domainSections[domain]) domainSections[domain] = [];
+      domainSections[domain].push({
+        code: q.question_code,
+        question: q.question_text_en,
+        score: answer.score,
+        evidence: answer.evidence || "No evidence provided",
+        entrepreneurComment: answer.entrepreneur_comment || "",
+        reviewerComment: answer.reviewer_comment || "",
+        aiPrompt: q.ai_prompt || "",
+      });
+    }
+
+    const scores = await computeAssessmentScores(assessmentId);
+
+    // Build the composite AI prompt
+    let promptParts = [
+      `You are a Capital Readiness Assessment (CRAT) expert evaluating a business's readiness across four domains.`,
+      ``,
+      `OVERALL SCORES:`,
+      `- Overall Score: ${scores.overallScore5.toFixed(2)} / 5 (${scores.overallPercent.toFixed(1)}%)`,
+      ...VALID_DOMAINS.map(
+        (d) =>
+          `- ${d.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}: avg ${(scores.domainScores[d]?.average || 0).toFixed(2)} / 5`,
+      ),
+      ``,
+    ];
+
+    for (const domain of VALID_DOMAINS) {
+      const items = domainSections[domain] || [];
+      if (items.length === 0) continue;
+      promptParts.push(
+        `\n## ${domain.replace(/_/g, " ").toUpperCase()}\n`,
+      );
+      for (const item of items) {
+        promptParts.push(`**${item.code}**: ${item.question}`);
+        promptParts.push(`Score: ${item.score}/5`);
+        if (item.evidence !== "No evidence provided") {
+          promptParts.push(`Evidence: ${item.evidence}`);
+        }
+        if (item.entrepreneurComment) {
+          promptParts.push(`Entrepreneur Comment: ${item.entrepreneurComment}`);
+        }
+        if (item.reviewerComment) {
+          promptParts.push(`Reviewer Comment: ${item.reviewerComment}`);
+        }
+        if (item.aiPrompt) {
+          promptParts.push(`Evaluation Guidance: ${item.aiPrompt}`);
+        }
+        promptParts.push("");
+      }
+    }
+
+    promptParts.push(
+      `\nBased on all the above, provide a comprehensive CRAT analysis including:`,
+      `1. Executive Summary (key strengths and weaknesses)`,
+      `2. Domain-by-domain findings and recommendations`,
+      `3. Top 3 priority actions to improve capital readiness`,
+      `4. Overall readiness verdict (Not Ready / Developing / Ready / Investment Ready)`,
+    );
+
+    const fullPrompt = promptParts.join("\n");
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      return res
+        .status(503)
+        .json({ status: false, message: "OpenAI API key not configured on server" });
+    }
+
+    const openai = new OpenAI({ apiKey });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert capital readiness analyst helping investors and entrepreneurs understand business readiness. Provide structured, actionable analysis in markdown format.",
+        },
+        { role: "user", content: fullPrompt },
+      ],
+      max_tokens: 2000,
+      temperature: 0.4,
+    });
+
+    const analysis = completion.choices?.[0]?.message?.content || "";
+
+    successResponse(res, {
+      assessmentId,
+      analysis,
+      scores: {
+        overallScore5: scores.overallScore5,
+        overallPercent: scores.overallPercent,
+        domainScores: scores.domainScores,
+      },
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
   getCatalog,
   getCurrentAssessment,
   saveEntrepreneurAnswers,
@@ -887,4 +1271,11 @@ module.exports = {
   getReviewerAssignments,
   getInternalReport,
   getPublishedReport,
+  // Admin catalog management
+  getAdminCatalog,
+  createQuestion,
+  updateQuestion,
+  toggleQuestionActive,
+  // Backend AI review
+  executeAiReview,
 };

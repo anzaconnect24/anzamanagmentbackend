@@ -36,7 +36,7 @@ const createInvestmentApplication = async (req, res) => {
       startupName: req.user.name,
       businessName: startupBusiness?.name || req.user.name,
       sector: startupBusiness?.sector || "N/A",
-      amount: amount ? `$${amount}` : "To be discussed",
+      amount: amount ? `Tshs. ${amount}` : "To be discussed",
     });
 
     successResponse(res, response);

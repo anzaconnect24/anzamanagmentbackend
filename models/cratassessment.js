@@ -23,6 +23,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "assessment_id",
         onDelete: "CASCADE",
       });
+      CratAssessment.hasMany(models.CratAssessmentReviewer, {
+        foreignKey: "assessment_id",
+        as: "assignedReviewers",
+        onDelete: "CASCADE",
+      });
     }
   }
 

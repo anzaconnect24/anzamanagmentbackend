@@ -44,6 +44,25 @@ router.post(
   validateJWT,
   controller.rejectAssessment,
 );
+router.post(
+  "/admin/assessments/:assessmentId/ai-review",
+  validateJWT,
+  controller.executeAiReview,
+);
+
+// Admin Catalog Management
+router.get("/admin/catalog-mgmt", validateJWT, controller.getAdminCatalog);
+router.post("/admin/catalog-mgmt", validateJWT, controller.createQuestion);
+router.put(
+  "/admin/catalog-mgmt/:questionId",
+  validateJWT,
+  controller.updateQuestion,
+);
+router.patch(
+  "/admin/catalog-mgmt/:questionId/toggle",
+  validateJWT,
+  controller.toggleQuestionActive,
+);
 
 router.get(
   "/reviewer/assignments",

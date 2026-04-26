@@ -52,6 +52,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      ai_prompt: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       sort_order: {
         type: DataTypes.INTEGER,
         allowNull: false,
