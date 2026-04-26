@@ -52,6 +52,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      required_attachment_sw: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       ai_prompt: {
         type: DataTypes.TEXT,
         allowNull: true,

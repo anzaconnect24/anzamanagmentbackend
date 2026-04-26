@@ -263,6 +263,7 @@ const getCatalog = async (req, res) => {
         guidanceEn: q.guidance_en,
         guidanceSw: q.guidance_sw,
         requiredAttachment: q.required_attachment,
+        requiredAttachmentSw: q.required_attachment_sw,
         aiPrompt: q.ai_prompt,
         sortOrder: q.sort_order,
       });
@@ -1006,26 +1007,23 @@ const createQuestion = async (req, res) => {
       guidance_en,
       guidance_sw,
       required_attachment,
+      required_attachment_sw,
       ai_prompt,
       sort_order = 0,
     } = req.body;
 
     if (!domain || !question_code || !question_text_en) {
-      return res
-        .status(400)
-        .json({
-          status: false,
-          message: "domain, question_code, and question_text_en are required",
-        });
+      return res.status(400).json({
+        status: false,
+        message: "domain, question_code, and question_text_en are required",
+      });
     }
 
     if (!VALID_DOMAINS.includes(domain)) {
-      return res
-        .status(400)
-        .json({
-          status: false,
-          message: `domain must be one of: ${VALID_DOMAINS.join(", ")}`,
-        });
+      return res.status(400).json({
+        status: false,
+        message: `domain must be one of: ${VALID_DOMAINS.join(", ")}`,
+      });
     }
 
     const question = await CratQuestionCatalog.create({
@@ -1037,6 +1035,7 @@ const createQuestion = async (req, res) => {
       guidance_en: guidance_en || null,
       guidance_sw: guidance_sw || null,
       required_attachment: required_attachment || null,
+      required_attachment_sw: required_attachment_sw || null,
       ai_prompt: ai_prompt || null,
       sort_order,
       is_active: true,
@@ -1080,6 +1079,7 @@ const updateQuestion = async (req, res) => {
       "guidance_en",
       "guidance_sw",
       "required_attachment",
+      "required_attachment_sw",
       "ai_prompt",
       "sort_order",
       "is_active",
@@ -1092,6 +1092,19 @@ const updateQuestion = async (req, res) => {
         updates[field] = req.body[field];
       }
     }
+
+    [
+      "question_text_sw",
+      "guidance_en",
+      "guidance_sw",
+      "required_attachment",
+      "required_attachment_sw",
+      "ai_prompt",
+    ].forEach((nullableField) => {
+      if (updates[nullableField] === "") {
+        updates[nullableField] = null;
+      }
+    });
 
     await question.update(updates);
     successResponse(res, question);
@@ -1247,12 +1260,10 @@ const executeAiReview = async (req, res) => {
 
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return res
-        .status(503)
-        .json({
-          status: false,
-          message: "OpenAI API key not configured on server",
-        });
+      return res.status(503).json({
+        status: false,
+        message: "OpenAI API key not configured on server",
+      });
     }
 
     const openai = new OpenAI({ apiKey });
