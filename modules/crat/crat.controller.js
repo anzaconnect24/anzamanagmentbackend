@@ -1445,6 +1445,24 @@ const executeAiReview = async (req, res) => {
   }
 };
 
+const getAvailableDomainsEndpoint = async (req, res) => {
+  try {
+    const questions = await CratQuestionCatalog.findAll({
+      where: { is_active: true },
+      attributes: ["domain"],
+      raw: true,
+    });
+
+    const uniqueDomains = [
+      ...new Set(questions.map((q) => q.domain).filter(Boolean)),
+    ].sort();
+
+    successResponse(res, uniqueDomains);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   getCatalog,
   getCurrentAssessment,
@@ -1467,4 +1485,6 @@ module.exports = {
   toggleQuestionActive,
   // Backend AI review
   executeAiReview,
+  // Public endpoints
+  getAvailableDomainsEndpoint,
 };

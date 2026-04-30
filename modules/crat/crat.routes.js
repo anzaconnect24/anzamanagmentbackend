@@ -7,6 +7,11 @@ const router = Router();
 
 router.get("/catalog/:businessId", validateJWT, controller.getCatalog);
 router.get(
+  "/available-domains",
+  validateJWT,
+  controller.getAvailableDomainsEndpoint,
+);
+router.get(
   "/assessments/:businessId/current",
   validateJWT,
   controller.getCurrentAssessment,
