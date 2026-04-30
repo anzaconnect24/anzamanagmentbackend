@@ -68,6 +68,11 @@ router.patch(
   validateJWT,
   controller.toggleQuestionActive,
 );
+router.delete(
+  "/admin/catalog-mgmt/:questionId",
+  validateJWT,
+  controller.deleteQuestion,
+);
 
 router.get(
   "/reviewer/assignments",

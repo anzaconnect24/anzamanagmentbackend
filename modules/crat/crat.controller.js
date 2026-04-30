@@ -1287,6 +1287,34 @@ const toggleQuestionActive = async (req, res) => {
   }
 };
 
+const deleteQuestion = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (
+      !ensureRole(
+        res,
+        isAdmin(requester.role),
+        "Only admin can delete questions",
+      )
+    ) {
+      return;
+    }
+
+    const questionId = Number(req.params.questionId);
+    const question = await CratQuestionCatalog.findByPk(questionId);
+    if (!question) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Question not found" });
+    }
+
+    await question.destroy();
+    successResponse(res, { message: "Question deleted successfully" });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 // ─── Backend AI Review ────────────────────────────────────────────────────────
 
 const executeAiReview = async (req, res) => {
@@ -1483,6 +1511,7 @@ module.exports = {
   createQuestion,
   updateQuestion,
   toggleQuestionActive,
+  deleteQuestion,
   // Backend AI review
   executeAiReview,
   // Public endpoints
