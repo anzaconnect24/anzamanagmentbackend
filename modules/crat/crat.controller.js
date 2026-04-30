@@ -10,22 +10,61 @@ const {
   CratAnswer,
   CratScoreSnapshot,
   CratAssessmentReviewer,
+  CratReviewerScore,
   User,
   sequelize,
 } = require("../../models");
 
-const DOMAIN_WEIGHTS = {
+const DEFAULT_DOMAIN_WEIGHTS = {
   commercial_marketing: 0.25,
   financial: 0.35,
   legal_compliance: 0.25,
   operations: 0.15,
 };
 
-const VALID_DOMAINS = Object.keys(DOMAIN_WEIGHTS);
+const DEFAULT_DOMAIN_ORDER = Object.keys(DEFAULT_DOMAIN_WEIGHTS);
 
 const isAdmin = (role) => role === "Admin";
 const isReviewer = (role) => role === "Staff";
 const isEntrepreneur = (role) => role === "Enterprenuer";
+
+const normalizeKey = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
+const getDomainOrder = (domains = []) => {
+  const normalized = [...new Set(domains.map(normalizeKey).filter(Boolean))];
+  const defaults = DEFAULT_DOMAIN_ORDER.filter((domain) =>
+    normalized.includes(domain),
+  );
+  const extras = normalized.filter((domain) => !defaults.includes(domain));
+  return [...defaults, ...extras];
+};
+
+const buildDomainWeights = (domains = []) => {
+  const orderedDomains = getDomainOrder(domains);
+  if (orderedDomains.length === 0) return {};
+
+  const raw = orderedDomains.reduce((acc, domain) => {
+    acc[domain] = DEFAULT_DOMAIN_WEIGHTS[domain] || 0.2;
+    return acc;
+  }, {});
+
+  const total = Object.values(raw).reduce((sum, weight) => sum + weight, 0);
+  if (!total) {
+    const equalWeight = 1 / orderedDomains.length;
+    return orderedDomains.reduce((acc, domain) => {
+      acc[domain] = equalWeight;
+      return acc;
+    }, {});
+  }
+
+  return orderedDomains.reduce((acc, domain) => {
+    acc[domain] = raw[domain] / total;
+    return acc;
+  }, {});
+};
 
 const ensureRole = (res, predicate, message) => {
   if (!predicate) {
@@ -97,9 +136,12 @@ const computeAssessmentScores = async (assessmentId) => {
     attributes: ["id", "domain"],
   });
 
+  const domains = getDomainOrder(questions.map((q) => q.domain));
+  const domainWeights = buildDomainWeights(domains);
+
   const questionMap = new Map();
   for (const q of questions) {
-    questionMap.set(q.id, q.domain);
+    questionMap.set(q.id, normalizeKey(q.domain));
   }
 
   const answers = await CratAnswer.findAll({
@@ -107,12 +149,10 @@ const computeAssessmentScores = async (assessmentId) => {
     attributes: ["question_id", "score"],
   });
 
-  const domainBuckets = {
-    commercial_marketing: [],
-    financial: [],
-    legal_compliance: [],
-    operations: [],
-  };
+  const domainBuckets = domains.reduce((acc, domain) => {
+    acc[domain] = [];
+    return acc;
+  }, {});
 
   const scoreDistribution = {
     0: 0,
@@ -125,14 +165,14 @@ const computeAssessmentScores = async (assessmentId) => {
 
   for (const answer of answers) {
     const domain = questionMap.get(answer.question_id);
-    if (!domain || !VALID_DOMAINS.includes(domain)) continue;
+    if (!domain || !domainBuckets[domain]) continue;
 
-    const score = Number(answer.score || 0);
+    const score = Number(answer.score ?? 0);
     if (scoreDistribution[score] !== undefined) {
       scoreDistribution[score] += 1;
     }
 
-    if (score >= 1 && score <= 5) {
+    if (score >= 0 && score <= 5) {
       domainBuckets[domain].push(score);
     }
   }
@@ -141,17 +181,19 @@ const computeAssessmentScores = async (assessmentId) => {
   let weightedRaw = 0;
   let reviewedWeight = 0;
 
-  for (const domain of VALID_DOMAINS) {
+  for (const domain of domains) {
     const reviewedScores = domainBuckets[domain];
     const reviewedQuestions = reviewedScores.length;
-    const totalQuestions = questions.filter((q) => q.domain === domain).length;
+    const totalQuestions = questions.filter(
+      (q) => normalizeKey(q.domain) === domain,
+    ).length;
 
     const average =
       reviewedQuestions > 0
         ? reviewedScores.reduce((acc, val) => acc + val, 0) / reviewedQuestions
         : 0;
 
-    const weight = DOMAIN_WEIGHTS[domain];
+    const weight = domainWeights[domain] || 0;
     const reviewed = reviewedQuestions > 0;
 
     if (reviewed) {
@@ -191,8 +233,9 @@ const computeAssessmentScores = async (assessmentId) => {
     totalQuestions,
     reviewedDomains: Object.values(domainScores).filter((d) => d.reviewed)
       .length,
-    totalDomains: VALID_DOMAINS.length,
+    totalDomains: domains.length,
     scoreDistribution,
+    domainWeights,
   };
 };
 
@@ -216,12 +259,14 @@ const buildReportPayload = async (businessId, assessmentId) => {
     percent: snapshot.overall_percent,
   }));
 
-  const weightedContribution = VALID_DOMAINS.map((domain) => ({
-    domain,
-    value: summary.domainScores[domain].weightedContribution,
-    average: summary.domainScores[domain].average,
-    weight: summary.domainScores[domain].weight,
-  }));
+  const weightedContribution = Object.keys(summary.domainScores).map(
+    (domain) => ({
+      domain,
+      value: summary.domainScores[domain].weightedContribution,
+      average: summary.domainScores[domain].average,
+      weight: summary.domainScores[domain].weight,
+    }),
+  );
 
   return {
     ...summary,
@@ -249,13 +294,19 @@ const getCatalog = async (req, res) => {
       ],
     });
 
-    const grouped = VALID_DOMAINS.reduce((acc, domain) => {
+    const orderedDomains = getDomainOrder(questions.map((q) => q.domain));
+    const grouped = orderedDomains.reduce((acc, domain) => {
       acc[domain] = [];
       return acc;
     }, {});
 
     for (const q of questions) {
-      grouped[q.domain].push({
+      const domain = normalizeKey(q.domain);
+      if (!grouped[domain]) {
+        grouped[domain] = [];
+      }
+
+      grouped[domain].push({
         id: q.id,
         questionCode: q.question_code,
         questionTextEn: q.question_text_en,
@@ -272,7 +323,7 @@ const getCatalog = async (req, res) => {
     successResponse(res, {
       businessId,
       legalVariant: variant,
-      domainWeights: DOMAIN_WEIGHTS,
+      domainWeights: buildDomainWeights(Object.keys(grouped)),
       domains: grouped,
     });
   } catch (error) {
@@ -318,18 +369,43 @@ const getCurrentAssessment = async (req, res) => {
       ],
     });
 
+    let reviewerScoreMap = new Map();
+    if (isReviewer(requester.role)) {
+      const reviewerScores = await CratReviewerScore.findAll({
+        where: {
+          assessment_id: assessment.id,
+          reviewer_id: requester.id,
+        },
+      });
+
+      reviewerScoreMap = new Map(
+        reviewerScores.map((score) => [
+          score.question_id,
+          {
+            score: Number(score.score ?? 0),
+            reviewerComment: score.reviewer_comment || "",
+          },
+        ]),
+      );
+    }
+
     successResponse(res, {
       assessment,
       answers: answers.map((answer) => ({
+        ...(reviewerScoreMap.get(answer.question_id) || {}),
         id: answer.id,
         questionId: answer.question_id,
         questionCode: answer.CratQuestionCatalog?.question_code,
         domain: answer.domain,
-        score: answer.score,
+        score:
+          reviewerScoreMap.get(answer.question_id)?.score ??
+          Number(answer.score ?? 0),
         attachment: answer.evidence,
         evidence: answer.evidence,
         entrepreneurComment: answer.entrepreneur_comment,
-        reviewerComment: answer.reviewer_comment,
+        reviewerComment:
+          reviewerScoreMap.get(answer.question_id)?.reviewerComment ||
+          answer.reviewer_comment,
         reviewedAt: answer.reviewed_at,
       })),
     });
@@ -611,12 +687,18 @@ const assignReviewer = async (req, res) => {
         transaction,
       });
 
+      await CratReviewerScore.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
       // Create new reviewer assignments
       await CratAssessmentReviewer.bulkCreate(
         reviewerIds.map((rid) => ({
           assessment_id: assessmentId,
           reviewer_id: rid,
           assigned_by: requester.id,
+          submitted_at: null,
         })),
         { transaction },
       );
@@ -699,8 +781,33 @@ const saveReviewerScores = async (req, res) => {
 
       if (!existingAnswer) continue;
 
-      await existingAnswer.update({
+      await CratReviewerScore.upsert({
+        assessment_id: assessment.id,
+        question_id: item.questionId,
+        reviewer_id: requester.id,
         score,
+        reviewer_comment: item.reviewerComment || null,
+      });
+
+      const reviewerScores = await CratReviewerScore.findAll({
+        where: {
+          assessment_id: assessment.id,
+          question_id: item.questionId,
+        },
+      });
+
+      const averageScore =
+        reviewerScores.length > 0
+          ? reviewerScores.reduce(
+              (sum, row) => sum + Number(row.score || 0),
+              0,
+            ) / reviewerScores.length
+          : 0;
+
+      const roundedAverage = Number(averageScore.toFixed(2));
+
+      await existingAnswer.update({
+        score: roundedAverage,
         reviewer_comment:
           item.reviewerComment || existingAnswer.reviewer_comment,
         reviewed_by: requester.id,
@@ -748,12 +855,46 @@ const submitReviewerAssessment = async (req, res) => {
       }
     }
 
-    await assessment.update({
-      status: "review_submitted",
-      reviewer_submitted_at: new Date(),
+    const submissionTime = new Date();
+
+    await CratAssessmentReviewer.update(
+      { submitted_at: submissionTime },
+      {
+        where: {
+          assessment_id: assessmentId,
+          reviewer_id: requester.id,
+        },
+      },
+    );
+
+    await CratReviewerScore.update(
+      { submitted_at: submissionTime },
+      {
+        where: {
+          assessment_id: assessmentId,
+          reviewer_id: requester.id,
+        },
+      },
+    );
+
+    const assignedReviewers = await CratAssessmentReviewer.findAll({
+      where: { assessment_id: assessmentId },
     });
 
-    successResponse(res, { message: "Review submitted to admin" });
+    const allSubmitted =
+      assignedReviewers.length > 0 &&
+      assignedReviewers.every((row) => Boolean(row.submitted_at));
+
+    await assessment.update({
+      status: allSubmitted ? "review_submitted" : "in_review",
+      reviewer_submitted_at: allSubmitted ? submissionTime : null,
+    });
+
+    successResponse(res, {
+      message: allSubmitted
+        ? "All reviewers submitted. Review forwarded to admin"
+        : "Review submitted. Waiting for other reviewers",
+    });
   } catch (error) {
     errorResponse(res, error);
   }
@@ -967,8 +1108,8 @@ const getAdminCatalog = async (req, res) => {
 
     const { domain, variant, active } = req.query;
     const where = {};
-    if (domain) where.domain = domain;
-    if (variant) where.variant = variant;
+    if (domain) where.domain = normalizeKey(domain);
+    if (variant) where.variant = normalizeKey(variant);
     if (active !== undefined) where.is_active = active === "true";
 
     const questions = await CratQuestionCatalog.findAll({
@@ -1012,23 +1153,19 @@ const createQuestion = async (req, res) => {
       sort_order = 0,
     } = req.body;
 
-    if (!domain || !question_code || !question_text_en) {
+    const domainValue = normalizeKey(domain);
+    const variantValue = normalizeKey(variant || "default");
+
+    if (!domainValue || !question_code || !question_text_en) {
       return res.status(400).json({
         status: false,
         message: "domain, question_code, and question_text_en are required",
       });
     }
 
-    if (!VALID_DOMAINS.includes(domain)) {
-      return res.status(400).json({
-        status: false,
-        message: `domain must be one of: ${VALID_DOMAINS.join(", ")}`,
-      });
-    }
-
     const question = await CratQuestionCatalog.create({
-      domain,
-      variant,
+      domain: domainValue,
+      variant: variantValue,
       question_code,
       question_text_en,
       question_text_sw: question_text_sw || null,
@@ -1074,6 +1211,7 @@ const updateQuestion = async (req, res) => {
     }
 
     const allowedFields = [
+      "domain",
       "question_text_en",
       "question_text_sw",
       "guidance_en",
@@ -1091,6 +1229,14 @@ const updateQuestion = async (req, res) => {
       if (req.body[field] !== undefined) {
         updates[field] = req.body[field];
       }
+    }
+
+    if (updates.domain !== undefined) {
+      updates.domain = normalizeKey(updates.domain);
+    }
+
+    if (updates.variant !== undefined) {
+      updates.variant = normalizeKey(updates.variant);
     }
 
     [
@@ -1211,6 +1357,7 @@ const executeAiReview = async (req, res) => {
     }
 
     const scores = await computeAssessmentScores(assessmentId);
+    const domains = getDomainOrder(Object.keys(scores.domainScores || {}));
 
     // Build the composite AI prompt
     let promptParts = [
@@ -1218,14 +1365,14 @@ const executeAiReview = async (req, res) => {
       ``,
       `OVERALL SCORES:`,
       `- Overall Score: ${scores.overallScore5.toFixed(2)} / 5 (${scores.overallPercent.toFixed(1)}%)`,
-      ...VALID_DOMAINS.map(
+      ...domains.map(
         (d) =>
           `- ${d.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}: avg ${(scores.domainScores[d]?.average || 0).toFixed(2)} / 5`,
       ),
       ``,
     ];
 
-    for (const domain of VALID_DOMAINS) {
+    for (const domain of domains) {
       const items = domainSections[domain] || [];
       if (items.length === 0) continue;
       promptParts.push(`\n## ${domain.replace(/_/g, " ").toUpperCase()}\n`);

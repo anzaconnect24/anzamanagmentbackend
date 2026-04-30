@@ -35,16 +35,11 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       domain: {
-        type: DataTypes.ENUM(
-          "commercial_marketing",
-          "financial",
-          "legal_compliance",
-          "operations",
-        ),
+        type: DataTypes.STRING,
         allowNull: false,
       },
       score: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(5, 2),
         allowNull: false,
         defaultValue: 0,
       },

@@ -14,16 +14,11 @@ module.exports = (sequelize, DataTypes) => {
   CratQuestionCatalog.init(
     {
       domain: {
-        type: DataTypes.ENUM(
-          "commercial_marketing",
-          "financial",
-          "legal_compliance",
-          "operations",
-        ),
+        type: DataTypes.STRING,
         allowNull: false,
       },
       variant: {
-        type: DataTypes.ENUM("default", "fintech"),
+        type: DataTypes.STRING,
         allowNull: false,
         defaultValue: "default",
       },
