@@ -33,6 +33,67 @@ const normalizeKey = (value) =>
     .trim()
     .toLowerCase();
 
+const parseEvidenceList = (evidence) => {
+  if (!evidence) return [];
+
+  const raw = String(evidence).trim();
+  if (!raw) return [];
+
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item || "").trim()).filter(Boolean);
+      }
+    } catch (_) {
+      return [raw];
+    }
+  }
+
+  return [raw];
+};
+
+const normalizeEvidenceInput = (input) => {
+  if (Array.isArray(input)) {
+    return input.map((item) => String(item || "").trim()).filter(Boolean);
+  }
+
+  if (!input) return [];
+
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) return [];
+
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((item) => String(item || "").trim())
+            .filter(Boolean);
+        }
+      } catch (_) {
+        return [trimmed];
+      }
+    }
+
+    return [trimmed];
+  }
+
+  return [];
+};
+
+const serializeEvidenceList = (list) => {
+  const clean = [
+    ...new Set(
+      (list || []).map((item) => String(item || "").trim()).filter(Boolean),
+    ),
+  ];
+  if (clean.length === 0) return null;
+  if (clean.length === 1) return clean[0];
+  return JSON.stringify(clean);
+};
+
 const getDomainOrder = (domains = []) => {
   const normalized = [...new Set(domains.map(normalizeKey).filter(Boolean))];
   const defaults = DEFAULT_DOMAIN_ORDER.filter((domain) =>
@@ -392,6 +453,7 @@ const getCurrentAssessment = async (req, res) => {
     successResponse(res, {
       assessment,
       answers: answers.map((answer) => ({
+        attachments: parseEvidenceList(answer.evidence),
         ...(reviewerScoreMap.get(answer.question_id) || {}),
         id: answer.id,
         questionId: answer.question_id,
@@ -400,7 +462,7 @@ const getCurrentAssessment = async (req, res) => {
         score:
           reviewerScoreMap.get(answer.question_id)?.score ??
           Number(answer.score ?? 0),
-        attachment: answer.evidence,
+        attachment: parseEvidenceList(answer.evidence)[0] || null,
         evidence: answer.evidence,
         entrepreneurComment: answer.entrepreneur_comment,
         reviewerComment:
@@ -459,7 +521,9 @@ const saveEntrepreneurAnswers = async (req, res) => {
         question_id: question.id,
         domain: question.domain,
         score: 0,
-        evidence: item.evidence || null,
+        evidence: serializeEvidenceList(
+          normalizeEvidenceInput(item.attachments || item.evidence),
+        ),
         entrepreneur_comment: item.entrepreneurComment || null,
       });
     }
@@ -521,7 +585,12 @@ const uploadEntrepreneurAttachment = async (req, res) => {
     const assessmentId = Number(req.params.assessmentId);
     const questionId = Number(req.params.questionId);
 
-    if (!req.file) {
+    const uploadedFiles = [
+      ...(Array.isArray(req.files) ? req.files : []),
+      ...(req.file ? [req.file] : []),
+    ];
+
+    if (uploadedFiles.length === 0) {
       return res
         .status(400)
         .json({ status: false, message: "File is required" });
@@ -547,7 +616,19 @@ const uploadEntrepreneurAttachment = async (req, res) => {
         .json({ status: false, message: "Question not found" });
     }
 
-    const attachmentUrl = await getUrl(req);
+    const attachmentUrls = [];
+    for (const file of uploadedFiles) {
+      const attachmentUrl = await getUrl({ ...req, file });
+      if (attachmentUrl) {
+        attachmentUrls.push(attachmentUrl);
+      }
+    }
+
+    if (attachmentUrls.length === 0) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Failed to process uploaded file(s)" });
+    }
 
     const existingAnswer = await CratAnswer.findOne({
       where: {
@@ -557,7 +638,14 @@ const uploadEntrepreneurAttachment = async (req, res) => {
     });
 
     if (existingAnswer) {
-      await existingAnswer.update({ evidence: attachmentUrl });
+      const mergedAttachments = [
+        ...parseEvidenceList(existingAnswer.evidence),
+        ...attachmentUrls,
+      ];
+
+      await existingAnswer.update({
+        evidence: serializeEvidenceList(mergedAttachments),
+      });
     } else {
       await CratAnswer.create({
         assessment_id: assessment.id,
@@ -565,14 +653,24 @@ const uploadEntrepreneurAttachment = async (req, res) => {
         question_id: question.id,
         domain: question.domain,
         score: 0,
-        evidence: attachmentUrl,
+        evidence: serializeEvidenceList(attachmentUrls),
       });
     }
+
+    const latestAnswer = await CratAnswer.findOne({
+      where: {
+        assessment_id: assessment.id,
+        question_id: question.id,
+      },
+    });
+
+    const attachments = parseEvidenceList(latestAnswer?.evidence);
 
     successResponse(res, {
       message: "Attachment uploaded",
       questionId,
-      attachment: attachmentUrl,
+      attachment: attachments[attachments.length - 1] || null,
+      attachments,
     });
   } catch (error) {
     errorResponse(res, error);

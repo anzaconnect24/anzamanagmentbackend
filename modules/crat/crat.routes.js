@@ -23,8 +23,8 @@ router.put(
 );
 router.post(
   "/assessments/:assessmentId/answers/:questionId/attachment",
-  upload.single("file"),
   validateJWT,
+  upload.any(),
   controller.uploadEntrepreneurAttachment,
 );
 router.post(
