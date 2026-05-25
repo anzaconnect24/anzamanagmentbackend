@@ -1,10 +1,17 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { MentorReport, User, Business, Notification } = require("../../models");
+const {
+  MentorReport,
+  User,
+  Business,
+  Notification,
+  MentorEntreprenuer,
+} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const getUrl = require("../../utils/cloudinary_upload");
 
 const createMentorReport = async (req, res) => {
   try {
+    const authUser = req.user;
     const {
       mentor_uuid,
       entreprenuer_uuid,
@@ -34,16 +41,45 @@ const createMentorReport = async (req, res) => {
 
     const url = req.file ? await getUrl(req) : null;
 
-    const mentor = await User.findOne({
-      where: {
-        uuid: mentor_uuid,
-      },
-    });
+    let mentor = await User.findByPk(authUser.id);
+    if (authUser.role === "Admin" && mentor_uuid) {
+      mentor = await User.findOne({
+        where: {
+          uuid: mentor_uuid,
+        },
+      });
+    }
+
+    if (!mentor || mentor.role !== "Mentor") {
+      return res.status(403).json({
+        status: false,
+        message: "Only mentors can submit mentorship reports",
+      });
+    }
+
+    if (
+      authUser.role !== "Admin" &&
+      mentor_uuid &&
+      mentor.uuid !== mentor_uuid
+    ) {
+      return res.status(403).json({
+        status: false,
+        message: "You cannot submit reports on behalf of another mentor",
+      });
+    }
+
     const entreprenuer = await User.findOne({
       where: {
         uuid: entreprenuer_uuid,
       },
     });
+
+    if (!entreprenuer || entreprenuer.role !== "Enterprenuer") {
+      return res.status(404).json({
+        status: false,
+        message: "Entrepreneur not found",
+      });
+    }
 
     const response = await MentorReport.create({
       mentorId: mentor.id,
@@ -242,6 +278,7 @@ const getMentorReport = async (req, res) => {
 };
 const getMentorEntrepreneurReports = async (req, res) => {
   try {
+    const authUser = req.user;
     const { mentorUuid, entrepreneurUuid } = req.params;
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
@@ -260,6 +297,31 @@ const getMentorEntrepreneurReports = async (req, res) => {
 
     if (!mentor || !entrepreneur) {
       return errorResponse(res, new Error("Mentor or Entrepreneur not found"));
+    }
+
+    if (authUser.role === "Mentor" && mentor.id !== authUser.id) {
+      return res.status(403).json({
+        status: false,
+        message: "You cannot view reports for another mentor",
+      });
+    }
+
+    if (authUser.role === "Mentor") {
+      const assignment = await MentorEntreprenuer.findOne({
+        where: {
+          mentorId: mentor.id,
+          entreprenuerId: entrepreneur.id,
+          approved: true,
+        },
+      });
+
+      if (!assignment) {
+        return res.status(403).json({
+          status: false,
+          message:
+            "You can only view reports for entrepreneurs assigned to you",
+        });
+      }
     }
 
     const { count, rows } = await MentorReport.findAndCountAll({

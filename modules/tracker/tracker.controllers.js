@@ -1,0 +1,609 @@
+const { Op } = require("sequelize");
+const { errorResponse, successResponse } = require("../../utils/responses");
+const {
+  Business,
+  Milestone,
+  WeeklyLog,
+  User,
+  MentorEntreprenuer,
+} = require("../../models");
+
+const csvEscape = (value) => {
+  const safeValue = value === null || value === undefined ? "" : String(value);
+  return `"${safeValue.replace(/"/g, '""')}"`;
+};
+
+const ensureApprovedBusiness = async (entreprenuerId) => {
+  return Business.findOne({
+    where: {
+      userId: entreprenuerId,
+      status: "accepted",
+    },
+  });
+};
+
+const ensureMentorAssignment = async (mentorId, entreprenuerId) => {
+  return MentorEntreprenuer.findOne({
+    where: {
+      mentorId,
+      entreprenuerId,
+      approved: true,
+    },
+  });
+};
+
+const getMentorOverview = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+
+    const [weeklyCount, redFlags, milestones] = await Promise.all([
+      WeeklyLog.count({ where: { mentorId } }),
+      WeeklyLog.count({ where: { mentorId, flag: "red" } }),
+      Milestone.count({
+        where: {
+          mentorId,
+          status: {
+            [Op.in]: ["pending", "in_progress", "submitted"],
+          },
+        },
+      }),
+    ]);
+
+    successResponse(res, {
+      weeklyLogs: weeklyCount,
+      redFlags,
+      openMilestones: milestones,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const listMentorWeeklyLogs = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { page = 1, limit = 10, entreprenuer_uuid } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = req.user.role === "Admin" ? {} : { mentorId };
+
+    if (entreprenuer_uuid) {
+      const entrepreneur = await User.findOne({
+        where: { uuid: entreprenuer_uuid },
+        attributes: ["id"],
+      });
+      if (!entrepreneur) {
+        return successResponse(res, {
+          weeklyLogs: [],
+          pagination: {
+            total: 0,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: 0,
+          },
+        });
+      }
+      where.entreprenuerId = entrepreneur.id;
+    }
+
+    const { count, rows } = await WeeklyLog.findAndCountAll({
+      where,
+      order: [["weekStart", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    successResponse(res, {
+      weeklyLogs: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const createWeeklyLog = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const {
+      entreprenuer_uuid,
+      weekStart,
+      hours,
+      touchpoints,
+      activities,
+      focus,
+      outcomes,
+      barriers,
+      nextPlan,
+      engagement,
+      flag,
+    } = req.body;
+
+    const entrepreneur = await User.findOne({
+      where: { uuid: entreprenuer_uuid, role: "Enterprenuer" },
+      attributes: ["id", "uuid", "name"],
+    });
+
+    if (!entrepreneur) {
+      return res.status(404).json({
+        status: false,
+        message: "Entrepreneur not found",
+      });
+    }
+
+    const assignment = await ensureMentorAssignment(mentorId, entrepreneur.id);
+    if (!assignment) {
+      return res.status(403).json({
+        status: false,
+        message:
+          "You can only log weekly progress for approved assigned entrepreneurs",
+      });
+    }
+
+    const business = await ensureApprovedBusiness(entrepreneur.id);
+    if (!business) {
+      return res.status(400).json({
+        status: false,
+        message: "Entrepreneur business is not approved for tracker",
+      });
+    }
+
+    const payload = {
+      mentorId,
+      entreprenuerId: entrepreneur.id,
+      businessId: business.id,
+      createdById: req.user.id,
+      weekStart,
+      hours: parseFloat(hours) || 0,
+      touchpoints: parseInt(touchpoints) || 0,
+      activities: Array.isArray(activities) ? activities : [],
+      focus,
+      outcomes,
+      barriers,
+      nextPlan,
+      engagement,
+      flag,
+    };
+
+    const weeklyLog = await WeeklyLog.create(payload);
+    successResponse(res, weeklyLog);
+  } catch (error) {
+    if (
+      error.name === "SequelizeUniqueConstraintError" ||
+      (error.parent && error.parent.code === "ER_DUP_ENTRY")
+    ) {
+      return res.status(409).json({
+        status: false,
+        message:
+          "A weekly log already exists for this mentor, entrepreneur, and week",
+      });
+    }
+
+    errorResponse(res, error);
+  }
+};
+
+const createMilestone = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { entreprenuer_uuid, title, description, dueDate } = req.body;
+
+    if (!title) {
+      return res.status(400).json({
+        status: false,
+        message: "Milestone title is required",
+      });
+    }
+
+    const entrepreneur = await User.findOne({
+      where: { uuid: entreprenuer_uuid, role: "Enterprenuer" },
+      attributes: ["id", "uuid", "name"],
+    });
+
+    if (!entrepreneur) {
+      return res.status(404).json({
+        status: false,
+        message: "Entrepreneur not found",
+      });
+    }
+
+    const assignment = await ensureMentorAssignment(mentorId, entrepreneur.id);
+    if (!assignment) {
+      return res.status(403).json({
+        status: false,
+        message:
+          "You can only create milestones for approved assigned entrepreneurs",
+      });
+    }
+
+    const business = await ensureApprovedBusiness(entrepreneur.id);
+    if (!business) {
+      return res.status(400).json({
+        status: false,
+        message: "Entrepreneur business is not approved for tracker",
+      });
+    }
+
+    const milestone = await Milestone.create({
+      mentorId,
+      entreprenuerId: entrepreneur.id,
+      businessId: business.id,
+      title,
+      description,
+      dueDate,
+      status: "pending",
+    });
+
+    successResponse(res, milestone);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const listMilestones = async (req, res) => {
+  try {
+    const role = req.user.role;
+    const where = {};
+
+    if (role === "Mentor") {
+      where.mentorId = req.user.id;
+    } else if (role === "Enterprenuer") {
+      where.entreprenuerId = req.user.id;
+    }
+
+    const milestones = await Milestone.findAll({
+      where,
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+    });
+
+    successResponse(res, milestones);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const submitMilestone = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { submissionNotes } = req.body;
+
+    const milestone = await Milestone.findOne({
+      where: { uuid },
+    });
+
+    if (!milestone) {
+      return res.status(404).json({
+        status: false,
+        message: "Milestone not found",
+      });
+    }
+
+    if (milestone.entreprenuerId !== req.user.id) {
+      return res.status(403).json({
+        status: false,
+        message: "You can only submit milestones assigned to you",
+      });
+    }
+
+    const updated = await milestone.update({
+      submissionNotes,
+      submissionDate: new Date(),
+      status: "submitted",
+    });
+
+    successResponse(res, updated);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const reviewMilestone = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { status, mentorReviewNotes } = req.body;
+
+    if (!["in_progress", "completed", "overdue", "rejected"].includes(status)) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Invalid milestone status. Allowed: in_progress, completed, overdue, rejected",
+      });
+    }
+
+    const milestone = await Milestone.findOne({ where: { uuid } });
+    if (!milestone) {
+      return res.status(404).json({
+        status: false,
+        message: "Milestone not found",
+      });
+    }
+
+    if (req.user.role === "Mentor" && milestone.mentorId !== req.user.id) {
+      return res.status(403).json({
+        status: false,
+        message: "You can only review your own milestone assignments",
+      });
+    }
+
+    const updated = await milestone.update({
+      status,
+      mentorReviewNotes,
+      reviewedById: req.user.id,
+      reviewedAt: new Date(),
+    });
+
+    successResponse(res, updated);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const getAdminOverview = async (req, res) => {
+  try {
+    const [totalWeeklyLogs, redFlags, totalMilestones, submittedMilestones] =
+      await Promise.all([
+        WeeklyLog.count(),
+        WeeklyLog.count({ where: { flag: "red" } }),
+        Milestone.count(),
+        Milestone.count({ where: { status: "submitted" } }),
+      ]);
+
+    successResponse(res, {
+      totalWeeklyLogs,
+      redFlags,
+      totalMilestones,
+      submittedMilestones,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const listAdminWeeklyLogs = async (req, res) => {
+  try {
+    const { flag, page = 1, limit = 20, weekStart } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {};
+    if (flag && ["green", "amber", "red"].includes(flag)) {
+      where.flag = flag;
+    }
+    if (weekStart) {
+      where.weekStart = weekStart;
+    }
+
+    const { count, rows } = await WeeklyLog.findAndCountAll({
+      where,
+      order: [
+        ["weekStart", "DESC"],
+        ["createdAt", "DESC"],
+      ],
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    successResponse(res, {
+      weeklyLogs: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const listAdminMilestones = async (req, res) => {
+  try {
+    const { status, page = 1, limit = 20 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {};
+    if (
+      status &&
+      [
+        "pending",
+        "in_progress",
+        "submitted",
+        "completed",
+        "overdue",
+        "rejected",
+      ].includes(status)
+    ) {
+      where.status = status;
+    }
+
+    const { count, rows } = await Milestone.findAndCountAll({
+      where,
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+      limit: parseInt(limit),
+      offset,
+    });
+
+    successResponse(res, {
+      milestones: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const exportAdminTrackerCsv = async (req, res) => {
+  try {
+    const [weeklyLogs, milestones] = await Promise.all([
+      WeeklyLog.findAll({
+        order: [["weekStart", "DESC"]],
+        include: [
+          {
+            model: User,
+            as: "Mentor",
+            attributes: ["name", "email"],
+          },
+          {
+            model: User,
+            as: "Entreprenuer",
+            attributes: ["name", "email"],
+          },
+        ],
+      }),
+      Milestone.findAll({
+        order: [["createdAt", "DESC"]],
+        include: [
+          {
+            model: User,
+            as: "Mentor",
+            attributes: ["name", "email"],
+          },
+          {
+            model: User,
+            as: "Entreprenuer",
+            attributes: ["name", "email"],
+          },
+        ],
+      }),
+    ]);
+
+    const rows = [
+      [
+        "Type",
+        "Mentor",
+        "Mentor Email",
+        "Entrepreneur",
+        "Entrepreneur Email",
+        "Week Start",
+        "Hours",
+        "Touchpoints",
+        "Flag",
+        "Milestone Title",
+        "Milestone Status",
+        "Due Date",
+        "Submission Date",
+        "Submission Notes",
+        "Review Notes",
+      ],
+    ];
+
+    weeklyLogs.forEach((log) => {
+      rows.push([
+        "Weekly Log",
+        log.Mentor?.name || "",
+        log.Mentor?.email || "",
+        log.Entreprenuer?.name || "",
+        log.Entreprenuer?.email || "",
+        log.weekStart || "",
+        log.hours || "",
+        log.touchpoints || "",
+        log.flag || "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ]);
+    });
+
+    milestones.forEach((milestone) => {
+      rows.push([
+        "Milestone",
+        milestone.Mentor?.name || "",
+        milestone.Mentor?.email || "",
+        milestone.Entreprenuer?.name || "",
+        milestone.Entreprenuer?.email || "",
+        "",
+        "",
+        "",
+        "",
+        milestone.title || "",
+        milestone.status || "",
+        milestone.dueDate || "",
+        milestone.submissionDate || "",
+        milestone.submissionNotes || "",
+        milestone.mentorReviewNotes || "",
+      ]);
+    });
+
+    const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=tracker-admin-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+
+    res.status(200).send(csv);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+module.exports = {
+  getMentorOverview,
+  listMentorWeeklyLogs,
+  createWeeklyLog,
+  createMilestone,
+  listMilestones,
+  submitMilestone,
+  reviewMilestone,
+  getAdminOverview,
+  listAdminWeeklyLogs,
+  listAdminMilestones,
+  exportAdminTrackerCsv,
+};

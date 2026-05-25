@@ -107,6 +107,7 @@ const getUserBusiness = async (req, res) => {
 const updateBusiness = async (req, res) => {
   try {
     const uuid = req.params.uuid;
+    const user = req.user;
     const payload = { ...req.body };
     let document;
     const { documentName, business_sector_uuid } = req.body;
@@ -136,6 +137,13 @@ const updateBusiness = async (req, res) => {
       }
       // Remove the UUID from payload as it's not a valid database field
       delete payload.business_sector_uuid;
+    }
+
+    if (payload.status && user.role !== "Admin") {
+      return res.status(403).json({
+        status: false,
+        message: "Only admins can change business approval status",
+      });
     }
 
     let business = await Business.findOne({

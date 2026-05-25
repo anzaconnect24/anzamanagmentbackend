@@ -24,7 +24,8 @@
     "swagger-ui-express": "^5.0.1"
   },
   "scripts": {
-    "seed:crat-catalog": "node scripts/seed_crat_catalog.js"
+    "seed:crat-catalog": "node scripts/seed_crat_catalog.js",
+    "test:tracker-rbac": "bash scripts/tracker_rbac_smoke.sh"
   },
   "devDependencies": {
     "swagger-autogen": "^2.23.7"

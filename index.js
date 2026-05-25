@@ -52,6 +52,7 @@ const InvestmentOpportunities = require("./modules/investmentOpportunities/inves
 const MentorshipApplicationRoutes = require("./modules/mentorshipApplications/mentorshipApplications.routes");
 const InvestmentApplicationRoutes = require("./modules/investmentApplications/investmentApplications.routes");
 const BusinessToolsRoutes = require("./modules/business_tools/business_tools.routes");
+const TrackerRoutes = require("./modules/tracker/tracker.routes");
 const {
   usersTag,
   statsTag,
@@ -188,6 +189,7 @@ app.use("/seller", sellersTag, Seller);
 app.use("/subscription", subscriptionsTag, Subscription);
 app.use("/crat", cratTag, CratRoutes);
 app.use("/business_tools", BusinessToolsRoutes);
+app.use("/tracker", TrackerRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
