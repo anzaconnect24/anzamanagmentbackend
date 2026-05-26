@@ -94,6 +94,54 @@ const serializeEvidenceList = (list) => {
   return JSON.stringify(clean);
 };
 
+const parseRequiredAttachmentList = (value) => {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(
+        value.map((item) => String(item || "").trim()).filter(Boolean),
+      ),
+    ];
+  }
+
+  if (value === null || value === undefined) return [];
+
+  const raw = String(value).trim();
+  if (!raw) return [];
+
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return [
+          ...new Set(
+            parsed.map((item) => String(item || "").trim()).filter(Boolean),
+          ),
+        ];
+      }
+    } catch (_) {
+      return [raw];
+    }
+  }
+
+  const splitItems = raw
+    .split(/[\n;]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  if (splitItems.length > 1) {
+    return [...new Set(splitItems)];
+  }
+
+  return [raw];
+};
+
+const serializeRequiredAttachmentList = (value) => {
+  const clean = parseRequiredAttachmentList(value);
+  if (clean.length === 0) return null;
+  if (clean.length === 1) return clean[0];
+  return JSON.stringify(clean);
+};
+
 const getDomainOrder = (domains = []) => {
   const normalized = [...new Set(domains.map(normalizeKey).filter(Boolean))];
   const defaults = DEFAULT_DOMAIN_ORDER.filter((domain) =>
@@ -376,6 +424,10 @@ const getCatalog = async (req, res) => {
         guidanceSw: q.guidance_sw,
         requiredAttachment: q.required_attachment,
         requiredAttachmentSw: q.required_attachment_sw,
+        requiredAttachments: parseRequiredAttachmentList(q.required_attachment),
+        requiredAttachmentsSw: parseRequiredAttachmentList(
+          q.required_attachment_sw,
+        ),
         aiPrompt: q.ai_prompt,
         sortOrder: q.sort_order,
       });
@@ -554,6 +606,57 @@ const submitAssessment = async (req, res) => {
       return res
         .status(404)
         .json({ status: false, message: "Assessment not found" });
+    }
+
+    const legalVariant = await resolveLegalVariant(assessment.business_id);
+    const questions = await CratQuestionCatalog.findAll({
+      where: {
+        is_active: true,
+        [Op.or]: [
+          { domain: { [Op.ne]: "legal_compliance" } },
+          { domain: "legal_compliance", variant: legalVariant },
+        ],
+      },
+      attributes: ["id", "question_code", "required_attachment"],
+    });
+
+    const answers = await CratAnswer.findAll({
+      where: { assessment_id: assessment.id },
+      attributes: ["question_id", "evidence"],
+    });
+
+    const answerMap = new Map(
+      answers.map((answer) => [answer.question_id, answer]),
+    );
+
+    const missingRequirements = [];
+
+    for (const question of questions) {
+      const requiredAttachments = parseRequiredAttachmentList(
+        question.required_attachment,
+      );
+
+      if (requiredAttachments.length === 0) continue;
+
+      const answer = answerMap.get(question.id);
+      const uploadedAttachments = parseEvidenceList(answer?.evidence);
+
+      if (uploadedAttachments.length < requiredAttachments.length) {
+        missingRequirements.push({
+          questionCode: question.question_code,
+          requiredCount: requiredAttachments.length,
+          uploadedCount: uploadedAttachments.length,
+        });
+      }
+    }
+
+    if (missingRequirements.length > 0) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Please upload all required attachments before submitting this assessment.",
+        missingRequirements,
+      });
     }
 
     await assessment.update({
@@ -1218,7 +1321,18 @@ const getAdminCatalog = async (req, res) => {
       ],
     });
 
-    successResponse(res, questions);
+    successResponse(
+      res,
+      questions.map((question) => ({
+        ...question.toJSON(),
+        required_attachments: parseRequiredAttachmentList(
+          question.required_attachment,
+        ),
+        required_attachments_sw: parseRequiredAttachmentList(
+          question.required_attachment_sw,
+        ),
+      })),
+    );
   } catch (error) {
     errorResponse(res, error);
   }
@@ -1247,6 +1361,8 @@ const createQuestion = async (req, res) => {
       guidance_sw,
       required_attachment,
       required_attachment_sw,
+      required_attachments,
+      required_attachments_sw,
       ai_prompt,
       sort_order = 0,
     } = req.body;
@@ -1269,8 +1385,16 @@ const createQuestion = async (req, res) => {
       question_text_sw: question_text_sw || null,
       guidance_en: guidance_en || null,
       guidance_sw: guidance_sw || null,
-      required_attachment: required_attachment || null,
-      required_attachment_sw: required_attachment_sw || null,
+      required_attachment: serializeRequiredAttachmentList(
+        required_attachments !== undefined
+          ? required_attachments
+          : required_attachment,
+      ),
+      required_attachment_sw: serializeRequiredAttachmentList(
+        required_attachments_sw !== undefined
+          ? required_attachments_sw
+          : required_attachment_sw,
+      ),
       ai_prompt: ai_prompt || null,
       sort_order,
       is_active: true,
@@ -1337,18 +1461,35 @@ const updateQuestion = async (req, res) => {
       updates.variant = normalizeKey(updates.variant);
     }
 
-    [
-      "question_text_sw",
-      "guidance_en",
-      "guidance_sw",
-      "required_attachment",
-      "required_attachment_sw",
-      "ai_prompt",
-    ].forEach((nullableField) => {
-      if (updates[nullableField] === "") {
-        updates[nullableField] = null;
-      }
-    });
+    if (
+      req.body.required_attachments !== undefined ||
+      req.body.required_attachment !== undefined
+    ) {
+      updates.required_attachment = serializeRequiredAttachmentList(
+        req.body.required_attachments !== undefined
+          ? req.body.required_attachments
+          : req.body.required_attachment,
+      );
+    }
+
+    if (
+      req.body.required_attachments_sw !== undefined ||
+      req.body.required_attachment_sw !== undefined
+    ) {
+      updates.required_attachment_sw = serializeRequiredAttachmentList(
+        req.body.required_attachments_sw !== undefined
+          ? req.body.required_attachments_sw
+          : req.body.required_attachment_sw,
+      );
+    }
+
+    ["question_text_sw", "guidance_en", "guidance_sw", "ai_prompt"].forEach(
+      (nullableField) => {
+        if (updates[nullableField] === "") {
+          updates[nullableField] = null;
+        }
+      },
+    );
 
     await question.update(updates);
     successResponse(res, question);
