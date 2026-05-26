@@ -17,6 +17,7 @@ const {
   submitMilestone,
   reviewMilestone,
   getAdminOverview,
+  listAdminBusinesses,
   listAdminWeeklyLogs,
   listAdminMilestones,
   exportAdminTrackerCsv,
@@ -116,6 +117,12 @@ router.get(
   validateJWT,
   requireRoles(["Admin"]),
   getAdminOverview,
+);
+router.get(
+  "/admin/businesses",
+  validateJWT,
+  requireRoles(["Admin"]),
+  listAdminBusinesses,
 );
 router.get(
   "/admin/weekly-logs",

@@ -810,9 +810,47 @@ const getAdminOverview = async (req, res) => {
   }
 };
 
+const listAdminBusinesses = async (req, res) => {
+  try {
+    const [weeklyBusinessIds, milestoneBusinessIds] = await Promise.all([
+      WeeklyLog.findAll({
+        attributes: ["businessId"],
+        group: ["businessId"],
+        raw: true,
+      }),
+      Milestone.findAll({
+        attributes: ["businessId"],
+        group: ["businessId"],
+        raw: true,
+      }),
+    ]);
+
+    const businessIdSet = new Set([
+      ...weeklyBusinessIds.map((row) => row.businessId),
+      ...milestoneBusinessIds.map((row) => row.businessId),
+    ]);
+
+    if (businessIdSet.size === 0) {
+      return successResponse(res, []);
+    }
+
+    const businesses = await Business.findAll({
+      where: {
+        id: { [Op.in]: Array.from(businessIdSet) },
+      },
+      attributes: ["id", "uuid", "name"],
+      order: [["name", "ASC"]],
+    });
+
+    successResponse(res, businesses);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const listAdminWeeklyLogs = async (req, res) => {
   try {
-    const { flag, page = 1, limit = 20, weekStart } = req.query;
+    const { flag, page = 1, limit = 20, weekStart, businessUuid } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
@@ -840,6 +878,16 @@ const listAdminWeeklyLogs = async (req, res) => {
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
         },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
+          ...(businessUuid
+            ? {
+                where: { uuid: businessUuid },
+                required: true,
+              }
+            : {}),
+        },
       ],
       limit: parseInt(limit),
       offset,
@@ -861,7 +909,7 @@ const listAdminWeeklyLogs = async (req, res) => {
 
 const listAdminMilestones = async (req, res) => {
   try {
-    const { status, page = 1, limit = 20 } = req.query;
+    const { status, page = 1, limit = 20, businessUuid } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {};
@@ -892,6 +940,16 @@ const listAdminMilestones = async (req, res) => {
           model: User,
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
+          ...(businessUuid
+            ? {
+                where: { uuid: businessUuid },
+                required: true,
+              }
+            : {}),
         },
       ],
       limit: parseInt(limit),
@@ -1037,6 +1095,7 @@ module.exports = {
   submitMilestone,
   reviewMilestone,
   getAdminOverview,
+  listAdminBusinesses,
   listAdminWeeklyLogs,
   listAdminMilestones,
   exportAdminTrackerCsv,
