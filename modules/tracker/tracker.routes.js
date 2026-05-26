@@ -3,6 +3,13 @@ const { validateJWT } = require("../../utils/validateJWT");
 const { requireRoles } = require("../../utils/authorization");
 const {
   getMentorOverview,
+  listMentorEnterprises,
+  upsertMentorEnterprise,
+  getMentorEnterpriseDetails,
+  updateMentorEnterpriseKpis,
+  createMentorEnterpriseSession,
+  createEnterpriseWeeklyLog,
+  createEnterpriseMilestone,
   listMentorWeeklyLogs,
   createWeeklyLog,
   createMilestone,
@@ -34,6 +41,49 @@ router.post(
   validateJWT,
   requireRoles(["Mentor"]),
   createWeeklyLog,
+);
+
+router.get(
+  "/enterprises",
+  validateJWT,
+  requireRoles(["Mentor", "Admin"]),
+  listMentorEnterprises,
+);
+router.post(
+  "/enterprises",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  upsertMentorEnterprise,
+);
+router.get(
+  "/enterprises/:uuid",
+  validateJWT,
+  requireRoles(["Mentor", "Admin"]),
+  getMentorEnterpriseDetails,
+);
+router.patch(
+  "/enterprises/:uuid/kpis",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  updateMentorEnterpriseKpis,
+);
+router.post(
+  "/enterprises/:uuid/sessions",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  createMentorEnterpriseSession,
+);
+router.post(
+  "/enterprises/:uuid/weekly-logs",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  createEnterpriseWeeklyLog,
+);
+router.post(
+  "/enterprises/:uuid/milestones",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  createEnterpriseMilestone,
 );
 
 router.post(

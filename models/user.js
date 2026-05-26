@@ -69,6 +69,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "generated_by",
         as: "cratGeneratedSnapshots",
       });
+
+      User.hasMany(models.TrackerEnterprise, {
+        foreignKey: "mentorId",
+        as: "trackerEnterprises",
+      });
+      User.hasMany(models.TrackerSession, {
+        foreignKey: "mentorId",
+        as: "trackerSessions",
+      });
     }
   }
   User.init(

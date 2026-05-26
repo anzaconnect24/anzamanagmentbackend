@@ -23,6 +23,14 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "business_id",
         onDelete: "CASCADE",
       });
+      Business.hasMany(models.TrackerEnterprise, {
+        foreignKey: "businessId",
+        onDelete: "CASCADE",
+      });
+      Business.hasMany(models.TrackerSession, {
+        foreignKey: "businessId",
+        onDelete: "CASCADE",
+      });
     }
   }
 

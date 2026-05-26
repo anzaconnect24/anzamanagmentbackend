@@ -3,6 +3,8 @@ const { errorResponse, successResponse } = require("../../utils/responses");
 const {
   Business,
   Milestone,
+  TrackerEnterprise,
+  TrackerSession,
   WeeklyLog,
   User,
   MentorEntreprenuer,
@@ -30,6 +32,417 @@ const ensureMentorAssignment = async (mentorId, entreprenuerId) => {
       approved: true,
     },
   });
+};
+
+const getMentorEnterpriseByUuid = async (mentorId, enterpriseUuid) => {
+  return TrackerEnterprise.findOne({
+    where: {
+      uuid: enterpriseUuid,
+      mentorId,
+    },
+  });
+};
+
+const listMentorEnterprises = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+
+    const enterprises = await TrackerEnterprise.findAll({
+      where: { mentorId },
+      order: [["updatedAt", "DESC"]],
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+    });
+
+    successResponse(res, enterprises);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const upsertMentorEnterprise = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const {
+      entreprenuer_uuid,
+      category,
+      ceSector,
+      assignedBda,
+      district,
+      leadContact,
+      grantUsd,
+      awardDate,
+      businessDescription,
+      flag,
+    } = req.body;
+
+    const entrepreneur = await User.findOne({
+      where: { uuid: entreprenuer_uuid, role: "Enterprenuer" },
+      attributes: ["id", "uuid", "name"],
+    });
+
+    if (!entrepreneur) {
+      return res.status(404).json({
+        status: false,
+        message: "Entrepreneur not found",
+      });
+    }
+
+    const assignment = await ensureMentorAssignment(mentorId, entrepreneur.id);
+    if (!assignment) {
+      return res.status(403).json({
+        status: false,
+        message: "You can only add assigned entrepreneurs as enterprises",
+      });
+    }
+
+    const business = await ensureApprovedBusiness(entrepreneur.id);
+    if (!business) {
+      return res.status(400).json({
+        status: false,
+        message: "Entrepreneur business is not approved for tracker",
+      });
+    }
+
+    const payload = {
+      mentorId,
+      entreprenuerId: entrepreneur.id,
+      businessId: business.id,
+      name: business.name || entrepreneur.name,
+      category,
+      ceSector,
+      assignedBda,
+      district,
+      leadContact,
+      grantUsd: Number(grantUsd) || 0,
+      awardDate,
+      businessDescription,
+    };
+
+    if (["green", "amber", "red"].includes(flag)) {
+      payload.flag = flag;
+    }
+
+    const existing = await TrackerEnterprise.findOne({
+      where: {
+        mentorId,
+        entreprenuerId: entrepreneur.id,
+      },
+    });
+
+    let enterprise;
+    if (existing) {
+      enterprise = await existing.update(payload);
+    } else {
+      enterprise = await TrackerEnterprise.create(payload);
+    }
+
+    successResponse(res, enterprise);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const getMentorEnterpriseDetails = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+
+    const enterprise = await TrackerEnterprise.findOne({
+      where: {
+        uuid,
+        mentorId,
+      },
+      include: [
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+      ],
+    });
+
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    const [sessions, weeklyLogs, milestones] = await Promise.all([
+      TrackerSession.findAll({
+        where: {
+          enterpriseId: enterprise.id,
+          mentorId,
+        },
+        order: [["sessionDate", "DESC"]],
+      }),
+      WeeklyLog.findAll({
+        where: {
+          mentorId,
+          entreprenuerId: enterprise.entreprenuerId,
+        },
+        include: [
+          {
+            model: User,
+            as: "Entreprenuer",
+            attributes: ["id", "uuid", "name", "email"],
+          },
+        ],
+        order: [["weekStart", "DESC"]],
+      }),
+      Milestone.findAll({
+        where: {
+          mentorId,
+          entreprenuerId: enterprise.entreprenuerId,
+        },
+        include: [
+          {
+            model: User,
+            as: "Entreprenuer",
+            attributes: ["id", "uuid", "name", "email"],
+          },
+        ],
+        order: [["createdAt", "DESC"]],
+      }),
+    ]);
+
+    const completedMilestones = milestones.filter(
+      (item) => item.status === "completed",
+    ).length;
+
+    const stats = {
+      sessionsCount: sessions.length,
+      weeklyLogsCount: weeklyLogs.length,
+      milestonesCount: milestones.length,
+      milestonesProgress: milestones.length
+        ? Math.round((completedMilestones / milestones.length) * 100)
+        : 0,
+      mentorshipHours: weeklyLogs.reduce(
+        (sum, item) => sum + Number(item.hours || 0),
+        0,
+      ),
+    };
+
+    successResponse(res, {
+      enterprise,
+      sessions,
+      weeklyLogs,
+      milestones,
+      stats,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const updateMentorEnterpriseKpis = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const {
+      monthlyRevenue,
+      employees,
+      wasteDiverted,
+      ceReadinessScore,
+      capitalMobilised,
+      activeCustomers,
+    } = req.body;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    const payload = {
+      monthlyRevenue: Number(monthlyRevenue) || 0,
+      employees: Number(employees) || 0,
+      wasteDiverted: Number(wasteDiverted) || 0,
+      ceReadinessScore:
+        ceReadinessScore === "" || ceReadinessScore === null
+          ? null
+          : Number(ceReadinessScore),
+      capitalMobilised: Number(capitalMobilised) || 0,
+      activeCustomers: Number(activeCustomers) || 0,
+    };
+
+    const response = await enterprise.update(payload);
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const createMentorEnterpriseSession = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const {
+      sessionDate,
+      facilitator,
+      sessionType,
+      issuesDiscussed,
+      recommendationsGiven,
+      actionsAgreed,
+      nextSessionDate,
+      flag = "green",
+    } = req.body;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    const response = await TrackerSession.create({
+      enterpriseId: enterprise.id,
+      mentorId,
+      entreprenuerId: enterprise.entreprenuerId,
+      businessId: enterprise.businessId,
+      createdById: req.user.id,
+      sessionDate,
+      facilitator,
+      sessionType,
+      issuesDiscussed,
+      recommendationsGiven,
+      actionsAgreed,
+      nextSessionDate,
+      flag: ["green", "amber", "red"].includes(flag) ? flag : "green",
+    });
+
+    if (["green", "amber", "red"].includes(flag)) {
+      await enterprise.update({ flag });
+    }
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const createEnterpriseWeeklyLog = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const {
+      weekStart,
+      hours,
+      touchpoints,
+      activities,
+      focus,
+      outcomes,
+      barriers,
+      nextPlan,
+      engagement,
+      flag = "green",
+    } = req.body;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    const response = await WeeklyLog.create({
+      mentorId,
+      entreprenuerId: enterprise.entreprenuerId,
+      businessId: enterprise.businessId,
+      createdById: req.user.id,
+      weekStart,
+      hours: parseFloat(hours) || 0,
+      touchpoints: parseInt(touchpoints) || 0,
+      activities: Array.isArray(activities) ? activities : [],
+      focus,
+      outcomes,
+      barriers,
+      nextPlan,
+      engagement,
+      flag: ["green", "amber", "red"].includes(flag) ? flag : "green",
+    });
+
+    if (["green", "amber", "red"].includes(flag)) {
+      await enterprise.update({ flag });
+    }
+
+    successResponse(res, response);
+  } catch (error) {
+    if (
+      error.name === "SequelizeUniqueConstraintError" ||
+      (error.parent && error.parent.code === "ER_DUP_ENTRY")
+    ) {
+      return res.status(409).json({
+        status: false,
+        message:
+          "A weekly log already exists for this mentor, entrepreneur, and week",
+      });
+    }
+
+    errorResponse(res, error);
+  }
+};
+
+const createEnterpriseMilestone = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const { title, description, dueDate, status, linkedTranche } = req.body;
+
+    if (!title) {
+      return res.status(400).json({
+        status: false,
+        message: "Milestone title is required",
+      });
+    }
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    const safeStatus = [
+      "pending",
+      "in_progress",
+      "submitted",
+      "completed",
+      "overdue",
+      "rejected",
+    ].includes(status)
+      ? status
+      : "pending";
+
+    const fullDescription = linkedTranche
+      ? `${description || ""}${description ? "\n\n" : ""}Linked tranche: ${linkedTranche}`
+      : description;
+
+    const response = await Milestone.create({
+      mentorId,
+      entreprenuerId: enterprise.entreprenuerId,
+      businessId: enterprise.businessId,
+      title,
+      description: fullDescription,
+      dueDate,
+      status: safeStatus,
+    });
+
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
 };
 
 const getMentorOverview = async (req, res) => {
@@ -256,11 +669,25 @@ const listMilestones = async (req, res) => {
   try {
     const role = req.user.role;
     const where = {};
+    const { entreprenuer_uuid } = req.query;
 
     if (role === "Mentor") {
       where.mentorId = req.user.id;
     } else if (role === "Enterprenuer") {
       where.entreprenuerId = req.user.id;
+    }
+
+    if (entreprenuer_uuid && ["Mentor", "Admin"].includes(role)) {
+      const entrepreneur = await User.findOne({
+        where: { uuid: entreprenuer_uuid },
+        attributes: ["id"],
+      });
+
+      if (!entrepreneur) {
+        return successResponse(res, []);
+      }
+
+      where.entreprenuerId = entrepreneur.id;
     }
 
     const milestones = await Milestone.findAll({
@@ -596,6 +1023,13 @@ const exportAdminTrackerCsv = async (req, res) => {
 
 module.exports = {
   getMentorOverview,
+  listMentorEnterprises,
+  upsertMentorEnterprise,
+  getMentorEnterpriseDetails,
+  updateMentorEnterpriseKpis,
+  createMentorEnterpriseSession,
+  createEnterpriseWeeklyLog,
+  createEnterpriseMilestone,
   listMentorWeeklyLogs,
   createWeeklyLog,
   createMilestone,
