@@ -48,6 +48,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATEONLY,
         allowNull: false,
       },
+      facilitator: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       hours: {
         type: DataTypes.DECIMAL(6, 2),
         allowNull: false,

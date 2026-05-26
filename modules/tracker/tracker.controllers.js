@@ -336,6 +336,7 @@ const createEnterpriseWeeklyLog = async (req, res) => {
     const { uuid } = req.params;
     const {
       weekStart,
+      facilitator,
       hours,
       touchpoints,
       activities,
@@ -361,6 +362,7 @@ const createEnterpriseWeeklyLog = async (req, res) => {
       businessId: enterprise.businessId,
       createdById: req.user.id,
       weekStart,
+      facilitator,
       hours: parseFloat(hours) || 0,
       touchpoints: parseInt(touchpoints) || 0,
       activities: Array.isArray(activities) ? activities : [],
@@ -425,18 +427,15 @@ const createEnterpriseMilestone = async (req, res) => {
       ? status
       : "pending";
 
-    const fullDescription = linkedTranche
-      ? `${description || ""}${description ? "\n\n" : ""}Linked tranche: ${linkedTranche}`
-      : description;
-
     const response = await Milestone.create({
       mentorId,
       entreprenuerId: enterprise.entreprenuerId,
       businessId: enterprise.businessId,
       title,
-      description: fullDescription,
+      description,
       dueDate,
       status: safeStatus,
+      linkedTranche,
     });
 
     successResponse(res, response);
@@ -533,6 +532,7 @@ const createWeeklyLog = async (req, res) => {
     const {
       entreprenuer_uuid,
       weekStart,
+      facilitator,
       hours,
       touchpoints,
       activities,
@@ -579,6 +579,7 @@ const createWeeklyLog = async (req, res) => {
       businessId: business.id,
       createdById: req.user.id,
       weekStart,
+      facilitator,
       hours: parseFloat(hours) || 0,
       touchpoints: parseInt(touchpoints) || 0,
       activities: Array.isArray(activities) ? activities : [],
