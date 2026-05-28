@@ -43,6 +43,43 @@ const getMentorEnterpriseByUuid = async (mentorId, enterpriseUuid) => {
   });
 };
 
+const toPlainRecord = (value) =>
+  value && typeof value.toJSON === "function" ? value.toJSON() : value;
+
+const TRACKER_CATEGORIES_MARKER = "__TRACKER_CATEGORIES__:";
+
+const getProgramCategories = (program) => {
+  const fallbackCategory = String(program?.programCategory || "").trim();
+  const rawDescription = String(program?.description || "");
+  const markerIndex = rawDescription.lastIndexOf(TRACKER_CATEGORIES_MARKER);
+
+  if (markerIndex === -1) {
+    return fallbackCategory ? [fallbackCategory] : [];
+  }
+
+  const rawCategories = rawDescription
+    .slice(markerIndex + TRACKER_CATEGORIES_MARKER.length)
+    .trim();
+
+  let parsedCategories = [];
+  try {
+    const parsedValue = JSON.parse(rawCategories);
+    if (Array.isArray(parsedValue)) {
+      parsedCategories = parsedValue;
+    }
+  } catch (error) {
+    parsedCategories = [];
+  }
+
+  return Array.from(
+    new Set(
+      [...parsedCategories, fallbackCategory]
+        .map((item) => String(item || "").trim())
+        .filter(Boolean),
+    ),
+  );
+};
+
 const normalizeTrancheStages = (value) => {
   const parsedValue =
     typeof value === "string" ? JSON.parse(value || "[]") : value;
@@ -76,6 +113,10 @@ const listMentorEnterprises = async (req, res) => {
         {
           model: TrackerSession,
           attributes: ["id"],
+        },
+        {
+          model: Program,
+          attributes: ["id", "uuid", "title", "programCategory"],
         },
       ],
     });
@@ -147,6 +188,7 @@ const upsertMentorEnterprise = async (req, res) => {
       mentorId,
       entreprenuerId: entrepreneur.id,
       businessId: business.id,
+      programId: selectedProgram.id,
       name: business.name || entrepreneur.name,
       category: category || selectedProgram.programCategory,
       ceSector,
@@ -211,6 +253,7 @@ const updateMentorEnterprise = async (req, res) => {
     }
 
     const payload = {
+      programId: selectedProgram?.id || enterprise.programId,
       category:
         category || selectedProgram?.programCategory || enterprise.category,
       ceSector,
@@ -268,6 +311,10 @@ const getMentorEnterpriseDetails = async (req, res) => {
           model: User,
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Program,
+          attributes: ["id", "uuid", "title", "programCategory"],
         },
       ],
     });
@@ -343,6 +390,193 @@ const getMentorEnterpriseDetails = async (req, res) => {
       milestones,
       trancheStages,
       stats,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const getTrackerProgramOverview = async (req, res) => {
+  try {
+    const { programUuid } = req.params;
+    const role = req.user.role;
+    const mentorId = req.user.id;
+
+    const program = await Program.findOne({
+      where: { uuid: programUuid },
+      attributes: [
+        "id",
+        "uuid",
+        "title",
+        "description",
+        "programCategory",
+        "startDate",
+        "endDate",
+        "image",
+      ],
+    });
+
+    if (!program) {
+      return res.status(404).json({
+        status: false,
+        message: "Program not found",
+      });
+    }
+
+    const programCategories = getProgramCategories(program);
+    const enterpriseWhere = {
+      [Op.or]: [
+        { programId: program.id },
+        {
+          programId: null,
+          ...(programCategories.length > 0
+            ? {
+                category: {
+                  [Op.in]: programCategories,
+                },
+              }
+            : {}),
+        },
+      ],
+    };
+    if (role === "Mentor") {
+      enterpriseWhere.mentorId = mentorId;
+    }
+
+    const enterprises = await TrackerEnterprise.findAll({
+      where: enterpriseWhere,
+      include: [
+        {
+          model: User,
+          as: "Mentor",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: User,
+          as: "Entreprenuer",
+          attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
+        },
+      ],
+      order: [["updatedAt", "DESC"]],
+    });
+
+    if (enterprises.length === 0) {
+      return successResponse(res, {
+        program,
+        enterprises: [],
+        summary: {
+          enterprisesCount: 0,
+          sessionsCount: 0,
+          weeklyLogsCount: 0,
+          milestonesCount: 0,
+          mentorshipHours: 0,
+        },
+      });
+    }
+
+    const enterpriseIds = enterprises.map((item) => item.id);
+
+    const [sessions, weeklyLogs, milestones] = await Promise.all([
+      TrackerSession.findAll({
+        where: {
+          enterpriseId: {
+            [Op.in]: enterpriseIds,
+          },
+        },
+        order: [["sessionDate", "DESC"]],
+      }),
+      WeeklyLog.findAll({
+        where: {
+          mentorId: {
+            [Op.in]: enterprises.map((item) => item.mentorId),
+          },
+          entreprenuerId: {
+            [Op.in]: enterprises.map((item) => item.entreprenuerId),
+          },
+        },
+        order: [["weekStart", "DESC"]],
+      }),
+      Milestone.findAll({
+        where: {
+          mentorId: {
+            [Op.in]: enterprises.map((item) => item.mentorId),
+          },
+          entreprenuerId: {
+            [Op.in]: enterprises.map((item) => item.entreprenuerId),
+          },
+        },
+        order: [["createdAt", "DESC"]],
+      }),
+    ]);
+
+    const enterpriseItems = enterprises.map((enterprise) => {
+      const enterpriseSessions = sessions.filter(
+        (item) => item.enterpriseId === enterprise.id,
+      );
+      const enterpriseWeeklyLogs = weeklyLogs.filter(
+        (item) =>
+          item.mentorId === enterprise.mentorId &&
+          item.entreprenuerId === enterprise.entreprenuerId,
+      );
+      const enterpriseMilestones = milestones.filter(
+        (item) =>
+          item.mentorId === enterprise.mentorId &&
+          item.entreprenuerId === enterprise.entreprenuerId,
+      );
+      const completedMilestones = enterpriseMilestones.filter(
+        (item) => item.status === "completed",
+      ).length;
+
+      return {
+        enterprise: toPlainRecord(enterprise),
+        sessions: enterpriseSessions.map(toPlainRecord),
+        weeklyLogs: enterpriseWeeklyLogs.map(toPlainRecord),
+        milestones: enterpriseMilestones.map(toPlainRecord),
+        stats: {
+          sessionsCount: enterpriseSessions.length,
+          weeklyLogsCount: enterpriseWeeklyLogs.length,
+          milestonesCount: enterpriseMilestones.length,
+          milestonesProgress: enterpriseMilestones.length
+            ? Math.round(
+                (completedMilestones / enterpriseMilestones.length) * 100,
+              )
+            : 0,
+          mentorshipHours: enterpriseWeeklyLogs.reduce(
+            (sum, item) => sum + Number(item.hours || 0),
+            0,
+          ),
+        },
+      };
+    });
+
+    const summary = enterpriseItems.reduce(
+      (accumulator, item) => {
+        return {
+          enterprisesCount: accumulator.enterprisesCount + 1,
+          sessionsCount: accumulator.sessionsCount + item.sessions.length,
+          weeklyLogsCount: accumulator.weeklyLogsCount + item.weeklyLogs.length,
+          milestonesCount: accumulator.milestonesCount + item.milestones.length,
+          mentorshipHours:
+            accumulator.mentorshipHours + Number(item.stats.mentorshipHours),
+        };
+      },
+      {
+        enterprisesCount: 0,
+        sessionsCount: 0,
+        weeklyLogsCount: 0,
+        milestonesCount: 0,
+        mentorshipHours: 0,
+      },
+    );
+
+    successResponse(res, {
+      program,
+      enterprises: enterpriseItems,
+      summary,
     });
   } catch (error) {
     errorResponse(res, error);
@@ -1231,6 +1465,7 @@ module.exports = {
   updateMentorEnterprise,
   deleteMentorEnterprise,
   getMentorEnterpriseDetails,
+  getTrackerProgramOverview,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,

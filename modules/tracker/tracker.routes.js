@@ -8,6 +8,7 @@ const {
   updateMentorEnterprise,
   deleteMentorEnterprise,
   getMentorEnterpriseDetails,
+  getTrackerProgramOverview,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
@@ -45,6 +46,13 @@ router.post(
   validateJWT,
   requireRoles(["Mentor"]),
   createWeeklyLog,
+);
+
+router.get(
+  "/programs/:programUuid/overview",
+  validateJWT,
+  requireRoles(["Mentor", "Admin"]),
+  getTrackerProgramOverview,
 );
 
 router.get(

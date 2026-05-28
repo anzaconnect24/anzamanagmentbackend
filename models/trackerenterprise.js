@@ -15,6 +15,9 @@ module.exports = (sequelize, DataTypes) => {
       TrackerEnterprise.belongsTo(models.Business, {
         foreignKey: "businessId",
       });
+      TrackerEnterprise.belongsTo(models.Program, {
+        foreignKey: "programId",
+      });
       TrackerEnterprise.hasMany(models.TrackerSession, {
         foreignKey: "enterpriseId",
         onDelete: "CASCADE",
@@ -39,6 +42,10 @@ module.exports = (sequelize, DataTypes) => {
       businessId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      programId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       name: {
         type: DataTypes.STRING,
