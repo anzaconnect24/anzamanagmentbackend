@@ -71,6 +71,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      submissionAttachments: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       submissionDate: {
         type: DataTypes.DATE,
         allowNull: true,

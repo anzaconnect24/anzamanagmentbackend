@@ -97,6 +97,20 @@ const normalizeTrancheStages = (value) => {
     .filter((item) => item.title && item.date);
 };
 
+const normalizeMilestoneAttachments = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item || "").trim())
+        .filter((item) => item.length > 0),
+    ),
+  );
+};
+
 const listMentorEnterprises = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -400,7 +414,9 @@ const getEntrepreneurTrackerDashboard = async (req, res) => {
   try {
     const entreprenuerId = req.user.id;
 
-    const enterprise = await TrackerEnterprise.findOne({
+    const { enterpriseUuid } = req.query;
+
+    const enterprises = await TrackerEnterprise.findAll({
       where: {
         entreprenuerId,
       },
@@ -431,11 +447,27 @@ const getEntrepreneurTrackerDashboard = async (req, res) => {
       order: [["updatedAt", "DESC"]],
     });
 
-    if (!enterprise) {
+    if (!Array.isArray(enterprises) || enterprises.length === 0) {
       return res.status(404).json({
         status: false,
         message: "Tracker profile not found for this entrepreneur",
       });
+    }
+
+    let enterprise = enterprises[0];
+    if (enterpriseUuid) {
+      const matchedEnterprise = enterprises.find(
+        (item) => item.uuid === enterpriseUuid,
+      );
+
+      if (!matchedEnterprise) {
+        return res.status(404).json({
+          status: false,
+          message: "Selected enterprise was not found for this entrepreneur",
+        });
+      }
+
+      enterprise = matchedEnterprise;
     }
 
     const [sessions, weeklyLogs, milestones] = await Promise.all([
@@ -448,12 +480,16 @@ const getEntrepreneurTrackerDashboard = async (req, res) => {
       WeeklyLog.findAll({
         where: {
           entreprenuerId,
+          mentorId: enterprise.mentorId,
+          businessId: enterprise.businessId,
         },
         order: [["weekStart", "DESC"]],
       }),
       Milestone.findAll({
         where: {
           entreprenuerId,
+          mentorId: enterprise.mentorId,
+          businessId: enterprise.businessId,
         },
         include: [
           {
@@ -484,9 +520,20 @@ const getEntrepreneurTrackerDashboard = async (req, res) => {
       ),
     };
 
+    const availableEnterprises = enterprises.map((item) => ({
+      uuid: item.uuid,
+      name: item.name,
+      mentorName: item.Mentor?.name || "N/A",
+      programUuid: item.Program?.uuid || null,
+      programTitle: item.Program?.title || item.category || "N/A",
+      category: item.category || null,
+    }));
+
     successResponse(res, {
       enterprise,
       program: enterprise.Program || null,
+      selectedEnterpriseUuid: enterprise.uuid,
+      availableEnterprises,
       sessions,
       weeklyLogs,
       milestones,
@@ -1248,7 +1295,7 @@ const listMilestones = async (req, res) => {
 const submitMilestone = async (req, res) => {
   try {
     const { uuid } = req.params;
-    const { submissionNotes } = req.body;
+    const { submissionNotes, submissionAttachments } = req.body;
 
     if (!String(submissionNotes || "").trim()) {
       return res.status(400).json({
@@ -1268,6 +1315,13 @@ const submitMilestone = async (req, res) => {
       });
     }
 
+    if (milestone.status === "completed") {
+      return res.status(400).json({
+        status: false,
+        message: "Completed milestones do not need report submission",
+      });
+    }
+
     if (milestone.entreprenuerId !== req.user.id) {
       return res.status(403).json({
         status: false,
@@ -1275,8 +1329,14 @@ const submitMilestone = async (req, res) => {
       });
     }
 
+    const safeAttachments = normalizeMilestoneAttachments(
+      submissionAttachments,
+    );
+
     const updated = await milestone.update({
       submissionNotes: String(submissionNotes).trim(),
+      submissionAttachments:
+        safeAttachments.length > 0 ? JSON.stringify(safeAttachments) : null,
       submissionDate: new Date(),
       status: "submitted",
     });
