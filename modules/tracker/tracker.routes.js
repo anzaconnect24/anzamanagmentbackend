@@ -5,6 +5,8 @@ const {
   getMentorOverview,
   listMentorEnterprises,
   upsertMentorEnterprise,
+  updateMentorEnterprise,
+  deleteMentorEnterprise,
   getMentorEnterpriseDetails,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
@@ -55,6 +57,18 @@ router.post(
   validateJWT,
   requireRoles(["Mentor"]),
   upsertMentorEnterprise,
+);
+router.patch(
+  "/enterprises/:uuid",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  updateMentorEnterprise,
+);
+router.delete(
+  "/enterprises/:uuid",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  deleteMentorEnterprise,
 );
 router.get(
   "/enterprises/:uuid",

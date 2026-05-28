@@ -149,6 +149,89 @@ const upsertMentorEnterprise = async (req, res) => {
   }
 };
 
+const updateMentorEnterprise = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const {
+      program_uuid,
+      category,
+      ceSector,
+      assignedBda,
+      district,
+      leadContact,
+      grantUsd,
+      awardDate,
+      businessDescription,
+      flag,
+    } = req.body;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    let selectedProgram = null;
+    if (program_uuid) {
+      selectedProgram = await Program.findOne({
+        where: { uuid: program_uuid },
+        attributes: ["id", "uuid", "title", "programCategory"],
+      });
+
+      if (!selectedProgram) {
+        return res.status(404).json({
+          status: false,
+          message: "Program not found",
+        });
+      }
+    }
+
+    const payload = {
+      category:
+        category || selectedProgram?.programCategory || enterprise.category,
+      ceSector,
+      assignedBda,
+      district,
+      leadContact,
+      grantUsd: Number(grantUsd) || 0,
+      awardDate,
+      businessDescription,
+    };
+
+    if (["green", "amber", "red"].includes(flag)) {
+      payload.flag = flag;
+    }
+
+    const response = await enterprise.update(payload);
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const deleteMentorEnterprise = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    await enterprise.destroy();
+    successResponse(res, { deleted: true });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getMentorEnterpriseDetails = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -1085,6 +1168,8 @@ module.exports = {
   getMentorOverview,
   listMentorEnterprises,
   upsertMentorEnterprise,
+  updateMentorEnterprise,
+  deleteMentorEnterprise,
   getMentorEnterpriseDetails,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
