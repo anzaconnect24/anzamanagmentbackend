@@ -8,6 +8,7 @@ const {
   updateMentorEnterprise,
   deleteMentorEnterprise,
   getMentorEnterpriseDetails,
+  getEntrepreneurTrackerDashboard,
   getTrackerProgramOverview,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
@@ -34,6 +35,12 @@ router.get(
   validateJWT,
   requireRoles(["Mentor", "Admin"]),
   getMentorOverview,
+);
+router.get(
+  "/entrepreneur/dashboard",
+  validateJWT,
+  requireRoles(["Enterprenuer"]),
+  getEntrepreneurTrackerDashboard,
 );
 router.get(
   "/mentor/weekly-logs",
@@ -119,7 +126,7 @@ router.post(
 router.post(
   "/milestones",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Enterprenuer"]),
   createMilestone,
 );
 router.get(
