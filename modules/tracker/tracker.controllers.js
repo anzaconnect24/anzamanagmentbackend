@@ -56,6 +56,10 @@ const listMentorEnterprises = async (req, res) => {
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
         },
+        {
+          model: TrackerSession,
+          attributes: ["id"],
+        },
       ],
     });
 
