@@ -115,12 +115,6 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "TrackerEnterprise",
-      indexes: [
-        {
-          unique: true,
-          fields: ["mentorId", "entreprenuerId"],
-        },
-      ],
     },
   );
 

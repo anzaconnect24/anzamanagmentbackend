@@ -141,19 +141,7 @@ const upsertMentorEnterprise = async (req, res) => {
       payload.flag = flag;
     }
 
-    const existing = await TrackerEnterprise.findOne({
-      where: {
-        mentorId,
-        entreprenuerId: entrepreneur.id,
-      },
-    });
-
-    let enterprise;
-    if (existing) {
-      enterprise = await existing.update(payload);
-    } else {
-      enterprise = await TrackerEnterprise.create(payload);
-    }
+    const enterprise = await TrackerEnterprise.create(payload);
 
     successResponse(res, enterprise);
   } catch (error) {
