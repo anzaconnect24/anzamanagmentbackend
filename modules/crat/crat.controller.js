@@ -608,57 +608,6 @@ const submitAssessment = async (req, res) => {
         .json({ status: false, message: "Assessment not found" });
     }
 
-    const legalVariant = await resolveLegalVariant(assessment.business_id);
-    const questions = await CratQuestionCatalog.findAll({
-      where: {
-        is_active: true,
-        [Op.or]: [
-          { domain: { [Op.ne]: "legal_compliance" } },
-          { domain: "legal_compliance", variant: legalVariant },
-        ],
-      },
-      attributes: ["id", "question_code", "required_attachment"],
-    });
-
-    const answers = await CratAnswer.findAll({
-      where: { assessment_id: assessment.id },
-      attributes: ["question_id", "evidence"],
-    });
-
-    const answerMap = new Map(
-      answers.map((answer) => [answer.question_id, answer]),
-    );
-
-    const missingRequirements = [];
-
-    for (const question of questions) {
-      const requiredAttachments = parseRequiredAttachmentList(
-        question.required_attachment,
-      );
-
-      if (requiredAttachments.length === 0) continue;
-
-      const answer = answerMap.get(question.id);
-      const uploadedAttachments = parseEvidenceList(answer?.evidence);
-
-      if (uploadedAttachments.length < requiredAttachments.length) {
-        missingRequirements.push({
-          questionCode: question.question_code,
-          requiredCount: requiredAttachments.length,
-          uploadedCount: uploadedAttachments.length,
-        });
-      }
-    }
-
-    if (missingRequirements.length > 0) {
-      return res.status(400).json({
-        status: false,
-        message:
-          "Please upload all required attachments before submitting this assessment.",
-        missingRequirements,
-      });
-    }
-
     await assessment.update({
       status: "submitted",
       submitted_at: new Date(),
