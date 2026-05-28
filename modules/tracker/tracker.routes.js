@@ -8,6 +8,7 @@ const {
   updateMentorEnterprise,
   deleteMentorEnterprise,
   getMentorEnterpriseDetails,
+  updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
   createEnterpriseWeeklyLog,
@@ -75,6 +76,12 @@ router.get(
   validateJWT,
   requireRoles(["Mentor", "Admin"]),
   getMentorEnterpriseDetails,
+);
+router.patch(
+  "/enterprises/:uuid/tranche-stages",
+  validateJWT,
+  requireRoles(["Mentor"]),
+  updateMentorEnterpriseTrancheStages,
 );
 router.patch(
   "/enterprises/:uuid/kpis",

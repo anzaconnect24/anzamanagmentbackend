@@ -77,6 +77,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      trancheStages: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       monthlyRevenue: {
         type: DataTypes.DECIMAL(14, 2),
         allowNull: false,

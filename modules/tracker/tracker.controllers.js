@@ -43,6 +43,23 @@ const getMentorEnterpriseByUuid = async (mentorId, enterpriseUuid) => {
   });
 };
 
+const normalizeTrancheStages = (value) => {
+  const parsedValue =
+    typeof value === "string" ? JSON.parse(value || "[]") : value;
+
+  if (!Array.isArray(parsedValue)) {
+    return [];
+  }
+
+  return parsedValue
+    .map((item) => ({
+      title: String(item?.title || "").trim(),
+      date: item?.date ? String(item.date).slice(0, 10) : "",
+      amount: Number(item?.amount || 0),
+    }))
+    .filter((item) => item.title && item.date);
+};
+
 const listMentorEnterprises = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -300,6 +317,8 @@ const getMentorEnterpriseDetails = async (req, res) => {
       }),
     ]);
 
+    const trancheStages = normalizeTrancheStages(enterprise.trancheStages);
+
     const completedMilestones = milestones.filter(
       (item) => item.status === "completed",
     ).length;
@@ -322,7 +341,44 @@ const getMentorEnterpriseDetails = async (req, res) => {
       sessions,
       weeklyLogs,
       milestones,
+      trancheStages,
       stats,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const updateMentorEnterpriseTrancheStages = async (req, res) => {
+  try {
+    const mentorId = req.user.id;
+    const { uuid } = req.params;
+    const { trancheStages } = req.body;
+
+    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    let normalizedStages = [];
+    try {
+      normalizedStages = normalizeTrancheStages(trancheStages);
+    } catch (error) {
+      return res.status(400).json({
+        status: false,
+        message: "Invalid tranche stages payload",
+      });
+    }
+
+    await enterprise.update({
+      trancheStages: JSON.stringify(normalizedStages),
+    });
+
+    successResponse(res, {
+      trancheStages: normalizedStages,
     });
   } catch (error) {
     errorResponse(res, error);
@@ -1175,6 +1231,7 @@ module.exports = {
   updateMentorEnterprise,
   deleteMentorEnterprise,
   getMentorEnterpriseDetails,
+  updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
   createEnterpriseWeeklyLog,
