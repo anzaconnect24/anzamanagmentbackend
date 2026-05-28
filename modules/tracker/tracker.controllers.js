@@ -7,6 +7,7 @@ const {
   TrackerSession,
   WeeklyLog,
   User,
+  Program,
   MentorEntreprenuer,
 } = require("../../models");
 
@@ -29,7 +30,6 @@ const ensureMentorAssignment = async (mentorId, entreprenuerId) => {
     where: {
       mentorId,
       entreprenuerId,
-      approved: true,
     },
   });
 };
@@ -70,6 +70,7 @@ const upsertMentorEnterprise = async (req, res) => {
     const mentorId = req.user.id;
     const {
       entreprenuer_uuid,
+      program_uuid,
       category,
       ceSector,
       assignedBda,
@@ -90,6 +91,18 @@ const upsertMentorEnterprise = async (req, res) => {
       return res.status(404).json({
         status: false,
         message: "Entrepreneur not found",
+      });
+    }
+
+    const selectedProgram = await Program.findOne({
+      where: { uuid: program_uuid },
+      attributes: ["id", "uuid", "title", "programCategory"],
+    });
+
+    if (!selectedProgram) {
+      return res.status(404).json({
+        status: false,
+        message: "Program not found",
       });
     }
 
@@ -114,7 +127,7 @@ const upsertMentorEnterprise = async (req, res) => {
       entreprenuerId: entrepreneur.id,
       businessId: business.id,
       name: business.name || entrepreneur.name,
-      category,
+      category: category || selectedProgram.programCategory,
       ceSector,
       assignedBda,
       district,

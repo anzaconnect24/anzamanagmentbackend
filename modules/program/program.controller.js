@@ -4,12 +4,23 @@ const { Op } = require("sequelize");
 
 const createProgram = async (req, res) => {
   try {
-    let { title, description, image, programCategory } = req.body;
+    let { title, description, image, programCategory, startDate, endDate } =
+      req.body;
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({
+        status: false,
+        message: "Program start date cannot be after end date",
+      });
+    }
+
     var response = await Program.create({
       title: title,
       description: description,
       image: image,
       programCategory: programCategory,
+      startDate: startDate || null,
+      endDate: endDate || null,
     });
 
     successResponse(res, response);
@@ -21,6 +32,15 @@ const createProgram = async (req, res) => {
 const updateProgram = async (req, res) => {
   try {
     const uuid = req.params.uuid;
+    const { startDate, endDate } = req.body;
+
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({
+        status: false,
+        message: "Program start date cannot be after end date",
+      });
+    }
+
     const program = await Program.findOne({
       where: {
         uuid,

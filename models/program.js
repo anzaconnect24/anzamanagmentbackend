@@ -37,11 +37,23 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      startDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      endDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      expireDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
       sequelize,
       modelName: "Program",
-    }
+    },
   );
   return Program;
 };
