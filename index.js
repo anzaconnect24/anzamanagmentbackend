@@ -108,7 +108,29 @@ const getUrl = require("./utils/cloudinary_upload");
 const { successResponse, errorResponse } = require("./utils/responses");
 const investmentapplication = require("./models/investmentapplication");
 app.use("/files", express.static("files"));
-app.use(cors());
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://api.anzaconnect.co.tz",
+  "https://anzaconnect.co.tz",
+  "https://www.anzaconnect.co.tz",
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser requests and configured origins.
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 app.use(bodyParser.text({ type: "/" }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
