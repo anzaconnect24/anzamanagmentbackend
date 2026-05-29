@@ -729,6 +729,90 @@ const uploadEntrepreneurAttachment = async (req, res) => {
   }
 };
 
+const deleteEntrepreneurAttachment = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (
+      !ensureRole(
+        res,
+        isEntrepreneur(requester.role),
+        "Only entrepreneurs can delete attachments",
+      )
+    ) {
+      return;
+    }
+
+    const assessmentId = Number(req.params.assessmentId);
+    const questionId = Number(req.params.questionId);
+    const attachmentUrl = String(
+      req.query.attachmentUrl || req.body?.attachmentUrl || "",
+    ).trim();
+
+    if (!attachmentUrl) {
+      return res
+        .status(400)
+        .json({ status: false, message: "attachmentUrl is required" });
+    }
+
+    const assessment = await CratAssessment.findByPk(assessmentId);
+    if (!assessment || assessment.entrepreneur_id !== requester.id) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Assessment not found" });
+    }
+
+    if (!["draft", "admin_rejected"].includes(assessment.status)) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Assessment is not editable" });
+    }
+
+    const question = await CratQuestionCatalog.findByPk(questionId);
+    if (!question) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Question not found" });
+    }
+
+    const answer = await CratAnswer.findOne({
+      where: {
+        assessment_id: assessment.id,
+        question_id: question.id,
+      },
+    });
+
+    if (!answer) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Attachment not found" });
+    }
+
+    const currentAttachments = parseEvidenceList(answer.evidence);
+    const remainingAttachments = currentAttachments.filter(
+      (item) => item !== attachmentUrl,
+    );
+
+    if (remainingAttachments.length === currentAttachments.length) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Attachment not found" });
+    }
+
+    await answer.update({
+      evidence: serializeEvidenceList(remainingAttachments),
+    });
+
+    successResponse(res, {
+      message: "Attachment deleted",
+      questionId,
+      attachmentUrl,
+      attachments: remainingAttachments,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getAdminQueue = async (req, res) => {
   try {
     const requester = req.user;
@@ -1685,6 +1769,7 @@ module.exports = {
   saveEntrepreneurAnswers,
   uploadEntrepreneurAttachment,
   submitAssessment,
+  deleteEntrepreneurAttachment,
   getAdminQueue,
   assignReviewer,
   saveReviewerScores,

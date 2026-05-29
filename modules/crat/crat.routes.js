@@ -27,6 +27,11 @@ router.post(
   upload.any(),
   controller.uploadEntrepreneurAttachment,
 );
+router.delete(
+  "/assessments/:assessmentId/answers/:questionId/attachment",
+  validateJWT,
+  controller.deleteEntrepreneurAttachment,
+);
 router.post(
   "/assessments/:assessmentId/submit",
   validateJWT,
