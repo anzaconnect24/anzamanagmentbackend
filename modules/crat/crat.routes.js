@@ -54,6 +54,11 @@ router.post(
   validateJWT,
   controller.rejectAssessment,
 );
+router.delete(
+  "/admin/assessments/:assessmentId",
+  validateJWT,
+  controller.deleteAssessment,
+);
 router.post(
   "/admin/assessments/:assessmentId/ai-review",
   validateJWT,

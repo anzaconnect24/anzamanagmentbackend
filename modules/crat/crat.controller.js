@@ -1220,6 +1220,52 @@ const rejectAssessment = async (req, res) => {
   }
 };
 
+const deleteAssessment = async (req, res) => {
+  try {
+    const requester = req.user;
+    if (!ensureRole(res, isAdmin(requester.role), "Only admin can delete")) {
+      return;
+    }
+
+    const assessmentId = Number(req.params.assessmentId);
+    const assessment = await CratAssessment.findByPk(assessmentId);
+
+    if (!assessment) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Assessment not found" });
+    }
+
+    await sequelize.transaction(async (transaction) => {
+      await CratReviewerScore.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
+      await CratAssessmentReviewer.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
+      await CratAnswer.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
+      await CratScoreSnapshot.destroy({
+        where: { assessment_id: assessmentId },
+        transaction,
+      });
+
+      await assessment.destroy({ transaction });
+    });
+
+    successResponse(res, { message: "Assessment deleted" });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const getReviewerAssignments = async (req, res) => {
   try {
     const requester = req.user;
@@ -1776,6 +1822,7 @@ module.exports = {
   submitReviewerAssessment,
   approveAssessment,
   rejectAssessment,
+  deleteAssessment,
   getReviewerAssignments,
   getInternalReport,
   getPublishedReport,
