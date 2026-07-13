@@ -232,12 +232,17 @@ const upsertMentorEnterprise = async (req, res) => {
       }
     }
 
-    const assignment = await ensureMentorAssignment(mentorId, entrepreneur.id);
-    if (!assignment) {
-      return res.status(403).json({
-        status: false,
-        message: "You can only add assigned entrepreneurs as enterprises",
-      });
+    if (!isFinanceOrAdminRole(requesterRole)) {
+      const assignment = await ensureMentorAssignment(
+        mentorId,
+        entrepreneur.id,
+      );
+      if (!assignment) {
+        return res.status(403).json({
+          status: false,
+          message: "You can only add assigned entrepreneurs as enterprises",
+        });
+      }
     }
 
     const business = await ensureApprovedBusiness(entrepreneur.id);
