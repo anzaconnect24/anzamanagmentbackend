@@ -43,6 +43,24 @@ const getMentorEnterpriseByUuid = async (mentorId, enterpriseUuid) => {
   });
 };
 
+const isMentorScopedRole = (role) =>
+  ["Mentor", "Staff", "Reviewer"].includes(String(role || ""));
+
+const isFinanceOrAdminRole = (role) =>
+  ["Admin", "Finance"].includes(String(role || ""));
+
+const getScopedEnterpriseByUuid = async (req, enterpriseUuid) => {
+  const role = req.user?.role;
+
+  if (isFinanceOrAdminRole(role)) {
+    return TrackerEnterprise.findOne({
+      where: { uuid: enterpriseUuid },
+    });
+  }
+
+  return getMentorEnterpriseByUuid(req.user.id, enterpriseUuid);
+};
+
 const toPlainRecord = (value) =>
   value && typeof value.toJSON === "function" ? value.toJSON() : value;
 
@@ -113,10 +131,11 @@ const normalizeMilestoneAttachments = (value) => {
 
 const listMentorEnterprises = async (req, res) => {
   try {
-    const mentorId = req.user.id;
+    const role = req.user.role;
+    const where = isMentorScopedRole(role) ? { mentorId: req.user.id } : {};
 
     const enterprises = await TrackerEnterprise.findAll({
-      where: { mentorId },
+      where,
       order: [["updatedAt", "DESC"]],
       include: [
         {
@@ -143,9 +162,10 @@ const listMentorEnterprises = async (req, res) => {
 
 const upsertMentorEnterprise = async (req, res) => {
   try {
-    const mentorId = req.user.id;
+    const requesterRole = req.user.role;
     const {
       entreprenuer_uuid,
+      mentor_uuid,
       program_uuid,
       category,
       ceSector,
@@ -156,6 +176,10 @@ const upsertMentorEnterprise = async (req, res) => {
       awardDate,
       businessDescription,
       flag,
+      signedContractUrl,
+      signedContractUploadedAt,
+      startupSignedContractUrl,
+      contractAcknowledgedAt,
     } = req.body;
 
     const entrepreneur = await User.findOne({
@@ -180,6 +204,32 @@ const upsertMentorEnterprise = async (req, res) => {
         status: false,
         message: "Program not found",
       });
+    }
+
+    let mentorId = req.user.id;
+
+    if (isFinanceOrAdminRole(requesterRole)) {
+      if (mentor_uuid) {
+        const mentor = await User.findOne({
+          where: { uuid: mentor_uuid },
+          attributes: ["id"],
+        });
+
+        if (mentor) {
+          mentorId = mentor.id;
+        }
+      }
+
+      if (!mentorId || mentorId === req.user.id) {
+        const assignment = await MentorEntreprenuer.findOne({
+          where: {
+            entreprenuerId: entrepreneur.id,
+          },
+          attributes: ["mentorId"],
+          order: [["updatedAt", "DESC"]],
+        });
+        mentorId = assignment?.mentorId || mentorId;
+      }
     }
 
     const assignment = await ensureMentorAssignment(mentorId, entrepreneur.id);
@@ -218,6 +268,19 @@ const upsertMentorEnterprise = async (req, res) => {
       payload.flag = flag;
     }
 
+    if (signedContractUrl) {
+      payload.signedContractUrl = signedContractUrl;
+    }
+    if (signedContractUploadedAt) {
+      payload.signedContractUploadedAt = signedContractUploadedAt;
+    }
+    if (startupSignedContractUrl) {
+      payload.startupSignedContractUrl = startupSignedContractUrl;
+    }
+    if (contractAcknowledgedAt) {
+      payload.contractAcknowledgedAt = contractAcknowledgedAt;
+    }
+
     const enterprise = await TrackerEnterprise.create(payload);
 
     successResponse(res, enterprise);
@@ -228,7 +291,6 @@ const upsertMentorEnterprise = async (req, res) => {
 
 const updateMentorEnterprise = async (req, res) => {
   try {
-    const mentorId = req.user.id;
     const { uuid } = req.params;
     const {
       program_uuid,
@@ -241,9 +303,13 @@ const updateMentorEnterprise = async (req, res) => {
       awardDate,
       businessDescription,
       flag,
+      signedContractUrl,
+      signedContractUploadedAt,
+      startupSignedContractUrl,
+      contractAcknowledgedAt,
     } = req.body;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -283,6 +349,19 @@ const updateMentorEnterprise = async (req, res) => {
       payload.flag = flag;
     }
 
+    if (typeof signedContractUrl === "string") {
+      payload.signedContractUrl = signedContractUrl;
+    }
+    if (signedContractUploadedAt) {
+      payload.signedContractUploadedAt = signedContractUploadedAt;
+    }
+    if (typeof startupSignedContractUrl === "string") {
+      payload.startupSignedContractUrl = startupSignedContractUrl;
+    }
+    if (contractAcknowledgedAt) {
+      payload.contractAcknowledgedAt = contractAcknowledgedAt;
+    }
+
     const response = await enterprise.update(payload);
     successResponse(res, response);
   } catch (error) {
@@ -292,10 +371,9 @@ const updateMentorEnterprise = async (req, res) => {
 
 const deleteMentorEnterprise = async (req, res) => {
   try {
-    const mentorId = req.user.id;
     const { uuid } = req.params;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -312,14 +390,16 @@ const deleteMentorEnterprise = async (req, res) => {
 
 const getMentorEnterpriseDetails = async (req, res) => {
   try {
-    const mentorId = req.user.id;
+    const role = req.user.role;
     const { uuid } = req.params;
 
+    const where = { uuid };
+    if (isMentorScopedRole(role)) {
+      where.mentorId = req.user.id;
+    }
+
     const enterprise = await TrackerEnterprise.findOne({
-      where: {
-        uuid,
-        mentorId,
-      },
+      where,
       include: [
         {
           model: User,
@@ -344,13 +424,13 @@ const getMentorEnterpriseDetails = async (req, res) => {
       TrackerSession.findAll({
         where: {
           enterpriseId: enterprise.id,
-          mentorId,
+          mentorId: enterprise.mentorId,
         },
         order: [["sessionDate", "DESC"]],
       }),
       WeeklyLog.findAll({
         where: {
-          mentorId,
+          mentorId: enterprise.mentorId,
           entreprenuerId: enterprise.entreprenuerId,
         },
         include: [
@@ -364,7 +444,7 @@ const getMentorEnterpriseDetails = async (req, res) => {
       }),
       Milestone.findAll({
         where: {
-          mentorId,
+          mentorId: enterprise.mentorId,
           entreprenuerId: enterprise.entreprenuerId,
         },
         include: [
@@ -588,7 +668,7 @@ const getTrackerProgramOverview = async (req, res) => {
         },
       ],
     };
-    if (role === "Mentor") {
+    if (isMentorScopedRole(role)) {
       enterpriseWhere.mentorId = mentorId;
     }
 
@@ -734,11 +814,10 @@ const getTrackerProgramOverview = async (req, res) => {
 
 const updateMentorEnterpriseTrancheStages = async (req, res) => {
   try {
-    const mentorId = req.user.id;
     const { uuid } = req.params;
     const { trancheStages } = req.body;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -770,7 +849,6 @@ const updateMentorEnterpriseTrancheStages = async (req, res) => {
 
 const updateMentorEnterpriseKpis = async (req, res) => {
   try {
-    const mentorId = req.user.id;
     const { uuid } = req.params;
     const {
       monthlyRevenue,
@@ -781,7 +859,7 @@ const updateMentorEnterpriseKpis = async (req, res) => {
       activeCustomers,
     } = req.body;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -823,7 +901,7 @@ const createMentorEnterpriseSession = async (req, res) => {
       flag = "green",
     } = req.body;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -875,7 +953,7 @@ const createEnterpriseWeeklyLog = async (req, res) => {
       flag = "green",
     } = req.body;
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -926,7 +1004,19 @@ const createEnterpriseMilestone = async (req, res) => {
   try {
     const mentorId = req.user.id;
     const { uuid } = req.params;
-    const { title, description, dueDate, status, linkedTranche } = req.body;
+    const {
+      title,
+      description,
+      dueDate,
+      status,
+      linkedTranche,
+      trancheAmount,
+      tranchePlannedUse,
+      kpiPlan,
+      planStatus,
+      verificationStatus,
+      disbursed,
+    } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -935,7 +1025,7 @@ const createEnterpriseMilestone = async (req, res) => {
       });
     }
 
-    const enterprise = await getMentorEnterpriseByUuid(mentorId, uuid);
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
     if (!enterprise) {
       return res.status(404).json({
         status: false,
@@ -963,6 +1053,17 @@ const createEnterpriseMilestone = async (req, res) => {
       dueDate,
       status: safeStatus,
       linkedTranche,
+      trancheAmount:
+        trancheAmount === "" || trancheAmount === null
+          ? null
+          : Number(trancheAmount),
+      tranchePlannedUse: tranchePlannedUse || null,
+      kpiPlan: Array.isArray(kpiPlan)
+        ? JSON.stringify(kpiPlan)
+        : kpiPlan || null,
+      planStatus: planStatus || null,
+      verificationStatus: verificationStatus || null,
+      disbursed: Boolean(disbursed),
     });
 
     successResponse(res, response);
@@ -1139,8 +1240,19 @@ const createWeeklyLog = async (req, res) => {
 const createMilestone = async (req, res) => {
   try {
     const requester = req.user;
-    const { entreprenuer_uuid, title, description, dueDate, linkedTranche } =
-      req.body;
+    const {
+      entreprenuer_uuid,
+      title,
+      description,
+      dueDate,
+      linkedTranche,
+      trancheAmount,
+      tranchePlannedUse,
+      kpiPlan,
+      planStatus,
+      verificationStatus,
+      disbursed,
+    } = req.body;
 
     if (!title) {
       return res.status(400).json({
@@ -1236,6 +1348,17 @@ const createMilestone = async (req, res) => {
       dueDate,
       linkedTranche,
       status: "pending",
+      trancheAmount:
+        trancheAmount === "" || trancheAmount === null
+          ? null
+          : Number(trancheAmount),
+      tranchePlannedUse: tranchePlannedUse || null,
+      kpiPlan: Array.isArray(kpiPlan)
+        ? JSON.stringify(kpiPlan)
+        : kpiPlan || null,
+      planStatus: planStatus || null,
+      verificationStatus: verificationStatus || null,
+      disbursed: Boolean(disbursed),
     });
 
     successResponse(res, milestone);
@@ -1295,14 +1418,12 @@ const listMilestones = async (req, res) => {
 const submitMilestone = async (req, res) => {
   try {
     const { uuid } = req.params;
-    const { submissionNotes, submissionAttachments } = req.body;
-
-    if (!String(submissionNotes || "").trim()) {
-      return res.status(400).json({
-        status: false,
-        message: "Please provide a report before submitting this milestone",
-      });
-    }
+    const {
+      submissionNotes,
+      submissionAttachments,
+      kpiPlan,
+      requestVerification,
+    } = req.body;
 
     const milestone = await Milestone.findOne({
       where: { uuid },
@@ -1333,13 +1454,44 @@ const submitMilestone = async (req, res) => {
       submissionAttachments,
     );
 
-    const updated = await milestone.update({
-      submissionNotes: String(submissionNotes).trim(),
-      submissionAttachments:
-        safeAttachments.length > 0 ? JSON.stringify(safeAttachments) : null,
+    const hasNotes = String(submissionNotes || "").trim().length > 0;
+    const hasAttachments = safeAttachments.length > 0;
+    const hasKpiProgress =
+      Array.isArray(kpiPlan) ||
+      (typeof kpiPlan === "string" && String(kpiPlan).trim().length > 0);
+
+    if (!hasNotes && !hasAttachments && !hasKpiProgress) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Please provide a report, attachments, or KPI progress before submitting this milestone",
+      });
+    }
+
+    const payload = {
       submissionDate: new Date(),
       status: "submitted",
-    });
+    };
+
+    if (hasNotes) {
+      payload.submissionNotes = String(submissionNotes).trim();
+    }
+
+    if (safeAttachments.length > 0) {
+      payload.submissionAttachments = JSON.stringify(safeAttachments);
+    }
+
+    if (hasKpiProgress) {
+      payload.kpiPlan = Array.isArray(kpiPlan)
+        ? JSON.stringify(kpiPlan)
+        : String(kpiPlan || "");
+    }
+
+    if (requestVerification === true || requestVerification === false) {
+      payload.verificationRequested = Boolean(requestVerification);
+    }
+
+    const updated = await milestone.update(payload);
 
     successResponse(res, updated);
   } catch (error) {
@@ -1350,15 +1502,13 @@ const submitMilestone = async (req, res) => {
 const reviewMilestone = async (req, res) => {
   try {
     const { uuid } = req.params;
-    const { status, mentorReviewNotes } = req.body;
-
-    if (!["in_progress", "completed", "overdue", "rejected"].includes(status)) {
-      return res.status(400).json({
-        status: false,
-        message:
-          "Invalid milestone status. Allowed: in_progress, completed, overdue, rejected",
-      });
-    }
+    const {
+      status,
+      mentorReviewNotes,
+      planStatus,
+      verificationStatus,
+      disbursed,
+    } = req.body;
 
     const milestone = await Milestone.findOne({ where: { uuid } });
     if (!milestone) {
@@ -1375,12 +1525,76 @@ const reviewMilestone = async (req, res) => {
       });
     }
 
-    const updated = await milestone.update({
-      status,
+    const payload = {
       mentorReviewNotes,
       reviewedById: req.user.id,
       reviewedAt: new Date(),
-    });
+    };
+
+    if (status !== undefined) {
+      if (
+        !["in_progress", "completed", "overdue", "rejected"].includes(status)
+      ) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Invalid milestone status. Allowed: in_progress, completed, overdue, rejected",
+        });
+      }
+      payload.status = status;
+    }
+
+    if (planStatus !== undefined) {
+      const allowedPlanStatuses = [
+        "draft",
+        "submitted",
+        "under_review",
+        "revision_requested",
+        "resubmitted",
+        "plan_approved",
+        "rejected",
+        "sent_to_finance",
+        "disbursed",
+      ];
+
+      if (!allowedPlanStatuses.includes(String(planStatus))) {
+        return res.status(400).json({
+          status: false,
+          message: "Invalid plan status",
+        });
+      }
+
+      payload.planStatus = String(planStatus);
+    }
+
+    if (verificationStatus !== undefined) {
+      const allowedVerificationStatuses = [
+        "",
+        "achieved",
+        "partially_achieved",
+        "not_achieved",
+        "need_more_evidence",
+      ];
+
+      if (!allowedVerificationStatuses.includes(String(verificationStatus))) {
+        return res.status(400).json({
+          status: false,
+          message: "Invalid verification status",
+        });
+      }
+
+      payload.verificationStatus = String(verificationStatus);
+      payload.verificationRequested = false;
+    }
+
+    if (disbursed !== undefined) {
+      payload.disbursed = Boolean(disbursed);
+      if (payload.disbursed) {
+        payload.planStatus = "disbursed";
+      }
+    }
+
+    const updated = await milestone.update(payload);
 
     successResponse(res, updated);
   } catch (error) {
@@ -1678,6 +1892,96 @@ const exportAdminTrackerCsv = async (req, res) => {
   }
 };
 
+const updateEntrepreneurEnterprise = async (req, res) => {
+  try {
+    const entreprenuerId = req.user.id;
+    const { enterpriseUuid } = req.body;
+
+    const where = { entreprenuerId };
+    if (enterpriseUuid) {
+      where.uuid = enterpriseUuid;
+    }
+
+    const enterprise = await TrackerEnterprise.findOne({
+      where,
+      order: [["updatedAt", "DESC"]],
+    });
+
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Tracker enterprise not found for this entrepreneur",
+      });
+    }
+
+    const payload = {};
+    const allowedStringFields = [
+      "category",
+      "ceSector",
+      "district",
+      "leadContact",
+      "businessDescription",
+      "signedContractUrl",
+      "startupSignedContractUrl",
+    ];
+
+    allowedStringFields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        payload[field] = req.body[field];
+      }
+    });
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "grantUsd")) {
+      payload.grantUsd = Number(req.body.grantUsd || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "awardDate")) {
+      payload.awardDate = req.body.awardDate || null;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "signedContractUploadedAt")
+    ) {
+      payload.signedContractUploadedAt =
+        req.body.signedContractUploadedAt || null;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(req.body, "contractAcknowledgedAt")
+    ) {
+      payload.contractAcknowledgedAt = req.body.contractAcknowledgedAt || null;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "monthlyRevenue")) {
+      payload.monthlyRevenue = Number(req.body.monthlyRevenue || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "employees")) {
+      payload.employees = Number(req.body.employees || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "wasteDiverted")) {
+      payload.wasteDiverted = Number(req.body.wasteDiverted || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "ceReadinessScore")) {
+      payload.ceReadinessScore =
+        req.body.ceReadinessScore === "" || req.body.ceReadinessScore === null
+          ? null
+          : Number(req.body.ceReadinessScore);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "capitalMobilised")) {
+      payload.capitalMobilised = Number(req.body.capitalMobilised || 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(req.body, "activeCustomers")) {
+      payload.activeCustomers = Number(req.body.activeCustomers || 0);
+    }
+
+    if (["green", "amber", "red"].includes(req.body.flag)) {
+      payload.flag = req.body.flag;
+    }
+
+    const updated = await enterprise.update(payload);
+    successResponse(res, updated);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   getMentorOverview,
   listMentorEnterprises,
@@ -1687,6 +1991,7 @@ module.exports = {
   getMentorEnterpriseDetails,
   getEntrepreneurTrackerDashboard,
   getTrackerProgramOverview,
+  updateEntrepreneurEnterprise,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,

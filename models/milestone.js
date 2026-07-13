@@ -56,6 +56,36 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      trancheAmount: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+      },
+      tranchePlannedUse: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      kpiPlan: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      planStatus: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      verificationStatus: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      verificationRequested: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      disbursed: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       status: {
         type: DataTypes.ENUM(
           "pending",

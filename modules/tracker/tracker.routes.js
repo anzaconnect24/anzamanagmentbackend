@@ -10,6 +10,7 @@ const {
   getMentorEnterpriseDetails,
   getEntrepreneurTrackerDashboard,
   getTrackerProgramOverview,
+  updateEntrepreneurEnterprise,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
   createMentorEnterpriseSession,
@@ -33,7 +34,7 @@ const router = Router();
 router.get(
   "/mentor/overview",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   getMentorOverview,
 );
 router.get(
@@ -45,82 +46,89 @@ router.get(
 router.get(
   "/mentor/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   listMentorWeeklyLogs,
 );
 router.post(
   "/mentor/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer"]),
   createWeeklyLog,
 );
 
 router.get(
   "/programs/:programUuid/overview",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   getTrackerProgramOverview,
 );
 
 router.get(
   "/enterprises",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   listMentorEnterprises,
 );
 router.post(
   "/enterprises",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   upsertMentorEnterprise,
 );
 router.patch(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   updateMentorEnterprise,
 );
 router.delete(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   deleteMentorEnterprise,
 );
 router.get(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   getMentorEnterpriseDetails,
 );
 router.patch(
   "/enterprises/:uuid/tranche-stages",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   updateMentorEnterpriseTrancheStages,
 );
 router.patch(
   "/enterprises/:uuid/kpis",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   updateMentorEnterpriseKpis,
 );
 router.post(
   "/enterprises/:uuid/sessions",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer"]),
   createMentorEnterpriseSession,
 );
 router.post(
   "/enterprises/:uuid/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer"]),
   createEnterpriseWeeklyLog,
 );
 router.post(
   "/enterprises/:uuid/milestones",
   validateJWT,
-  requireRoles(["Mentor"]),
+  requireRoles(["Mentor", "Staff", "Reviewer"]),
   createEnterpriseMilestone,
+);
+
+router.patch(
+  "/entrepreneur/enterprise",
+  validateJWT,
+  requireRoles(["Enterprenuer"]),
+  updateEntrepreneurEnterprise,
 );
 
 router.post(
@@ -144,38 +152,38 @@ router.patch(
 router.patch(
   "/milestones/:uuid/review",
   validateJWT,
-  requireRoles(["Mentor", "Admin"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
   reviewMilestone,
 );
 
 router.get(
   "/admin/overview",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   getAdminOverview,
 );
 router.get(
   "/admin/businesses",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   listAdminBusinesses,
 );
 router.get(
   "/admin/weekly-logs",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   listAdminWeeklyLogs,
 );
 router.get(
   "/admin/milestones",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   listAdminMilestones,
 );
 router.get(
   "/admin/export-csv",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   exportAdminTrackerCsv,
 );
 

@@ -84,6 +84,22 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      signedContractUrl: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      signedContractUploadedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      startupSignedContractUrl: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      contractAcknowledgedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       trancheStages: {
         type: DataTypes.TEXT,
         allowNull: true,
