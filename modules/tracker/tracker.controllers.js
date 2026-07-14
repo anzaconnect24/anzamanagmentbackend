@@ -1527,7 +1527,6 @@ const listMilestones = async (req, res) => {
           where: {
             mentorId: req.user.id,
             entreprenuerId: entrepreneur.id,
-            approved: true,
           },
           attributes: ["id"],
         });
