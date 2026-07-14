@@ -80,7 +80,63 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
+      firstName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      lastName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      representativeEmail: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      representativePhone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      gender: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      nationalId: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      tin: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      registeredBusinessName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      displayName: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      businessPhone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      country: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      latitude: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      longitude: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       businessDescription: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      documents: {
         type: DataTypes.TEXT,
         allowNull: true,
       },

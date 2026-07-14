@@ -129,6 +129,36 @@ const normalizeMilestoneAttachments = (value) => {
   );
 };
 
+const normalizeEnterpriseDocuments = (value) => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return JSON.stringify(parsed);
+      }
+    } catch (error) {
+      // Keep non-JSON strings as-is for backwards compatibility.
+    }
+
+    return trimmed;
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    return JSON.stringify(value);
+  }
+
+  return null;
+};
+
 const listMentorEnterprises = async (req, res) => {
   try {
     const role = req.user.role;
@@ -180,6 +210,20 @@ const upsertMentorEnterprise = async (req, res) => {
       signedContractUploadedAt,
       startupSignedContractUrl,
       contractAcknowledgedAt,
+      firstName,
+      lastName,
+      representativeEmail,
+      representativePhone,
+      gender,
+      nationalId,
+      tin,
+      registeredBusinessName,
+      displayName,
+      businessPhone,
+      country,
+      latitude,
+      longitude,
+      documents,
     } = req.body;
 
     const entrepreneur = await User.findOne({
@@ -266,8 +310,26 @@ const upsertMentorEnterprise = async (req, res) => {
       leadContact,
       grantUsd: Number(grantUsd) || 0,
       awardDate,
+      firstName,
+      lastName,
+      representativeEmail,
+      representativePhone,
+      gender,
+      nationalId,
+      tin,
+      registeredBusinessName,
+      displayName,
+      businessPhone,
+      country,
+      latitude,
+      longitude,
       businessDescription,
     };
+
+    const normalizedDocuments = normalizeEnterpriseDocuments(documents);
+    if (normalizedDocuments !== null) {
+      payload.documents = normalizedDocuments;
+    }
 
     if (["green", "amber", "red"].includes(flag)) {
       payload.flag = flag;
@@ -312,6 +374,20 @@ const updateMentorEnterprise = async (req, res) => {
       signedContractUploadedAt,
       startupSignedContractUrl,
       contractAcknowledgedAt,
+      firstName,
+      lastName,
+      representativeEmail,
+      representativePhone,
+      gender,
+      nationalId,
+      tin,
+      registeredBusinessName,
+      displayName,
+      businessPhone,
+      country,
+      latitude,
+      longitude,
+      documents,
     } = req.body;
 
     const enterprise = await getScopedEnterpriseByUuid(req, uuid);
@@ -347,8 +423,26 @@ const updateMentorEnterprise = async (req, res) => {
       leadContact,
       grantUsd: Number(grantUsd) || 0,
       awardDate,
+      firstName,
+      lastName,
+      representativeEmail,
+      representativePhone,
+      gender,
+      nationalId,
+      tin,
+      registeredBusinessName,
+      displayName,
+      businessPhone,
+      country,
+      latitude,
+      longitude,
       businessDescription,
     };
+
+    const normalizedDocuments = normalizeEnterpriseDocuments(documents);
+    if (normalizedDocuments !== null) {
+      payload.documents = normalizedDocuments;
+    }
 
     if (["green", "amber", "red"].includes(flag)) {
       payload.flag = flag;
@@ -1912,10 +2006,68 @@ const updateEntrepreneurEnterprise = async (req, res) => {
       order: [["updatedAt", "DESC"]],
     });
 
-    if (!enterprise) {
+    if (!enterprise && enterpriseUuid) {
       return res.status(404).json({
         status: false,
         message: "Tracker enterprise not found for this entrepreneur",
+      });
+    }
+
+    let targetEnterprise = enterprise;
+    if (!targetEnterprise) {
+      const business = await ensureApprovedBusiness(entreprenuerId);
+      if (!business) {
+        return res.status(400).json({
+          status: false,
+          message: "Entrepreneur business is not approved for tracker",
+        });
+      }
+
+      const approvedAssignment = await MentorEntreprenuer.findOne({
+        where: {
+          entreprenuerId,
+          approved: true,
+        },
+        attributes: ["mentorId"],
+        order: [["updatedAt", "DESC"]],
+      });
+
+      const latestAssignment =
+        approvedAssignment ||
+        (await MentorEntreprenuer.findOne({
+          where: { entreprenuerId },
+          attributes: ["mentorId"],
+          order: [["updatedAt", "DESC"]],
+        }));
+
+      if (!latestAssignment?.mentorId) {
+        return res.status(400).json({
+          status: false,
+          message: "No mentor assignment found for this entrepreneur",
+        });
+      }
+
+      targetEnterprise = await TrackerEnterprise.create({
+        mentorId: latestAssignment.mentorId,
+        entreprenuerId,
+        businessId: business.id,
+        name:
+          req.body.registeredBusinessName ||
+          req.body.displayName ||
+          business.name ||
+          req.user.name ||
+          "Enterprise",
+        category: req.body.category || business.stage || null,
+        ceSector: req.body.ceSector || null,
+        assignedBda: req.body.assignedBda || null,
+        district: req.body.district || business.location || null,
+        leadContact:
+          req.body.leadContact ||
+          req.body.representativeEmail ||
+          req.body.representativePhone ||
+          null,
+        grantUsd: Number(req.body.grantUsd || 0),
+        awardDate: req.body.awardDate || null,
       });
     }
 
@@ -1925,6 +2077,19 @@ const updateEntrepreneurEnterprise = async (req, res) => {
       "ceSector",
       "district",
       "leadContact",
+      "firstName",
+      "lastName",
+      "representativeEmail",
+      "representativePhone",
+      "gender",
+      "nationalId",
+      "tin",
+      "registeredBusinessName",
+      "displayName",
+      "businessPhone",
+      "country",
+      "latitude",
+      "longitude",
       "businessDescription",
       "signedContractUrl",
       "startupSignedContractUrl",
@@ -1976,11 +2141,15 @@ const updateEntrepreneurEnterprise = async (req, res) => {
       payload.activeCustomers = Number(req.body.activeCustomers || 0);
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body, "documents")) {
+      payload.documents = normalizeEnterpriseDocuments(req.body.documents);
+    }
+
     if (["green", "amber", "red"].includes(req.body.flag)) {
       payload.flag = req.body.flag;
     }
 
-    const updated = await enterprise.update(payload);
+    const updated = await targetEnterprise.update(payload);
     successResponse(res, updated);
   } catch (error) {
     errorResponse(res, error);
