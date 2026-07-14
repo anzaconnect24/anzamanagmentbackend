@@ -1419,27 +1419,29 @@ const createMilestone = async (req, res) => {
     } else if (requester.role === "Enterprenuer") {
       entrepreneurId = requester.id;
 
-      const trackerEnterprise = await TrackerEnterprise.findOne({
+      const approvedAssignment = await MentorEntreprenuer.findOne({
         where: {
           entreprenuerId: entrepreneurId,
+          approved: true,
         },
         attributes: ["mentorId"],
         order: [["updatedAt", "DESC"]],
       });
 
-      if (trackerEnterprise?.mentorId) {
-        mentorId = trackerEnterprise.mentorId;
-      } else {
-        const assignment = await MentorEntreprenuer.findOne({
+      if (approvedAssignment?.mentorId) {
+        mentorId = approvedAssignment.mentorId;
+      }
+
+      if (!mentorId) {
+        const trackerEnterprise = await TrackerEnterprise.findOne({
           where: {
             entreprenuerId: entrepreneurId,
-            approved: true,
           },
           attributes: ["mentorId"],
           order: [["updatedAt", "DESC"]],
         });
 
-        mentorId = assignment?.mentorId || null;
+        mentorId = trackerEnterprise?.mentorId || null;
       }
 
       if (!mentorId) {
