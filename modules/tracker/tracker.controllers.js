@@ -1498,6 +1498,7 @@ const listMilestones = async (req, res) => {
     const role = req.user.role;
     const where = {};
     const { entreprenuer_uuid, business_uuid } = req.query;
+    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
 
     if (["Mentor", "Staff", "Reviewer"].includes(role)) {
       where.mentorId = req.user.id;
@@ -1516,6 +1517,26 @@ const listMilestones = async (req, res) => {
 
       if (!entrepreneur) {
         return successResponse(res, []);
+      }
+
+      // Staff/Reviewer should see milestones for entrepreneurs assigned to
+      // them even if historical milestones were created under a different
+      // mentorId. Validate assignment, then scope by entrepreneur.
+      if (isStaffScopedRole) {
+        const assignment = await MentorEntreprenuer.findOne({
+          where: {
+            mentorId: req.user.id,
+            entreprenuerId: entrepreneur.id,
+            approved: true,
+          },
+          attributes: ["id"],
+        });
+
+        if (!assignment) {
+          return successResponse(res, []);
+        }
+
+        delete where.mentorId;
       }
 
       where.entreprenuerId = entrepreneur.id;
