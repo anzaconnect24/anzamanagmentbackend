@@ -1,5 +1,13 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
-const { Program } = require("../../models");
+const {
+  Program,
+  MentorEntreprenuer,
+  TrackerEnterprise,
+  Milestone,
+  WeeklyLog,
+  TrackerSession,
+  User,
+} = require("../../models");
 const { Op } = require("sequelize");
 
 const createProgram = async (req, res) => {
@@ -58,13 +66,88 @@ const deleteProgram = async (req, res) => {
   try {
     const uuid = req.params.uuid;
     const program = await Program.findOne({
-      where: {
-        uuid,
-      },
+      where: { uuid },
     });
-    const response = await program.destroy();
-    successResponse(res, response);
+
+    if (!program) {
+      return res.status(404).json({
+        status: false,
+        message: "Program not found",
+      });
+    }
+
+    // Parse the program description to extract enrolled startups (entrepreneurs)
+    const TRACKER_STARTUPS_MARKER = "__TRACKER_STARTUPS__:";
+    const rawDescription = String(program.description || "");
+    const markerIdx = rawDescription.lastIndexOf(TRACKER_STARTUPS_MARKER);
+    let startupUuids = [];
+
+    if (markerIdx >= 0) {
+      const line = rawDescription
+        .slice(markerIdx + TRACKER_STARTUPS_MARKER.length)
+        .split("\n")[0]
+        .trim();
+      try {
+        startupUuids = JSON.parse(line);
+        if (!Array.isArray(startupUuids)) {
+          startupUuids = [];
+        }
+      } catch {
+        startupUuids = [];
+      }
+    }
+
+    // Convert entrepreneur UUIDs to IDs for database queries
+    const entrepreneurs = await User.findAll({
+      where: {
+        uuid: {
+          [Op.in]: startupUuids.filter(
+            (uuid) => uuid && typeof uuid === "string",
+          ),
+        },
+      },
+      attributes: ["id"],
+    });
+
+    const entrepreneurIds = entrepreneurs.map((e) => e.id);
+
+    // Cascade delete all tracker data for entrepreneurs in this program
+    if (entrepreneurIds.length > 0) {
+      // Delete TrackerSessions (coaching sessions)
+      await TrackerSession.destroy({
+        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+      });
+
+      // Delete Milestones
+      await Milestone.destroy({
+        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+      });
+
+      // Delete WeeklyLogs
+      await WeeklyLog.destroy({
+        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+      });
+
+      // Delete TrackerEnterprises
+      await TrackerEnterprise.destroy({
+        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+      });
+
+      // Delete MentorEntreprenuers (BDA assignments)
+      await MentorEntreprenuer.destroy({
+        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+      });
+    }
+
+    // Delete the program itself
+    await program.destroy();
+
+    successResponse(res, {
+      message: "Program and all associated data deleted successfully",
+      deletedEntrepreneurs: entrepreneurIds.length,
+    });
   } catch (error) {
+    console.error("Error deleting program:", error);
     errorResponse(res, error);
   }
 };
