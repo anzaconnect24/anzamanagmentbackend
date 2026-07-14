@@ -159,6 +159,33 @@ const normalizeEnterpriseDocuments = (value) => {
   return null;
 };
 
+const syncEntrepreneurAssignment = async ({ entreprenuerId, mentorId }) => {
+  if (!entreprenuerId || !mentorId) {
+    return;
+  }
+
+  const existingAssignment = await MentorEntreprenuer.findOne({
+    where: {
+      entreprenuerId,
+    },
+    order: [["updatedAt", "DESC"]],
+  });
+
+  if (existingAssignment) {
+    await existingAssignment.update({
+      mentorId,
+      approved: true,
+    });
+    return;
+  }
+
+  await MentorEntreprenuer.create({
+    mentorId,
+    entreprenuerId,
+    approved: true,
+  });
+};
+
 const listMentorEnterprises = async (req, res) => {
   try {
     const role = req.user.role;
@@ -401,6 +428,13 @@ const upsertMentorEnterprise = async (req, res) => {
 
     const enterprise = await TrackerEnterprise.create(payload);
 
+    if (isFinanceOrAdminRole(requesterRole)) {
+      await syncEntrepreneurAssignment({
+        entreprenuerId: entrepreneur.id,
+        mentorId,
+      });
+    }
+
     successResponse(res, enterprise);
   } catch (error) {
     errorResponse(res, error);
@@ -533,6 +567,14 @@ const updateMentorEnterprise = async (req, res) => {
     }
 
     const response = await enterprise.update(payload);
+
+    if (mentor_uuid && isFinanceOrAdminRole(requesterRole)) {
+      await syncEntrepreneurAssignment({
+        entreprenuerId: enterprise.entreprenuerId,
+        mentorId,
+      });
+    }
+
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);

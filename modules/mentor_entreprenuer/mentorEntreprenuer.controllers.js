@@ -7,8 +7,40 @@ const {
   Notification,
   MentorshipApplication,
   MentorProfile,
+  TrackerEnterprise,
+  Milestone,
+  WeeklyLog,
 } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+
+const syncTrackerOwnership = async (entreprenuerId, mentorId) => {
+  await Promise.all([
+    TrackerEnterprise.update(
+      { mentorId },
+      {
+        where: {
+          entreprenuerId,
+        },
+      },
+    ),
+    Milestone.update(
+      { mentorId },
+      {
+        where: {
+          entreprenuerId,
+        },
+      },
+    ),
+    WeeklyLog.update(
+      { mentorId },
+      {
+        where: {
+          entreprenuerId,
+        },
+      },
+    ),
+  ]);
+};
 
 const createMentorEntreprenuer = async (req, res) => {
   try {
@@ -25,11 +57,37 @@ const createMentorEntreprenuer = async (req, res) => {
       },
     });
 
-    const response = await MentorEntreprenuer.create({
-      mentorId: mentor.id,
-      entreprenuerId: entreprenuer.id,
-      approved: user.role == "Mentor" ? false : true,
+    if (!mentor || !entreprenuer) {
+      return res.status(404).json({
+        status: false,
+        message: !mentor ? "Mentor not found" : "Entrepreneur not found",
+      });
+    }
+
+    const approved = user.role == "Mentor" ? false : true;
+
+    const existingAssignment = await MentorEntreprenuer.findOne({
+      where: {
+        entreprenuerId: entreprenuer.id,
+      },
+      order: [["updatedAt", "DESC"]],
     });
+
+    let response;
+    if (existingAssignment) {
+      response = await existingAssignment.update({
+        mentorId: mentor.id,
+        approved,
+      });
+    } else {
+      response = await MentorEntreprenuer.create({
+        mentorId: mentor.id,
+        entreprenuerId: entreprenuer.id,
+        approved,
+      });
+    }
+
+    await syncTrackerOwnership(entreprenuer.id, mentor.id);
 
     // Send notification to mentor
     await Notification.create({
