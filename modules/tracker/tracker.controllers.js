@@ -162,7 +162,12 @@ const normalizeEnterpriseDocuments = (value) => {
 const listMentorEnterprises = async (req, res) => {
   try {
     const role = req.user.role;
-    const where = isMentorScopedRole(role) ? { mentorId: req.user.id } : {};
+    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
+    let where = {};
+
+    if (isMentorScopedRole(role) && !isStaffScopedRole) {
+      where.mentorId = req.user.id;
+    }
 
     const enterprises = await TrackerEnterprise.findAll({
       where,
@@ -172,6 +177,10 @@ const listMentorEnterprises = async (req, res) => {
           model: User,
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
         },
         {
           model: TrackerSession,
@@ -184,7 +193,49 @@ const listMentorEnterprises = async (req, res) => {
       ],
     });
 
-    successResponse(res, enterprises);
+    if (isStaffScopedRole) {
+      const assignedEntrepreneurIds = await MentorEntreprenuer.findAll({
+        where: { mentorId: req.user.id },
+        attributes: ["entreprenuerId"],
+        raw: true,
+      });
+      const assignedIds = assignedEntrepreneurIds.map((a) => a.entreprenuerId);
+
+      const additionalEnterprises = await TrackerEnterprise.findAll({
+        where: {
+          entreprenuerId: { [Op.in]: assignedIds },
+          mentorId: { [Op.ne]: req.user.id },
+        },
+        order: [["updatedAt", "DESC"]],
+        include: [
+          {
+            model: User,
+            as: "Entreprenuer",
+            attributes: ["id", "uuid", "name", "email"],
+          },
+          {
+            model: Business,
+            attributes: ["id", "uuid", "name"],
+          },
+          {
+            model: TrackerSession,
+            attributes: ["id"],
+          },
+          {
+            model: Program,
+            attributes: ["id", "uuid", "title", "programCategory"],
+          },
+        ],
+      });
+
+      const enterpriseMap = new Map();
+      enterprises.forEach((e) => enterpriseMap.set(e.uuid, e));
+      additionalEnterprises.forEach((e) => enterpriseMap.set(e.uuid, e));
+
+      successResponse(res, Array.from(enterpriseMap.values()));
+    } else {
+      successResponse(res, enterprises);
+    }
   } catch (error) {
     errorResponse(res, error);
   }
@@ -511,9 +562,10 @@ const getMentorEnterpriseDetails = async (req, res) => {
   try {
     const role = req.user.role;
     const { uuid } = req.params;
+    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
 
     const where = { uuid };
-    if (isMentorScopedRole(role)) {
+    if (isMentorScopedRole(role) && !isStaffScopedRole) {
       where.mentorId = req.user.id;
     }
 
@@ -524,6 +576,10 @@ const getMentorEnterpriseDetails = async (req, res) => {
           model: User,
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
         },
         {
           model: Program,
@@ -539,14 +595,32 @@ const getMentorEnterpriseDetails = async (req, res) => {
       });
     }
 
+    if (isStaffScopedRole) {
+      const assignment = await MentorEntreprenuer.findOne({
+        where: {
+          mentorId: req.user.id,
+          entreprenuerId: enterprise.entreprenuerId,
+        },
+        attributes: ["id"],
+      });
+      if (!assignment) {
+        return res.status(403).json({
+          status: false,
+          message: "You are not assigned to this entrepreneur",
+        });
+      }
+    }
+
     const sharedFilter = {
       entreprenuerId: enterprise.entreprenuerId,
       businessId: enterprise.businessId,
     };
-    const mentorScopedFilter = {
-      ...sharedFilter,
-      mentorId: enterprise.mentorId,
-    };
+    const mentorScopedFilter = isStaffScopedRole
+      ? sharedFilter
+      : {
+          ...sharedFilter,
+          mentorId: enterprise.mentorId,
+        };
 
     const [sessions, weeklyLogs, milestones] = await Promise.all([
       TrackerSession.findAll({
