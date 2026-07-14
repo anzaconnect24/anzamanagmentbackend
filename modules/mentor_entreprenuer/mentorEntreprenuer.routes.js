@@ -23,19 +23,19 @@ const {
 router.post(
   "/",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   createMentorEntreprenuer,
 );
 router.get(
   "/mentor/:uuid",
   validateJWT,
-  requireSelfOrRoles("uuid", ["Admin"]),
+  requireSelfOrRoles("uuid", ["Admin", "Finance"]),
   getMentorEntreprenuers,
 );
 router.get(
   "/entreprenuer/:uuid",
   validateJWT,
-  requireSelfOrRoles("uuid", ["Admin"]),
+  requireSelfOrRoles("uuid", ["Admin", "Finance"]),
   getEntreprenuerMentors,
 );
 router.get(
@@ -47,13 +47,13 @@ router.get(
 router.delete(
   "/:uuid",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   deleteMentorEntreprenuer,
 );
 router.patch(
   "/:uuid",
   validateJWT,
-  requireRoles(["Admin"]),
+  requireRoles(["Admin", "Finance"]),
   updateMentorEntreprenuer,
 );
 router.post(
