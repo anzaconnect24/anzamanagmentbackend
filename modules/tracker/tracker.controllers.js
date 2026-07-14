@@ -543,10 +543,10 @@ const getMentorEnterpriseDetails = async (req, res) => {
       entreprenuerId: enterprise.entreprenuerId,
       businessId: enterprise.businessId,
     };
-    const mentorScopedFilter =
-      role === "Mentor"
-        ? { ...sharedFilter, mentorId: enterprise.mentorId }
-        : sharedFilter;
+    const mentorScopedFilter = {
+      ...sharedFilter,
+      mentorId: enterprise.mentorId,
+    };
 
     const [sessions, weeklyLogs, milestones] = await Promise.all([
       TrackerSession.findAll({
