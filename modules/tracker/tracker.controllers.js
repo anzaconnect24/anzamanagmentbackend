@@ -358,8 +358,10 @@ const upsertMentorEnterprise = async (req, res) => {
 
 const updateMentorEnterprise = async (req, res) => {
   try {
+    const requesterRole = req.user.role;
     const { uuid } = req.params;
     const {
+      mentor_uuid,
       program_uuid,
       category,
       ceSector,
@@ -413,7 +415,25 @@ const updateMentorEnterprise = async (req, res) => {
       }
     }
 
+    let mentorId = enterprise.mentorId;
+    if (mentor_uuid && isFinanceOrAdminRole(requesterRole)) {
+      const mentor = await User.findOne({
+        where: { uuid: mentor_uuid },
+        attributes: ["id"],
+      });
+
+      if (!mentor) {
+        return res.status(404).json({
+          status: false,
+          message: "Mentor not found",
+        });
+      }
+
+      mentorId = mentor.id;
+    }
+
     const payload = {
+      mentorId,
       programId: selectedProgram?.id || enterprise.programId,
       category:
         category || selectedProgram?.programCategory || enterprise.category,
