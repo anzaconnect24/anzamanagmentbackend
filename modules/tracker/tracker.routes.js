@@ -140,7 +140,14 @@ router.post(
 router.get(
   "/milestones",
   validateJWT,
-  requireRoles(["Mentor", "Enterprenuer", "Admin"]),
+  requireRoles([
+    "Mentor",
+    "Staff",
+    "Reviewer",
+    "Enterprenuer",
+    "Admin",
+    "Finance",
+  ]),
   listMilestones,
 );
 router.patch(

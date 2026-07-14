@@ -539,19 +539,23 @@ const getMentorEnterpriseDetails = async (req, res) => {
       });
     }
 
+    const sharedFilter = {
+      entreprenuerId: enterprise.entreprenuerId,
+      businessId: enterprise.businessId,
+    };
+    const mentorScopedFilter = isMentorScopedRole(role)
+      ? { ...sharedFilter, mentorId: enterprise.mentorId }
+      : sharedFilter;
+
     const [sessions, weeklyLogs, milestones] = await Promise.all([
       TrackerSession.findAll({
         where: {
           enterpriseId: enterprise.id,
-          mentorId: enterprise.mentorId,
         },
         order: [["sessionDate", "DESC"]],
       }),
       WeeklyLog.findAll({
-        where: {
-          mentorId: enterprise.mentorId,
-          entreprenuerId: enterprise.entreprenuerId,
-        },
+        where: mentorScopedFilter,
         include: [
           {
             model: User,
@@ -562,15 +566,16 @@ const getMentorEnterpriseDetails = async (req, res) => {
         order: [["weekStart", "DESC"]],
       }),
       Milestone.findAll({
-        where: {
-          mentorId: enterprise.mentorId,
-          entreprenuerId: enterprise.entreprenuerId,
-        },
+        where: mentorScopedFilter,
         include: [
           {
             model: User,
             as: "Entreprenuer",
             attributes: ["id", "uuid", "name", "email"],
+          },
+          {
+            model: Business,
+            attributes: ["id", "uuid", "name"],
           },
         ],
         order: [["createdAt", "DESC"]],
@@ -1490,15 +1495,18 @@ const listMilestones = async (req, res) => {
   try {
     const role = req.user.role;
     const where = {};
-    const { entreprenuer_uuid } = req.query;
+    const { entreprenuer_uuid, business_uuid } = req.query;
 
-    if (role === "Mentor") {
+    if (["Mentor", "Staff", "Reviewer"].includes(role)) {
       where.mentorId = req.user.id;
     } else if (role === "Enterprenuer") {
       where.entreprenuerId = req.user.id;
     }
 
-    if (entreprenuer_uuid && ["Mentor", "Admin"].includes(role)) {
+    if (
+      entreprenuer_uuid &&
+      ["Mentor", "Staff", "Reviewer", "Admin", "Finance"].includes(role)
+    ) {
       const entrepreneur = await User.findOne({
         where: { uuid: entreprenuer_uuid },
         attributes: ["id"],
@@ -1509,6 +1517,22 @@ const listMilestones = async (req, res) => {
       }
 
       where.entreprenuerId = entrepreneur.id;
+    }
+
+    if (
+      business_uuid &&
+      ["Mentor", "Staff", "Reviewer", "Admin", "Finance"].includes(role)
+    ) {
+      const business = await Business.findOne({
+        where: { uuid: business_uuid },
+        attributes: ["id"],
+      });
+
+      if (!business) {
+        return successResponse(res, []);
+      }
+
+      where.businessId = business.id;
     }
 
     const milestones = await Milestone.findAll({
@@ -1524,6 +1548,10 @@ const listMilestones = async (req, res) => {
           model: User,
           as: "Entreprenuer",
           attributes: ["id", "uuid", "name", "email"],
+        },
+        {
+          model: Business,
+          attributes: ["id", "uuid", "name"],
         },
       ],
     });
