@@ -98,44 +98,67 @@ const deleteProgram = async (req, res) => {
     }
 
     // Convert entrepreneur UUIDs to IDs for database queries
-    const entrepreneurs = await User.findAll({
-      where: {
-        uuid: {
-          [Op.in]: startupUuids.filter(
-            (uuid) => uuid && typeof uuid === "string",
-          ),
+    let entrepreneurIds = [];
+    if (startupUuids.length > 0) {
+      const entrepreneurs = await User.findAll({
+        where: {
+          uuid: {
+            [Op.in]: startupUuids.filter(
+              (uuid) => uuid && typeof uuid === "string",
+            ),
+          },
         },
-      },
-      attributes: ["id"],
+        attributes: ["id"],
+      });
+      entrepreneurIds = entrepreneurs.map((e) => e.id);
+    }
+
+    // Also find any entrepreneurs who might be in tracker data but not in program meta
+    // (in case program description is missing or corrupted)
+    const trackerEnterprises = await TrackerEnterprise.findAll({
+      attributes: ["entreprenuerId"],
+      raw: true,
+      group: ["entreprenuerId"],
     });
 
-    const entrepreneurIds = entrepreneurs.map((e) => e.id);
+    const trackerEntrepreneurIds = trackerEnterprises.map(
+      (te) => te.entreprenuerId,
+    );
 
-    // Cascade delete all tracker data for entrepreneurs in this program
-    if (entrepreneurIds.length > 0) {
+    // Combine both sets of entrepreneurs
+    const allEntrepreneurIds = [
+      ...new Set([...entrepreneurIds, ...trackerEntrepreneurIds]),
+    ];
+
+    console.log(
+      `Deleting program ${uuid} with ${allEntrepreneurIds.length} entrepreneurs`,
+    );
+
+    // Cascade delete all tracker data for all entrepreneurs
+    if (allEntrepreneurIds.length > 0) {
       // Delete TrackerSessions (coaching sessions)
       await TrackerSession.destroy({
-        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+        where: { entreprenuerId: { [Op.in]: allEntrepreneurIds } },
       });
 
       // Delete Milestones
       await Milestone.destroy({
-        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+        where: { entreprenuerId: { [Op.in]: allEntrepreneurIds } },
       });
 
       // Delete WeeklyLogs
       await WeeklyLog.destroy({
-        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+        where: { entreprenuerId: { [Op.in]: allEntrepreneurIds } },
       });
 
       // Delete TrackerEnterprises
       await TrackerEnterprise.destroy({
-        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+        where: { entreprenuerId: { [Op.in]: allEntrepreneurIds } },
       });
 
       // Delete MentorEntreprenuers (BDA assignments)
       await MentorEntreprenuer.destroy({
-        where: { entreprenuerId: { [Op.in]: entrepreneurIds } },
+        where: { entreprenuerId: { [Op.in]: allEntrepreneurIds } },
       });
     }
 
@@ -144,7 +167,7 @@ const deleteProgram = async (req, res) => {
 
     successResponse(res, {
       message: "Program and all associated data deleted successfully",
-      deletedEntrepreneurs: entrepreneurIds.length,
+      deletedEntrepreneurs: allEntrepreneurIds.length,
     });
   } catch (error) {
     console.error("Error deleting program:", error);
