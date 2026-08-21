@@ -49,6 +49,15 @@ const isMentorScopedRole = (role) =>
 const isFinanceOrAdminRole = (role) =>
   ["Admin", "Finance"].includes(String(role || ""));
 
+const getEntrepreneurEnterpriseByUuid = async (entrepreneurId, enterpriseUuid) => {
+  return TrackerEnterprise.findOne({
+    where: {
+      uuid: enterpriseUuid,
+      entreprenuerId: entrepreneurId,
+    },
+  });
+};
+
 const getScopedEnterpriseByUuid = async (req, enterpriseUuid) => {
   const role = req.user?.role;
 
@@ -56,6 +65,10 @@ const getScopedEnterpriseByUuid = async (req, enterpriseUuid) => {
     return TrackerEnterprise.findOne({
       where: { uuid: enterpriseUuid },
     });
+  }
+
+  if (role === "Enterprenuer") {
+    return getEntrepreneurEnterpriseByUuid(req.user.id, enterpriseUuid);
   }
 
   return getMentorEnterpriseByUuid(req.user.id, enterpriseUuid);
@@ -2343,6 +2356,77 @@ const updateEntrepreneurEnterprise = async (req, res) => {
   }
 };
 
+const reviseMilestone = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const {
+      title,
+      description,
+      dueDate,
+      linkedTranche,
+      trancheAmount,
+      tranchePlannedUse,
+      kpiPlan,
+      planStatus,
+    } = req.body;
+
+    const milestone = await Milestone.findOne({ where: { uuid } });
+    if (!milestone) {
+      return res.status(404).json({
+        status: false,
+        message: "Milestone not found",
+      });
+    }
+
+    if (milestone.entreprenuerId !== req.user.id) {
+      return res.status(403).json({
+        status: false,
+        message: "You can only revise your own milestones",
+      });
+    }
+
+    const payload = {};
+    if (title !== undefined) payload.title = title;
+    if (description !== undefined) payload.description = description;
+    if (dueDate !== undefined) payload.dueDate = dueDate;
+    if (linkedTranche !== undefined) payload.linkedTranche = linkedTranche;
+    if (trancheAmount !== undefined) {
+      payload.trancheAmount = trancheAmount === "" || trancheAmount === null
+        ? null
+        : Number(trancheAmount);
+    }
+    if (tranchePlannedUse !== undefined) payload.tranchePlannedUse = tranchePlannedUse;
+    if (kpiPlan !== undefined) {
+      payload.kpiPlan = Array.isArray(kpiPlan)
+        ? JSON.stringify(kpiPlan)
+        : kpiPlan || null;
+    }
+    if (planStatus !== undefined) {
+      const allowedPlanStatuses = [
+        "draft",
+        "submitted",
+        "under_review",
+        "revision_requested",
+        "resubmitted",
+        "plan_approved",
+        "rejected",
+      ];
+      if (!allowedPlanStatuses.includes(String(planStatus))) {
+        return res.status(400).json({
+          status: false,
+          message: "Invalid plan status",
+        });
+      }
+      payload.planStatus = String(planStatus);
+    }
+
+    const updated = await milestone.update(payload);
+    successResponse(res, updated);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   getMentorOverview,
   listMentorEnterprises,
@@ -2369,4 +2453,5 @@ module.exports = {
   listAdminWeeklyLogs,
   listAdminMilestones,
   exportAdminTrackerCsv,
+  reviseMilestone,
 };

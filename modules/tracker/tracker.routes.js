@@ -27,6 +27,7 @@ const {
   listAdminWeeklyLogs,
   listAdminMilestones,
   exportAdminTrackerCsv,
+  reviseMilestone,
 } = require("./tracker.controllers");
 
 const router = Router();
@@ -102,7 +103,7 @@ router.patch(
 router.patch(
   "/enterprises/:uuid/kpis",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance", "Enterprenuer"]),
   updateMentorEnterpriseKpis,
 );
 router.post(
@@ -155,6 +156,12 @@ router.patch(
   validateJWT,
   requireRoles(["Enterprenuer"]),
   submitMilestone,
+);
+router.patch(
+  "/milestones/:uuid",
+  validateJWT,
+  requireRoles(["Enterprenuer"]),
+  reviseMilestone,
 );
 router.patch(
   "/milestones/:uuid/review",
