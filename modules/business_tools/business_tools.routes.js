@@ -6,6 +6,7 @@ const {
   getBusinessTool,
   updateBusinessTool,
   deleteBusinessTool,
+  generateBusinessTool,
 } = require("./business_tools.controller");
 
 // Get all business tools
@@ -22,5 +23,9 @@ router.put("/:uuid", validateJWT, updateBusinessTool);
 
 // Delete business tool (Admin only)
 router.delete("/:uuid", validateJWT, deleteBusinessTool);
+
+// Generate AI content for an AI-enabled business tool, using the
+// authenticated user's own business data (see generateBusinessTool).
+router.post("/:uuid/generate", validateJWT, generateBusinessTool);
 
 module.exports = router;

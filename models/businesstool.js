@@ -33,6 +33,23 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         comment: "word, excel, ppt, pdf",
       },
+      category: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      thumbnailUrl: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      aiEnabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      aiPrompt: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
       fileSize: {
         type: DataTypes.INTEGER,
         allowNull: true,

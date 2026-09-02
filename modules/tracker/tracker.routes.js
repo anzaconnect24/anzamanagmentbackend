@@ -13,6 +13,7 @@ const {
   updateEntrepreneurEnterprise,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
+  updateEnterpriseBudgetDocument,
   createMentorEnterpriseSession,
   createEnterpriseWeeklyLog,
   createEnterpriseMilestone,
@@ -105,6 +106,12 @@ router.patch(
   validateJWT,
   requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance", "Enterprenuer"]),
   updateMentorEnterpriseKpis,
+);
+router.patch(
+  "/enterprises/:uuid/budget-document",
+  validateJWT,
+  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance", "Enterprenuer"]),
+  updateEnterpriseBudgetDocument,
 );
 router.post(
   "/enterprises/:uuid/sessions",

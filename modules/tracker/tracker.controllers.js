@@ -1140,6 +1140,61 @@ const updateMentorEnterpriseKpis = async (req, res) => {
   }
 };
 
+// The startup's own budget document + description, uploaded from their
+// Attachments tab. Merged into the same `documents` field the KYC screen
+// uses (rather than a dedicated column) so it survives alongside whatever
+// KYC documents are already stored there — narrow endpoint, scoped via
+// getScopedEnterpriseByUuid, so the entrepreneur can only touch their own
+// enterprise record.
+const updateEnterpriseBudgetDocument = async (req, res) => {
+  try {
+    const { uuid } = req.params;
+    const { budgetDocumentUrl, budgetDocumentDescription } = req.body;
+
+    const enterprise = await getScopedEnterpriseByUuid(req, uuid);
+    if (!enterprise) {
+      return res.status(404).json({
+        status: false,
+        message: "Enterprise not found",
+      });
+    }
+
+    let currentDocuments = {};
+    if (enterprise.documents) {
+      try {
+        const parsed =
+          typeof enterprise.documents === "string"
+            ? JSON.parse(enterprise.documents)
+            : enterprise.documents;
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          currentDocuments = parsed;
+        }
+      } catch (error) {
+        // Ignore an unparsable existing value rather than lose this update.
+      }
+    }
+
+    const mergedDocuments = {
+      ...currentDocuments,
+      budgetDocumentUrl:
+        budgetDocumentUrl !== undefined
+          ? budgetDocumentUrl
+          : currentDocuments.budgetDocumentUrl,
+      budgetDocumentDescription:
+        budgetDocumentDescription !== undefined
+          ? budgetDocumentDescription
+          : currentDocuments.budgetDocumentDescription,
+    };
+
+    const response = await enterprise.update({
+      documents: normalizeEnterpriseDocuments(mergedDocuments),
+    });
+    successResponse(res, response);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 const createMentorEnterpriseSession = async (req, res) => {
   try {
     const mentorId = req.user.id;
@@ -2439,6 +2494,7 @@ module.exports = {
   updateEntrepreneurEnterprise,
   updateMentorEnterpriseTrancheStages,
   updateMentorEnterpriseKpis,
+  updateEnterpriseBudgetDocument,
   createMentorEnterpriseSession,
   createEnterpriseWeeklyLog,
   createEnterpriseMilestone,
