@@ -6,6 +6,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Business.belongsTo(models.User);
       Business.belongsTo(models.BusinessSector);
+      // The programme cohort this startup is in. Owned by the cohort tables,
+      // so nothing about it lives on this model.
+      Business.hasOne(models.CohortMembership, {
+        foreignKey: "businessId",
+        onDelete: "CASCADE",
+      });
       Business.hasMany(models.BusinessDocument);
       Business.hasMany(models.BusinessInvestmentRequest, {
         onDelete: "CASCADE",
@@ -92,6 +98,25 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      // Portfolio metrics, shown on a programme's Startup Portfolio table.
+      // Jobs the venture supports.
+      jobsCreated: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      // USD raised to date — not investmentAmount, which is what is sought.
+      capitalRaised: {
+        type: DataTypes.DECIMAL(14, 2),
+        allowNull: true,
+      },
+      // Last quarter's revenue, so Revenue Growth can be computed against the
+      // current `revenue` rather than stored and left to drift.
+      previousQuarterRevenue: {
+        type: DataTypes.DOUBLE,
+        allowNull: true,
+      },
+      // Free-text alumni history: "what program did you complete?". Unrelated
+      // to the cohort the startup is in now, which lives in cohort_memberships.
       completedProgram: {
         type: DataTypes.STRING,
         allowNull: true,

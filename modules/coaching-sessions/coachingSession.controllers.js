@@ -11,6 +11,7 @@ exports.createCoachingSession = async (req, res) => {
   try {
     const {
       entreprenuer_uuid,
+      title,
       sessionDate,
       facilitator,
       sessionType,
@@ -60,6 +61,7 @@ exports.createCoachingSession = async (req, res) => {
       entreprenuerId: entrepreneur.id,
       businessId: enterprise.businessId,
       createdById: mentorId,
+      title: title || null,
       sessionDate,
       facilitator: facilitator || null,
       sessionType,

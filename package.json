@@ -26,7 +26,8 @@
   },
   "scripts": {
     "seed:crat-catalog": "node scripts/seed_crat_catalog.js",
-    "test:tracker-rbac": "bash scripts/tracker_rbac_smoke.sh"
+    "test:tracker-rbac": "bash scripts/tracker_rbac_smoke.sh",
+    "seed:programs": "node scripts/seed_programs.js"
   },
   "devDependencies": {
     "swagger-autogen": "^2.23.7"

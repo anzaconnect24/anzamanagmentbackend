@@ -16,6 +16,7 @@ const BusinessRoutes = require("./modules/business/business.routes");
 const BusinessReviewRoutes = require("./modules/business_review/business_review.routes");
 const ProgramRoutes = require("./modules/program/program.routes");
 const ProgramApplicationRoutes = require("./modules/programApplication/programApplication.routes");
+const CohortRoutes = require("./modules/cohort/cohort.routes");
 const BusinessInvestmentRequestRoutes = require("./modules/business_investment_request/business_investment_request.routes");
 const BusinessInvestmentRequestReviewRoutes = require("./modules/business_investment_request_review/business_investment_request_review.routes");
 const InvestorProfileRoutes = require("./modules/investor_profile/investor_profile.routes");
@@ -181,6 +182,9 @@ app.use(
 app.use("/mentor-reports", mentorReportsTag, MentorReportRoutes);
 app.use("/programs", programsTag, ProgramRoutes);
 app.use("/program-applications", ProgramApplicationRoutes);
+// Startups-by-program. Its own tables, its own routes — independent of the
+// shared /programs resource used by courses, grants and the mentorship tracker.
+app.use("/cohort-programs", CohortRoutes);
 app.use("/investor_profile", investorProfilesTag, InvestorProfileRoutes);
 app.use("/conversation", conversationsTag, ConversationRoutes);
 app.use("/pitch_material", pitchMaterialsTag, PitchMaterialRoutes);

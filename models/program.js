@@ -13,6 +13,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "programId",
         sourceKey: "id",
       });
+      // Which programme cohorts may open this class. None means open to all.
+      Program.hasMany(models.ClassProgramAccess, {
+        foreignKey: "courseId",
+        sourceKey: "id",
+        onDelete: "CASCADE",
+      });
     }
   }
   Program.init(
@@ -36,6 +42,18 @@ module.exports = (sequelize, DataTypes) => {
       programCategory: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      // What kind of program this row is. The column already existed but was
+      // missing from the model, so values sent by the client were silently
+      // dropped. "grant" and "mentorship" belong to the trackers; "program"
+      // (the column default) is a learn-and-grow course. Startup cohorts live
+      // in cohort_programs and no longer appear here.
+      //
+      // NOT NULL in the database — writing an explicit null fails.
+      type: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "program",
       },
       startDate: {
         type: DataTypes.DATEONLY,

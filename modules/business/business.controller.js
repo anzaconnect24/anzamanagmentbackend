@@ -7,6 +7,8 @@ const {
   MentorEntreprenuer,
   Sequelize,
   BusinessDocument,
+  CohortProgram,
+  CohortMembership,
 } = require("../../models");
 const { where, Op } = require("sequelize");
 
@@ -32,6 +34,11 @@ const createBusiness = async (req, res) => {
       traction,
       // status,
 
+      // The programme cohort the startup says it belongs to, chosen at
+      // sign-up. Sent as a uuid and resolved below; Admin/Staff can move the
+      // startup later from the Programs area.
+      program_uuid,
+
       // Newly added attributes
       description,
       otherIndustry,
@@ -53,6 +60,13 @@ const createBusiness = async (req, res) => {
         uuid: business_sector_uuid,
       },
     });
+
+    // Unknown or omitted programme leaves the startup unassigned rather than
+    // failing the whole registration.
+    const cohort = program_uuid
+      ? await CohortProgram.findOne({ where: { uuid: program_uuid } })
+      : null;
+
     const response = await Business.create({
       // reviewerId,
       registration,
@@ -84,6 +98,16 @@ const createBusiness = async (req, res) => {
       websiteLink,
       // status,
     });
+
+    // Place the new startup in its chosen cohort. Membership lives in its own
+    // table, so this is a separate row rather than a column on the business.
+    if (cohort) {
+      await CohortMembership.create({
+        cohortProgramId: cohort.id,
+        businessId: response.id,
+      });
+    }
+
     successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
@@ -97,6 +121,15 @@ const getUserBusiness = async (req, res) => {
       where: {
         userId: user.id,
       },
+      include: [
+        {
+          model: CohortMembership,
+          required: false,
+          include: [
+            { model: CohortProgram, attributes: ["uuid", "title", "category"] },
+          ],
+        },
+      ],
     });
     successResponse(res, response);
   } catch (error) {
@@ -110,7 +143,11 @@ const updateBusiness = async (req, res) => {
     const user = req.user;
     const payload = { ...req.body };
     let document;
-    const { documentName, business_sector_uuid } = req.body;
+    const { documentName, business_sector_uuid, program_uuid } = req.body;
+
+    // Cohort membership is not a column on this table; it is only ever changed
+    // by resolving program_uuid below.
+    delete payload.program_uuid;
 
     if (req.file) {
       document = await getUrl(req);
@@ -153,11 +190,41 @@ const updateBusiness = async (req, res) => {
     });
 
     await business.update(payload);
+
+    // Cohort membership. An empty value releases the startup back to
+    // "Unassigned"; an unknown uuid is ignored; omitting the field leaves the
+    // current cohort alone.
+    if (program_uuid !== undefined) {
+      const cohort = program_uuid
+        ? await CohortProgram.findOne({ where: { uuid: program_uuid } })
+        : null;
+
+      if (program_uuid && cohort) {
+        // businessId is unique, so replace rather than accumulate.
+        await CohortMembership.destroy({ where: { businessId: business.id } });
+        await CohortMembership.create({
+          cohortProgramId: cohort.id,
+          businessId: business.id,
+        });
+      } else if (!program_uuid) {
+        await CohortMembership.destroy({ where: { businessId: business.id } });
+      }
+    }
+
     business = await Business.findOne({
       where: {
         id: business.id,
       },
-      include: [BusinessDocument],
+      include: [
+        BusinessDocument,
+        {
+          model: CohortMembership,
+          required: false,
+          include: [
+            { model: CohortProgram, attributes: ["uuid", "title", "category"] },
+          ],
+        },
+      ],
     });
     successResponse(res, business);
   } catch (error) {
@@ -313,6 +380,14 @@ const findBusiness = async (req, res) => {
         },
         { model: BusinessSector },
         { model: BusinessDocument },
+        // Lets Edit Profile preselect the programme the startup is in.
+        {
+          model: CohortMembership,
+          required: false,
+          include: [
+            { model: CohortProgram, attributes: ["uuid", "title", "category"] },
+          ],
+        },
       ],
     });
 

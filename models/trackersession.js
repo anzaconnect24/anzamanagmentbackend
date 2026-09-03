@@ -4,6 +4,9 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class TrackerSession extends Model {
     static associate(models) {
+      TrackerSession.belongsTo(models.CohortProgram, {
+        foreignKey: "cohortProgramId",
+      });
       TrackerSession.belongsTo(models.TrackerEnterprise, {
         foreignKey: "enterpriseId",
       });
@@ -31,9 +34,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
+      // Null when the session belongs to a programme rather than to a
+      // grant-tracker enterprise.
       enterpriseId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
+      },
+      // The programme this coaching session was run under.
+      cohortProgramId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       mentorId: {
         type: DataTypes.INTEGER,
@@ -50,6 +60,12 @@ module.exports = (sequelize, DataTypes) => {
       createdById: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      // The session's own name; the history panel shows it in place of the
+      // session type when set.
+      title: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       sessionDate: {
         type: DataTypes.DATEONLY,

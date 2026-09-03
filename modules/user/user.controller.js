@@ -10,6 +10,8 @@ const {
   Product,
   Role,
   PitchMaterial,
+  CohortProgram,
+  CohortMembership,
 } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
@@ -661,6 +663,55 @@ const getEnterprenuers = async (req, res) => {
       };
     }
 
+    // Optional cohort filter. "unassigned" narrows to startups not in any
+    // program; a program uuid narrows to that program's roster. Either way the
+    // Business join stops being optional — a user with no business cannot be
+    // in a cohort.
+    const { programUuid } = req.query;
+    let restrictToBusinesses = false;
+
+    if (programUuid) {
+      let programCondition;
+
+      if (programUuid === "unassigned") {
+        const assigned = await CohortMembership.findAll({
+          attributes: ["businessId"],
+          raw: true,
+        });
+        const assignedIds = assigned.map((row) => row.businessId);
+        programCondition = assignedIds.length
+          ? { id: { [Op.notIn]: assignedIds } }
+          : {};
+      } else {
+        const cohort = await CohortProgram.findOne({
+          where: { uuid: programUuid },
+          attributes: ["id"],
+        });
+
+        if (!cohort) {
+          return res.status(404).json({
+            status: false,
+            message: "Program not found",
+          });
+        }
+
+        const members = await CohortMembership.findAll({
+          attributes: ["businessId"],
+          where: { cohortProgramId: cohort.id },
+          raw: true,
+        });
+        const memberIds = members.map((row) => row.businessId);
+
+        // An empty cohort must match nothing, not everything.
+        programCondition = { id: { [Op.in]: memberIds.length ? memberIds : [0] } };
+      }
+
+      businessWhereConditions = {
+        [Op.and]: [businessWhereConditions, programCondition],
+      };
+      restrictToBusinesses = true;
+    }
+
     const response = await User.findAndCountAll({
       offset: req.offset,
       limit: req.limit,
@@ -673,9 +724,21 @@ const getEnterprenuers = async (req, res) => {
               model: BusinessSector,
               required: false,
             },
+            {
+              model: CohortMembership,
+              required: false,
+              include: [
+                {
+                  model: CohortProgram,
+                  attributes: ["uuid", "title", "category"],
+                },
+              ],
+            },
           ],
           where: businessWhereConditions,
-          required: false, // make Business optional so we can still find users without a business
+          // Optional so users without a business still show up — unless a
+          // cohort filter is active, which only businesses can satisfy.
+          required: restrictToBusinesses,
         },
       ],
       where: {
