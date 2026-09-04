@@ -2,26 +2,53 @@ const express = require("express");
 const router = express.Router();
 const quizController = require("./quiz.controller");
 const { validateJWT } = require("../../utils/validateJWT");
+const { requireRoles } = require("../../utils/authorization");
+
+// Quizzes are authored and graded by staff. Learners sit them and read their
+// own attempts — these write routes were open to any signed-in user.
+const AUTHORS = ["Admin", "Staff", "Reviewer"];
 
 // Quiz CRUD
-router.post("/create", validateJWT, quizController.createQuiz);
+router.post(
+  "/create",
+  validateJWT,
+  requireRoles(AUTHORS),
+  quizController.createQuiz,
+);
 router.get("/module/:moduleId", validateJWT, quizController.getQuizzesByModule);
 router.get("/:uuid", validateJWT, quizController.getQuizById);
-router.put("/:uuid", validateJWT, quizController.updateQuiz);
-router.patch("/:uuid/publish", validateJWT, quizController.togglePublish);
-router.delete("/:uuid", validateJWT, quizController.deleteQuiz);
+router.put("/:uuid", validateJWT, requireRoles(AUTHORS), quizController.updateQuiz);
+router.patch(
+  "/:uuid/publish",
+  validateJWT,
+  requireRoles(AUTHORS),
+  quizController.togglePublish,
+);
+router.delete(
+  "/:uuid",
+  validateJWT,
+  requireRoles(AUTHORS),
+  quizController.deleteQuiz,
+);
 
 // Question management
-router.post("/:quizUuid/questions", validateJWT, quizController.addQuestion);
+router.post(
+  "/:quizUuid/questions",
+  validateJWT,
+  requireRoles(AUTHORS),
+  quizController.addQuestion,
+);
 router.put(
   "/questions/:questionUuid",
   validateJWT,
-  quizController.updateQuestion
+  requireRoles(AUTHORS),
+  quizController.updateQuestion,
 );
 router.delete(
   "/questions/:questionUuid",
   validateJWT,
-  quizController.deleteQuestion
+  requireRoles(AUTHORS),
+  quizController.deleteQuestion,
 );
 
 // Quiz attempts
@@ -56,32 +83,42 @@ router.get(
   quizController.checkProgramCompletion
 );
 
-// Admin endpoints
-router.get("/admin/attempts", validateJWT, quizController.getAllAttempts);
+// Admin endpoints — everyone's attempts and the marking queue.
+router.get(
+  "/admin/attempts",
+  validateJWT,
+  requireRoles(AUTHORS),
+  quizController.getAllAttempts,
+);
 router.get(
   "/admin/attempts/:attemptUuid",
   validateJWT,
-  quizController.getAttemptDetails
+  requireRoles(AUTHORS),
+  quizController.getAttemptDetails,
 );
 router.get(
   "/admin/pending-grading",
   validateJWT,
-  quizController.getPendingQuizzes
+  requireRoles(AUTHORS),
+  quizController.getPendingQuizzes,
 );
 router.post(
   "/admin/attempts/:attemptUuid/grade",
   validateJWT,
-  quizController.gradeQuizAttempt
+  requireRoles(AUTHORS),
+  quizController.gradeQuizAttempt,
 );
 router.patch(
   "/admin/answers/:answerUuid/mark",
   validateJWT,
-  quizController.markDescriptionAnswer
+  requireRoles(AUTHORS),
+  quizController.markDescriptionAnswer,
 );
 router.post(
   "/admin/answers/bulk-mark",
   validateJWT,
-  quizController.bulkMarkAnswers
+  requireRoles(AUTHORS),
+  quizController.bulkMarkAnswers,
 );
 
 module.exports = router;

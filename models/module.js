@@ -17,6 +17,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "programId",
         targetKey: "id",
       });
+      // A module belongs straight to the programme startups enrol in.
+      Module.belongsTo(models.CohortProgram, {
+        foreignKey: "cohortProgramId",
+        targetKey: "id",
+      });
     }
   }
   Module.init(
@@ -25,13 +30,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
       },
+      // The course this module was authored under, before courses were
+      // dropped. Null on every module created since.
       programId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
           model: "Programs",
           key: "id",
         },
+      },
+      cohortProgramId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       image: {
         type: DataTypes.STRING,

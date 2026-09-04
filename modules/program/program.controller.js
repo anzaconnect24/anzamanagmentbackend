@@ -56,6 +56,14 @@ const myCohortProgramId = async (userId) => {
   return membership ? membership.cohortProgramId : null;
 };
 
+// The course author, shown as the lead instructor.
+const creatorInclude = {
+  model: User,
+  as: "creator",
+  required: false,
+  attributes: ["uuid", "name", "email", "role", "image"],
+};
+
 const accessInclude = {
   model: ClassProgramAccess,
   required: false,
@@ -95,6 +103,8 @@ const createProgram = async (req, res) => {
       endDate: endDate || null,
       // "program" is a learn-and-grow course; the column is NOT NULL.
       type: type || "program",
+      // Recorded so the course can name its lead instructor.
+      createdById: req.user ? req.user.id : null,
     });
 
     await setClassAccess(response.id, cohortProgramUuids);
@@ -284,7 +294,7 @@ const getAllPrograms = async (req, res) => {
       offset: req.offset,
       limit: req.limit,
       order: [["createdAt", "DESC"]],
-      include: [accessInclude],
+      include: [accessInclude, creatorInclude],
       // findAndCountAll with a hasMany include would otherwise count join rows.
       distinct: true,
     });
@@ -399,7 +409,7 @@ const getProgramDetails = async (req, res) => {
     const uuid = req.params.uuid;
     const response = await Program.findOne({
       where: { uuid },
-      include: [accessInclude],
+      include: [accessInclude, creatorInclude],
     });
 
     if (!response) {

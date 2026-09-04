@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
         sourceKey: "id",
       });
       // Which programme cohorts may open this class. None means open to all.
+      Program.belongsTo(models.User, {
+        foreignKey: "createdById",
+        as: "creator",
+      });
       Program.hasMany(models.ClassProgramAccess, {
         foreignKey: "courseId",
         sourceKey: "id",
@@ -61,6 +65,12 @@ module.exports = (sequelize, DataTypes) => {
       },
       endDate: {
         type: DataTypes.DATEONLY,
+        allowNull: true,
+      },
+      // Who created the course. Shown as the lead instructor. Null on rows
+      // created before this was recorded.
+      createdById: {
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
     },

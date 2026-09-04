@@ -15,6 +15,8 @@ const {
   getCohortSessions,
   createCohortSession,
   deleteCohortSession,
+  getCohortModules,
+  getCohortAnalytics,
 } = require("./cohort.controller");
 
 // Staff are stored as either "Staff" or "Reviewer" (see SignUp on the client),
@@ -30,6 +32,23 @@ router.get("/public", getPublicCohortPrograms);
 
 router.get("/", validateJWT, requireRoles(VIEW_ROLES), getCohortPrograms);
 router.post("/", validateJWT, requireRoles(ADMIN_ONLY), createCohortProgram);
+
+// Programme analytics: summary figures plus a row per course.
+router.get(
+  "/:uuid/analytics",
+  validateJWT,
+  requireRoles(VIEW_ROLES),
+  getCohortAnalytics,
+);
+
+// The modules a programme runs. They are created and deleted through the
+// modules resource; this just lists the programme's own.
+router.get(
+  "/:uuid/modules",
+  validateJWT,
+  requireRoles(VIEW_ROLES),
+  getCohortModules,
+);
 
 // Coaching sessions run under a programme. Business coaches (Mentor) log them
 // alongside Staff and Admin, which is who ran them on the Mentorship Tracker.

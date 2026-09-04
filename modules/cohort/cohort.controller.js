@@ -10,11 +10,101 @@ const {
   Milestone,
   CratAssessment,
   CratScoreSnapshot,
-  ClassProgramAccess,
-  CourseCompletion,
+  Program,
+  Module,
+  Slide,
+  SlideReader,
+  Quiz,
+  QuizAttempt,
   sequelize,
 } = require("../../models");
 const { Op, fn, col } = require("sequelize");
+
+// Slides read per (startup, module) across a programme's modules. Progress is
+// measured on SlideReader rows, which the slide viewer already writes, so it
+// reflects what learners actually opened rather than a separate flag.
+const moduleSlideStats = async (cohortProgramId, userIds = []) => {
+  const modules = await Module.findAll({
+    attributes: ["id", "uuid", "title", "image", "description", "createdAt"],
+    where: { cohortProgramId },
+    order: [["createdAt", "ASC"]],
+    raw: true,
+  });
+
+  const moduleIds = modules.map((row) => row.id);
+
+  const slides = moduleIds.length
+    ? await Slide.findAll({
+        attributes: ["id", "moduleId"],
+        where: { moduleId: { [Op.in]: moduleIds } },
+        raw: true,
+      })
+    : [];
+
+  const slidesByModule = new Map();
+  const moduleBySlide = new Map();
+
+  for (const slide of slides) {
+    moduleBySlide.set(slide.id, slide.moduleId);
+    slidesByModule.set(
+      slide.moduleId,
+      (slidesByModule.get(slide.moduleId) || 0) + 1,
+    );
+  }
+
+  const reads =
+    slides.length && userIds.length
+      ? await SlideReader.findAll({
+          attributes: ["userId", "slideId"],
+          where: {
+            slideId: { [Op.in]: slides.map((row) => row.id) },
+            userId: { [Op.in]: userIds },
+          },
+          raw: true,
+        })
+      : [];
+
+  // A slide read twice is still one slide read.
+  const seen = new Set();
+  const readsBy = new Map();
+
+  for (const read of reads) {
+    const slideKey = `${read.userId}:${read.slideId}`;
+    if (seen.has(slideKey)) continue;
+    seen.add(slideKey);
+
+    const key = `${read.userId}:${moduleBySlide.get(read.slideId)}`;
+    readsBy.set(key, (readsBy.get(key) || 0) + 1);
+  }
+
+  return { modules, slidesByModule, readsBy };
+};
+
+// How many of the programme's modules each startup has finished. A module is
+// finished once every slide in it has been read.
+const moduleCompletionsByUser = async (cohortProgramId, userIds = []) => {
+  const { modules, slidesByModule, readsBy } = await moduleSlideStats(
+    cohortProgramId,
+    userIds,
+  );
+
+  const completedByUser = new Map();
+
+  for (const userId of userIds) {
+    let completed = 0;
+
+    for (const module of modules) {
+      const total = slidesByModule.get(module.id) || 0;
+      if (total > 0 && (readsBy.get(`${userId}:${module.id}`) || 0) >= total) {
+        completed += 1;
+      }
+    }
+
+    completedByUser.set(userId, completed);
+  }
+
+  return { total: modules.length, completedByUser };
+};
 
 // Stands in for a programme uuid to mean "startups not in any programme".
 // Programmes use real uuids, so this cannot collide.
@@ -249,7 +339,9 @@ const getCohortStartups = async (req, res) => {
 
     // Attach where each startup stands, so the roster can show and change it.
     const memberships = await CohortMembership.findAll({
-      attributes: ["businessId", "status", "reportingStatus"],
+      // createdAt is when the startup joined the programme — the Enrollment
+      // Date on the members table.
+      attributes: ["businessId", "status", "reportingStatus", "createdAt"],
       where: { businessId: { [Op.in]: startups.map((item) => item.id) } },
       raw: true,
     });
@@ -324,35 +416,16 @@ const getCohortStartups = async (req, res) => {
       }
     }
 
-    // Classes created for this programme, and how many each startup has
+    // Modules created for this programme, and how many each startup has
     // finished. The denominator is the same for every row — it is the
-    // programme's curriculum, not a per-startup list.
-    const grants = program
-      ? await ClassProgramAccess.findAll({
-          attributes: ["courseId"],
-          where: { cohortProgramId: program.id },
-          raw: true,
-        })
-      : [];
-
-    const courseIds = [...new Set(grants.map((row) => row.courseId))];
-
-    const completions =
-      courseIds.length && businessIds.length
-        ? await CourseCompletion.findAll({
-            attributes: ["businessId", [fn("COUNT", col("id")), "n"]],
-            where: {
-              businessId: { [Op.in]: businessIds },
-              courseId: { [Op.in]: courseIds },
-            },
-            group: ["businessId"],
-            raw: true,
-          })
-        : [];
-
-    const completionsBy = new Map(
-      completions.map((row) => [row.businessId, Number(row.n) || 0]),
-    );
+    // programme's curriculum, not a per-startup list. A module counts as
+    // finished once the startup has read every slide in it.
+    const moduleProgress = program
+      ? await moduleCompletionsByUser(
+          program.id,
+          startups.map((item) => item.userId).filter(Boolean),
+        )
+      : { total: 0, completedByUser: new Map() };
 
     const data = startups.map((startup) => {
       const milestones = milestonesBy.get(startup.id) || {
@@ -376,6 +449,7 @@ const getCohortStartups = async (req, res) => {
         ...startup.toJSON(),
         membershipStatus: membership.status || null,
         reportingStatus: membership.reportingStatus || null,
+        enrolledAt: membership.createdAt || null,
         milestonesTotal: milestones.total,
         milestonesCompleted: milestones.completed,
         revenueGrowthPercent,
@@ -383,8 +457,9 @@ const getCohortStartups = async (req, res) => {
         capitalReadinessPercent: cratByBusinessId.has(startup.id)
           ? cratByBusinessId.get(startup.id)
           : null,
-        coursesTotal: courseIds.length,
-        coursesCompleted: completionsBy.get(startup.id) || 0,
+        modulesTotal: moduleProgress.total,
+        modulesCompleted:
+          moduleProgress.completedByUser.get(startup.userId) || 0,
       };
     });
 
@@ -722,6 +797,185 @@ const setReportingStatus = async (req, res) => {
   }
 };
 
+// The modules a programme runs, newest last so the curriculum reads in order.
+// Courses used to sit between a programme and its modules; they no longer do.
+const getCohortModules = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid },
+    });
+
+    if (!program) {
+      return res.status(404).json({
+        status: false,
+        message: "Program not found",
+      });
+    }
+
+    const { modules, slidesByModule } = await moduleSlideStats(program.id);
+
+    const enrolled = await CohortMembership.count({
+      where: { cohortProgramId: program.id },
+    });
+
+    successResponse(res, {
+      program,
+      data: modules.map((module) => ({
+        ...module,
+        slides: slidesByModule.get(module.id) || 0,
+      })),
+      count: modules.length,
+      enrolled,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Programme analytics: summary figures plus a row per module.
+//
+// Slides, reads and quiz results are real records. Assignments are not
+// modelled at all, so assignment pass rate comes back null and the page says
+// "No Submissions" rather than inventing a rate.
+const getCohortAnalytics = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid },
+    });
+
+    if (!program) {
+      return res.status(404).json({
+        status: false,
+        message: "Program not found",
+      });
+    }
+
+    const memberships = await CohortMembership.findAll({
+      attributes: ["businessId", "status"],
+      where: { cohortProgramId: program.id },
+      raw: true,
+    });
+
+    const businessIds = memberships.map((row) => row.businessId);
+    const members = businessIds.length;
+    const active = memberships.filter((row) => row.status === "active").length;
+
+    const businesses = businessIds.length
+      ? await Business.findAll({
+          attributes: ["id", "userId"],
+          where: { id: { [Op.in]: businessIds } },
+          raw: true,
+        })
+      : [];
+
+    const userIds = businesses.map((row) => row.userId).filter(Boolean);
+
+    const { modules, slidesByModule, readsBy } = await moduleSlideStats(
+      program.id,
+      userIds,
+    );
+
+    const moduleIds = modules.map((row) => row.id);
+
+    // Quiz results per module.
+    const quizzes = moduleIds.length
+      ? await Quiz.findAll({
+          attributes: ["id", "moduleId"],
+          where: { moduleId: { [Op.in]: moduleIds } },
+          raw: true,
+        })
+      : [];
+
+    const moduleByQuiz = new Map(quizzes.map((row) => [row.id, row.moduleId]));
+
+    const attempts = quizzes.length
+      ? await QuizAttempt.findAll({
+          attributes: ["quizId", "score"],
+          where: { quizId: { [Op.in]: quizzes.map((row) => row.id) } },
+          raw: true,
+        })
+      : [];
+
+    const quizByModule = new Map();
+
+    for (const row of attempts) {
+      const moduleId = moduleByQuiz.get(row.quizId);
+      if (moduleId === undefined) continue;
+      const entry = quizByModule.get(moduleId) || { attempts: 0, total: 0 };
+      entry.attempts += 1;
+      entry.total += Number(row.score) || 0;
+      quizByModule.set(moduleId, entry);
+    }
+
+    let readsTotal = 0;
+    let slidesTotal = 0;
+
+    const rows = modules.map((module) => {
+      const slides = slidesByModule.get(module.id) || 0;
+      const quiz = quizByModule.get(module.id) || { attempts: 0, total: 0 };
+
+      const read = userIds.reduce(
+        (sum, userId) => sum + (readsBy.get(`${userId}:${module.id}`) || 0),
+        0,
+      );
+
+      readsTotal += read;
+      slidesTotal += slides * userIds.length;
+
+      const completed = userIds.filter(
+        (userId) =>
+          slides > 0 && (readsBy.get(`${userId}:${module.id}`) || 0) >= slides,
+      ).length;
+
+      return {
+        uuid: module.uuid,
+        title: module.title,
+        lessons: slides,
+        completed,
+        // Share of the slides in this module the programme's startups have
+        // read, averaged over every member.
+        averageProgressPercent:
+          slides && userIds.length
+            ? Math.round((read / (slides * userIds.length)) * 100)
+            : 0,
+        quizAttempts: quiz.attempts,
+        averageQuizScore: quiz.attempts
+          ? Math.round(quiz.total / quiz.attempts)
+          : null,
+        // Not modelled anywhere yet.
+        assignmentPassRate: null,
+      };
+    });
+
+    const totalAttempts = rows.reduce((sum, row) => sum + row.quizAttempts, 0);
+    const scored = rows.filter((row) => row.averageQuizScore !== null);
+
+    successResponse(res, {
+      program,
+      summary: {
+        members,
+        active,
+        modules: rows.length,
+        // Programme-wide progress: slides read out of every slide every
+        // member could have read.
+        averageProgressPercent: slidesTotal
+          ? Math.round((readsTotal / slidesTotal) * 100)
+          : 0,
+        quizAttempts: totalAttempts,
+        averageQuizScore: scored.length
+          ? Math.round(
+              scored.reduce((sum, row) => sum + row.averageQuizScore, 0) /
+                scored.length,
+            )
+          : null,
+      },
+      data: rows,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 // Coaching sessions run under a programme. Moved here from the Mentorship
 // Tracker so a coach works from the programme's roster; a startup no longer
 // has to be in the grant tracker to be coached.
@@ -870,6 +1124,8 @@ module.exports = {
   getCohortDashboard,
   setStartupStatus,
   setReportingStatus,
+  getCohortModules,
+  getCohortAnalytics,
   getCohortSessions,
   createCohortSession,
   deleteCohortSession,
