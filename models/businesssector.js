@@ -8,7 +8,12 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      BusinessSector.hasMany(models.Business, { onDelete: "cascade" });
+      // foreignKey is explicit: Business declares businessSectorId, and without
+      // naming it Sequelize adds a duplicate BusinessSectorId attribute.
+      BusinessSector.hasMany(models.Business, {
+        foreignKey: "businessSectorId",
+        onDelete: "cascade",
+      });
       BusinessSector.hasMany(models.InvestorProfile);
       BusinessSector.hasMany(models.MentorProfile);
       // define association here

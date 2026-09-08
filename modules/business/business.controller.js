@@ -200,13 +200,17 @@ const updateBusiness = async (req, res) => {
         : null;
 
       if (program_uuid && cohort) {
-        // businessId is unique, so replace rather than accumulate.
-        await CohortMembership.destroy({ where: { businessId: business.id } });
-        await CohortMembership.create({
-          cohortProgramId: cohort.id,
-          businessId: business.id,
+        // A startup can be on several programmes, so this adds one rather than
+        // replacing what it already has. findOrCreate keeps it idempotent —
+        // saving the form twice must not collide with the unique
+        // (cohortProgramId, businessId) index, and must not reset the status
+        // or enrollment date an existing membership carries.
+        await CohortMembership.findOrCreate({
+          where: { cohortProgramId: cohort.id, businessId: business.id },
         });
       } else if (!program_uuid) {
+        // An explicitly empty value still means "release entirely", which is
+        // the only way this endpoint can express removal.
         await CohortMembership.destroy({ where: { businessId: business.id } });
       }
     }

@@ -38,12 +38,9 @@ router.post(
   controller.submitAssessment,
 );
 
+// CRAT is scored by AI on submission and published by an admin. There is no
+// staff reviewer step, so no assignment or reviewer-scoring routes.
 router.get("/admin/queue", validateJWT, controller.getAdminQueue);
-router.post(
-  "/admin/assessments/:assessmentId/assign",
-  validateJWT,
-  controller.assignReviewer,
-);
 router.post(
   "/admin/assessments/:assessmentId/approve",
   validateJWT,
@@ -82,22 +79,6 @@ router.delete(
   "/admin/catalog-mgmt/:questionId",
   validateJWT,
   controller.deleteQuestion,
-);
-
-router.get(
-  "/reviewer/assignments",
-  validateJWT,
-  controller.getReviewerAssignments,
-);
-router.put(
-  "/reviewer/assessments/:assessmentId/scores",
-  validateJWT,
-  controller.saveReviewerScores,
-);
-router.post(
-  "/reviewer/assessments/:assessmentId/submit",
-  validateJWT,
-  controller.submitReviewerAssessment,
 );
 
 router.get(

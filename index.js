@@ -18,6 +18,10 @@ const ProgramRoutes = require("./modules/program/program.routes");
 const ProgramApplicationRoutes = require("./modules/programApplication/programApplication.routes");
 const CohortRoutes = require("./modules/cohort/cohort.routes");
 const SurveyRoutes = require("./modules/survey/survey.routes");
+const MeRoutes = require("./modules/me/me.routes");
+const LessonRoutes = require("./modules/lesson/lesson.routes");
+const WorkshopRoutes = require("./modules/workshop/workshop.routes");
+const CourseRoutes = require("./modules/course/course.routes");
 const BusinessInvestmentRequestRoutes = require("./modules/business_investment_request/business_investment_request.routes");
 const BusinessInvestmentRequestReviewRoutes = require("./modules/business_investment_request_review/business_investment_request_review.routes");
 const InvestorProfileRoutes = require("./modules/investor_profile/investor_profile.routes");
@@ -187,6 +191,10 @@ app.use("/program-applications", ProgramApplicationRoutes);
 // shared /programs resource used by courses, grants and the mentorship tracker.
 app.use("/cohort-programs", CohortRoutes);
 app.use("/surveys", SurveyRoutes);
+app.use("/me", MeRoutes);
+app.use("/learning", LessonRoutes);
+app.use("/learning", WorkshopRoutes);
+app.use("/learning", CourseRoutes);
 app.use("/investor_profile", investorProfilesTag, InvestorProfileRoutes);
 app.use("/conversation", conversationsTag, ConversationRoutes);
 app.use("/pitch_material", pitchMaterialsTag, PitchMaterialRoutes);
@@ -238,6 +246,26 @@ app.get("/", (req, res) => {
   res.send("Anza management system API's are okay!");
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server started at port ${process.env.PORT}`);
+const port = Number(process.env.PORT) || 4000;
+const server = app.listen(port, () => {
+  console.log(`Server started at port ${port}`);
 });
+
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      `Port ${port} is already in use. Stop the other backend process or set a different PORT in .env.`,
+    );
+    process.exit(1);
+  }
+
+  throw error;
+});
+
+const shutdown = (signal) => {
+  console.log(`${signal} received; closing the HTTP server.`);
+  server.close(() => process.exit(0));
+};
+
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));

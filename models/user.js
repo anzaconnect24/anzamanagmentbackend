@@ -11,7 +11,14 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       User.hasMany(models.UserRole, { onDelete: "CASCADE", scope: true });
       User.hasMany(models.UserPermission, { onDelete: "CASCADE", scope: true });
-      User.hasOne(models.Business, { onDelete: "CASCADE", scope: true });
+      // foreignKey is explicit: Business declares userId, and without naming it
+      // Sequelize adds a second UserId attribute on the same column, which
+      // collides inside any subquery-backed include.
+      User.hasOne(models.Business, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+        scope: true,
+      });
       User.hasOne(models.BusinessReview, { onDelete: "CASCADE", scope: true });
 
       User.hasOne(models.InvestorProfile, { onDelete: "CASCADE", scope: true });
@@ -39,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       });
       User.hasMany(models.UserRole, { onDelete: "cascade" });
       User.hasMany(models.UserPermission, { onDelete: "cascade" });
-      User.hasOne(models.Business, { onDelete: "cascade" });
+      User.hasOne(models.Business, { foreignKey: "userId", onDelete: "cascade" });
       User.hasOne(models.BusinessReview, { onDelete: "cascade" });
       User.hasOne(models.InvestorProfile, { onDelete: "cascade" });
 

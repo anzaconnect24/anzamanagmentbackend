@@ -110,15 +110,29 @@ const moduleCompletionsByUser = async (cohortProgramId, userIds = []) => {
 // Programmes use real uuids, so this cannot collide.
 const UNASSIGNED_KEY = "unassigned";
 
-// How many startups exist in total, for the Unassigned tally. Only businesses
-// are counted — a user without a business is not a startup.
+// How many startups are in no programme, for the Unassigned tally.
+//
+// Counted the same way the Unassigned roster is listed, so the badge and the
+// list it opens can never disagree:
+//
+//   - a business whose owner no longer exists is not a startup. Businesses
+//     .userId has no foreign key, so deleting a user leaves its business
+//     behind; there are hundreds of those, and none of them appear on the
+//     Startups list. Requiring the User join drops them.
+//   - subtracting the membership count would also be wrong even without the
+//     orphans, because some of those memberships belong to businesses that
+//     are themselves orphaned, so the totals are drawn from different sets.
 const countUnassigned = async () => {
-  const [total, assigned] = await Promise.all([
-    Business.count(),
-    CohortMembership.count(),
-  ]);
+  const assigned = await CohortMembership.findAll({
+    attributes: ["businessId"],
+    raw: true,
+  });
+  const assignedIds = assigned.map((row) => row.businessId);
 
-  return Math.max(total - assigned, 0);
+  return Business.count({
+    include: [{ model: User, required: true, attributes: [] }],
+    where: assignedIds.length ? { id: { [Op.notIn]: assignedIds } } : {},
+  });
 };
 
 // The programme grid: every cohort with its roster size, plus how many
@@ -129,8 +143,23 @@ const getCohortPrograms = async (req, res) => {
       order: [["title", "ASC"]],
     });
 
+    // Counted through Business and User so a programme card shows the same
+    // number as its roster. A membership whose business has been deleted, or
+    // whose business outlived its owner, is not a startup on the roster and
+    // must not be counted as one here either.
     const tallies = await CohortMembership.findAll({
-      attributes: ["cohortProgramId", [fn("COUNT", col("id")), "startupCount"]],
+      attributes: [
+        "cohortProgramId",
+        [fn("COUNT", col("CohortMembership.id")), "startupCount"],
+      ],
+      include: [
+        {
+          model: Business,
+          required: true,
+          attributes: [],
+          include: [{ model: User, required: true, attributes: [] }],
+        },
+      ],
       group: ["cohortProgramId"],
       raw: true,
     });
@@ -329,8 +358,11 @@ const getCohortStartups = async (req, res) => {
       include: [
         { model: BusinessSector, required: false },
         {
+          // Required: a business whose owner has been deleted is not a startup
+          // anyone can act on, and showing it would put rows with no owner on
+          // the roster. This also keeps the list in step with countUnassigned.
           model: User,
-          required: false,
+          required: true,
           attributes: ["uuid", "name", "email", "phone", "image", "role"],
         },
       ],
@@ -532,19 +564,32 @@ const setCohortStartups = async (req, res) => {
     });
 
     if (keepIds.length) {
-      // Clear any membership these startups hold elsewhere, then place them.
-      await CohortMembership.destroy({
-        where: { businessId: { [Op.in]: keepIds } },
+      // Only this programme's roster is being set. A startup may be on other
+      // programmes at the same time, so those memberships are left alone —
+      // clearing them here would silently drop it from cohorts this screen
+      // never mentioned.
+      const existing = await CohortMembership.findAll({
+        where: { cohortProgramId: program.id, businessId: { [Op.in]: keepIds } },
+        attributes: ["businessId"],
         transaction,
+        raw: true,
       });
+      const alreadyHere = new Set(existing.map((row) => row.businessId));
 
-      await CohortMembership.bulkCreate(
-        keepIds.map((businessId) => ({
-          cohortProgramId: program.id,
-          businessId,
-        })),
-        { transaction },
-      );
+      // Re-adding someone already on the roster would collide with the unique
+      // (cohortProgramId, businessId) index, and would also reset the status
+      // and enrollment date they already carry.
+      const toAdd = keepIds.filter((businessId) => !alreadyHere.has(businessId));
+
+      if (toAdd.length) {
+        await CohortMembership.bulkCreate(
+          toAdd.map((businessId) => ({
+            cohortProgramId: program.id,
+            businessId,
+          })),
+          { transaction },
+        );
+      }
     }
 
     await transaction.commit();

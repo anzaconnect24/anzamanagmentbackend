@@ -7,9 +7,10 @@ const REPORTING_STATUSES = ["up_to_date", "pending", "overdue"];
 // Where a startup stands within its programme: on it, or dropped out.
 const MEMBERSHIP_STATUSES = ["active", "dropped_out"];
 
-// Which startup is in which programme. businessId is unique, so a startup
-// belongs to one cohort at a time — moving it to another programme replaces
-// the row rather than adding a second one.
+// Which startup is in which programme. A startup can hold any number of
+// memberships — a venture may be on an Ideation cohort and an Accelerator at
+// once, and past programmes stay on its record — but only one per programme,
+// which the unique index on (cohortProgramId, businessId) enforces.
 module.exports = (sequelize, DataTypes) => {
   class CohortMembership extends Model {
     static associate(models) {
@@ -37,7 +38,6 @@ module.exports = (sequelize, DataTypes) => {
       businessId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        unique: true,
       },
       reportingStatus: {
         type: DataTypes.STRING,
@@ -66,6 +66,13 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "CohortMembership",
       tableName: "cohort_memberships",
+      indexes: [
+        {
+          name: "cohort_memberships_program_business",
+          unique: true,
+          fields: ["cohortProgramId", "businessId"],
+        },
+      ],
     },
   );
 

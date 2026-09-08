@@ -38,10 +38,30 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      // The score every report and snapshot reads. It starts as the
+      // applicant's own answer and becomes the AI's once scoring has run.
       score: {
         type: DataTypes.DECIMAL(5, 2),
         allowNull: false,
         defaultValue: 0,
+      },
+      // Kept separately so the applicant's own judgement is never lost, and
+      // can be compared against what the AI awarded.
+      self_score: {
+        type: DataTypes.DECIMAL(4, 2),
+        allowNull: true,
+      },
+      ai_score: {
+        type: DataTypes.DECIMAL(4, 2),
+        allowNull: true,
+      },
+      ai_comment: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      ai_scored_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
       },
       evidence: {
         type: DataTypes.TEXT("long"),

@@ -27,7 +27,10 @@ const asList = (value) => {
 
 const isAuthor = (req) => AUTHOR_ROLES.includes(req.user && req.user.role);
 
-// The programme the signed-in startup is enrolled in, with its business.
+// Every programme the signed-in startup is enrolled in, with its business.
+// A survey is open to the startup if it belongs to any of them; the routes
+// that must resolve to a single programme take cohortProgramIds[0], the most
+// recently joined.
 const myMembership = async (userId) => {
   const business = await Business.findOne({
     where: { userId },
@@ -36,14 +39,19 @@ const myMembership = async (userId) => {
 
   if (!business) return null;
 
-  const membership = await CohortMembership.findOne({
+  const memberships = await CohortMembership.findAll({
     where: { businessId: business.id },
     attributes: ["cohortProgramId"],
+    order: [["createdAt", "DESC"], ["id", "DESC"]],
+    raw: true,
   });
 
-  if (!membership) return null;
+  if (!memberships.length) return null;
 
-  return { businessId: business.id, cohortProgramId: membership.cohortProgramId };
+  return {
+    businessId: business.id,
+    cohortProgramIds: memberships.map((row) => row.cohortProgramId),
+  };
 };
 
 const questionInclude = {
@@ -86,7 +94,8 @@ const getSurveys = async (req, res) => {
         return successResponse(res, { program: null, data: [], count: 0 });
       }
 
-      program = await CohortProgram.findByPk(membership.cohortProgramId);
+      // This route shows one programme's surveys, so it takes the most recent.
+      program = await CohortProgram.findByPk(membership.cohortProgramIds[0]);
     }
 
     if (!program) {
@@ -175,7 +184,7 @@ const getSurvey = async (req, res) => {
       // A startup may only open a published survey on its own programme.
       if (
         !membership ||
-        membership.cohortProgramId !== survey.cohortProgramId ||
+        !membership.cohortProgramIds.includes(survey.cohortProgramId) ||
         survey.status !== "published"
       ) {
         return res.status(403).json({
@@ -444,7 +453,7 @@ const submitResponse = async (req, res) => {
 
     if (
       !membership ||
-      membership.cohortProgramId !== survey.cohortProgramId ||
+      !membership.cohortProgramIds.includes(survey.cohortProgramId) ||
       survey.status !== "published"
     ) {
       await transaction.rollback();

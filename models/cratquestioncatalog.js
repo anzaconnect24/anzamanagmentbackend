@@ -4,6 +4,10 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class CratQuestionCatalog extends Model {
     static associate(models) {
+      CratQuestionCatalog.belongsTo(models.CohortProgram, {
+        foreignKey: "cohort_program_id",
+        targetKey: "id",
+      });
       CratQuestionCatalog.hasMany(models.CratAnswer, {
         foreignKey: "question_id",
         onDelete: "CASCADE",
@@ -16,6 +20,12 @@ module.exports = (sequelize, DataTypes) => {
       domain: {
         type: DataTypes.STRING,
         allowNull: false,
+      },
+      // The programme this question belongs to. Null means it is asked of
+      // every startup, whichever programme they are on.
+      cohort_program_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       variant: {
         type: DataTypes.STRING,

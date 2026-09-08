@@ -42,9 +42,15 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       status: {
+        // The live flow is draft -> submitted -> ai_scoring -> ai_scored ->
+        // published. The reviewer statuses stay for assessments that were
+        // already part-way through the old staff-review flow.
         type: DataTypes.ENUM(
           "draft",
           "submitted",
+          "ai_scoring",
+          "ai_scored",
+          "ai_failed",
           "assigned",
           "in_review",
           "review_submitted",
@@ -77,6 +83,28 @@ module.exports = (sequelize, DataTypes) => {
       },
       published_at: {
         type: DataTypes.DATE,
+        allowNull: true,
+      },
+      // The AI's written verdict on the assessment, shown to the Admin
+      // deciding whether to publish it.
+      ai_analysis: {
+        type: DataTypes.TEXT("long"),
+        allowNull: true,
+      },
+      ai_scored_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      // Why scoring failed, or which questions the model skipped, so the
+      // gap is visible rather than silent.
+      ai_error: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      // Which model produced the scores. A change of model changes what a
+      // score means, so it belongs in the record.
+      ai_model: {
+        type: DataTypes.STRING,
         allowNull: true,
       },
     },

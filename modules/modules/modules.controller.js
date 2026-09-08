@@ -7,7 +7,7 @@ const {
   Program,
   CohortProgram,
   CohortMembership,
-
+  Course,
   Business,
   Quiz,
   QuizQuestion,
@@ -18,14 +18,33 @@ const program = require("../../models/program");
 
 const createModule = async (req, res) => {
   try {
-    const { title, cohort_program_uuid, program_uuid, image, description } =
-      req.body;
+    const {
+      title,
+      course_uuid,
+      cohort_program_uuid,
+      program_uuid,
+      image,
+      description,
+    } = req.body;
 
-    // A module belongs to a programme. program_uuid is still accepted so the
-    // handful of modules authored under a course keep working.
-    const cohort = cohort_program_uuid
-      ? await CohortProgram.findOne({ where: { uuid: cohort_program_uuid } })
+    // A module belongs to a course inside a programme. cohort_program_uuid
+    // and program_uuid are still accepted so callers that predate courses
+    // keep working.
+    const course = course_uuid
+      ? await Course.findOne({ where: { uuid: course_uuid } })
       : null;
+
+    if (course_uuid && !course) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Course not found" });
+    }
+
+    const cohort = course
+      ? await CohortProgram.findByPk(course.cohortProgramId)
+      : cohort_program_uuid
+        ? await CohortProgram.findOne({ where: { uuid: cohort_program_uuid } })
+        : null;
 
     if (cohort_program_uuid && !cohort) {
       return res
@@ -37,15 +56,16 @@ const createModule = async (req, res) => {
       ? await Program.findOne({ where: { uuid: program_uuid } })
       : null;
 
-    if (!cohort && !program) {
+    if (!course && !cohort && !program) {
       return res.status(400).json({
         status: false,
-        message: "A module must be created against a program",
+        message: "A module must be created against a course",
       });
     }
 
     const response = await Module.create({
       title,
+      courseId: course ? course.id : null,
       cohortProgramId: cohort ? cohort.id : null,
       programId: program ? program.id : null,
       image,
@@ -124,21 +144,23 @@ const deleteModule = async (req, res) => {
   }
 };
 
-// The programme the signed-in startup is enrolled in, or null.
-const myCohortProgramId = async (userId) => {
+// Every programme the signed-in startup is enrolled in. Empty when it is on
+// none, or has no business at all.
+const myCohortProgramIds = async (userId) => {
   const business = await Business.findOne({
     where: { userId },
     attributes: ["id"],
   });
 
-  if (!business) return null;
+  if (!business) return [];
 
-  const membership = await CohortMembership.findOne({
+  const memberships = await CohortMembership.findAll({
     where: { businessId: business.id },
     attributes: ["cohortProgramId"],
+    raw: true,
   });
 
-  return membership ? membership.cohortProgramId : null;
+  return memberships.map((row) => row.cohortProgramId);
 };
 
 const getModules = async (req, res) => {
@@ -150,10 +172,23 @@ const getModules = async (req, res) => {
 
     const program_uuid = clean(req.query.program_uuid);
     const cohort_program_uuid = clean(req.query.cohort_program_uuid);
+    const course_uuid = clean(req.query.course_uuid);
 
     const where = {};
 
-    if (cohort_program_uuid) {
+    // A course is the narrowest filter, so it wins when one is given.
+    if (course_uuid) {
+      const course = await Course.findOne({
+        where: { uuid: course_uuid },
+        attributes: ["id"],
+      });
+
+      if (!course) {
+        return successResponse(res, { count: 0, data: [], page: req.page });
+      }
+
+      where.courseId = course.id;
+    } else if (cohort_program_uuid) {
       const cohort = await CohortProgram.findOne({
         where: { uuid: cohort_program_uuid },
         attributes: ["id"],
@@ -177,13 +212,14 @@ const getModules = async (req, res) => {
       where.programId = program.id;
     } else if (req.user && req.user.role === "Enterprenuer") {
       // No filter given: a startup sees the modules of its own programme.
-      const cohortProgramId = await myCohortProgramId(req.user.id);
+      const cohortProgramIds = await myCohortProgramIds(req.user.id);
 
-      if (!cohortProgramId) {
+      if (!cohortProgramIds.length) {
         return successResponse(res, { count: 0, data: [], page: req.page });
       }
 
-      where.cohortProgramId = cohortProgramId;
+      // Modules from every programme the startup is on.
+      where.cohortProgramId = { [Op.in]: cohortProgramIds };
     }
 
     const { count, rows } = await Module.findAndCountAll({

@@ -4,23 +4,60 @@ const { logModuleStart } = require("../../utils/activity_logger");
 const { sendEmail } = require("../../utils/send_email");
 const { response } = require("express");
 
+// A content item inside a lesson. lesson_uuid is the current form;
+// module_uuid still works for the callers that predate lessons, and the item
+// then lands on that module's first lesson.
+// A slide inside a module. lesson_uuid is still accepted from older callers
+// and simply ignored: slides hang off their module directly.
 const createSlide = async (req, res) => {
   try {
-    const { content, title, module_uuid, file, type } = req.body;
-    const module = await Module.findOne({
-      where: {
-        uuid: module_uuid,
-      },
-    });
-    console.log(req.body);
+    const {
+      content,
+      title,
+      module_uuid,
+      file,
+      type,
+      url,
+      durationSeconds,
+      thumbnail,
+      description,
+      downloadable,
+    } = req.body;
+
+    const module = await Module.findOne({ where: { uuid: module_uuid } });
+
+    if (!module) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Module not found" });
+    }
+
+    if (type && !Slide.TYPES.includes(type)) {
+      return res.status(400).json({
+        status: false,
+        message: "Content type must be one of " + Slide.TYPES.join(", "),
+      });
+    }
+
+    const position = await Slide.count({ where: { moduleId: module.id } });
+
     const response = await Slide.create({
       content,
       title,
       file,
-      type,
+      type: type || "text",
+      url: url || null,
+      durationSeconds: Number.isFinite(Number(durationSeconds))
+        ? Number(durationSeconds)
+        : null,
+      thumbnail: thumbnail || null,
+      description: description || null,
+      downloadable: downloadable !== false,
       moduleId: module.id,
+      position,
     });
-    successResponse(res, { ...response });
+
+    successResponse(res, response);
   } catch (error) {
     errorResponse(res, error);
   }

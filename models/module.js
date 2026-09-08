@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "cohortProgramId",
         targetKey: "id",
       });
+      // ...and to the course within that programme. Course.hasMany defines
+      // the courseId attribute; this side is what makes includes work.
+      Module.belongsTo(models.Course, {
+        foreignKey: "courseId",
+        targetKey: "id",
+      });
     }
   }
   Module.init(

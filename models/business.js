@@ -4,11 +4,22 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Business extends Model {
     static associate(models) {
-      Business.belongsTo(models.User);
-      Business.belongsTo(models.BusinessSector);
-      // The programme cohort this startup is in. Owned by the cohort tables,
+      // foreignKey is explicit because the model already declares userId.
+      // Without it Sequelize adds a second attribute, UserId, pointing at the
+      // same column — harmless in a plain join, but a hasMany include builds a
+      // subquery where the two collide as "Duplicate column name 'UserId'".
+      Business.belongsTo(models.User, { foreignKey: "userId" });
+      // Same reason as User above: the model declares businessSectorId.
+      Business.belongsTo(models.BusinessSector, {
+        foreignKey: "businessSectorId",
+      });
+      // The programme cohorts this startup is in. Owned by the cohort tables,
       // so nothing about it lives on this model.
-      Business.hasOne(models.CohortMembership, {
+      //
+      // hasMany, not hasOne: a startup can be on several programmes at once,
+      // and a hasOne would serialize only whichever row came back first,
+      // hiding the rest from every caller that includes it.
+      Business.hasMany(models.CohortMembership, {
         foreignKey: "businessId",
         onDelete: "CASCADE",
       });

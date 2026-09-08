@@ -39,21 +39,24 @@ const setClassAccess = async (courseId, cohortProgramUuids) => {
   }
 };
 
-// The cohort the signed-in user's startup belongs to, or null.
-const myCohortProgramId = async (userId) => {
+// Every cohort the signed-in user's startup belongs to. Empty when it is on
+// none. A startup on several programmes is granted a class if any one of them
+// has been given access.
+const myCohortProgramIds = async (userId) => {
   const business = await Business.findOne({
     where: { userId },
     attributes: ["id"],
   });
 
-  if (!business) return null;
+  if (!business) return [];
 
-  const membership = await CohortMembership.findOne({
+  const memberships = await CohortMembership.findAll({
     where: { businessId: business.id },
     attributes: ["cohortProgramId"],
+    raw: true,
   });
 
-  return membership ? membership.cohortProgramId : null;
+  return memberships.map((row) => row.cohortProgramId);
 };
 
 // The course author, shown as the lead instructor.
@@ -305,14 +308,14 @@ const getAllPrograms = async (req, res) => {
     // to, plus classes nobody restricted. Enforced here rather than in the
     // client so it cannot be bypassed by calling the endpoint directly.
     if (req.user && req.user.role === "Enterprenuer") {
-      const cohortProgramId = await myCohortProgramId(req.user.id);
+      const cohortProgramIds = await myCohortProgramIds(req.user.id);
 
       data = rows.filter((program) => {
         const grants = program.ClassProgramAccesses || [];
         if (grants.length === 0) return true;
-        if (!cohortProgramId) return false;
-        return grants.some(
-          (grant) => grant.cohortProgramId === cohortProgramId,
+        if (!cohortProgramIds.length) return false;
+        return grants.some((grant) =>
+          cohortProgramIds.includes(grant.cohortProgramId),
         );
       });
     }
@@ -422,9 +425,9 @@ const getProgramDetails = async (req, res) => {
     // Opening a class by uuid must respect the same restriction as the list.
     const grants = response.ClassProgramAccesses || [];
     if (req.user && req.user.role === "Enterprenuer" && grants.length > 0) {
-      const cohortProgramId = await myCohortProgramId(req.user.id);
-      const allowed = grants.some(
-        (grant) => grant.cohortProgramId === cohortProgramId,
+      const cohortProgramIds = await myCohortProgramIds(req.user.id);
+      const allowed = grants.some((grant) =>
+        cohortProgramIds.includes(grant.cohortProgramId),
       );
 
       if (!allowed) {
