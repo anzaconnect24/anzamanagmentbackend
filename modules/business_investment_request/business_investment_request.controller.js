@@ -449,7 +449,7 @@ const getReviewersStatus = async (req, res) => {
       limit: limit, //leta ngapi
       order: [["createdAt", "DESC"]],
 
-      where: { role: "Reviewer" },
+      where: { role: "BDA" },
       include: [
         {
           model: BusinessInvestmentRequestReview,

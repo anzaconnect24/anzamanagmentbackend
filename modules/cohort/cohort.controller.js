@@ -1,13 +1,28 @@
 const { errorResponse, successResponse } = require("../../utils/responses");
 const {
   CohortProgram,
+  CohortProgramLead,
   CohortMembership,
+  Notification,
   Business,
   BusinessSector,
   User,
   TrackerSession,
   TrackerEnterprise,
   Milestone,
+  MeActivity,
+  ProgramDocument,
+  ProgramAnnouncement,
+  ProgramReport,
+  MeEmploymentRecord,
+  MeFundingLinkage,
+  MeIndicator,
+  MeIndicatorValue,
+  MeRiskFlag,
+  MePeriodicReport,
+  ProgramDocumentVersion,
+  MeActivityAttendance,
+  MeEvidence,
   CratAssessment,
   CratScoreSnapshot,
   Program,
@@ -19,6 +34,15 @@ const {
   sequelize,
 } = require("../../models");
 const { Op, fn, col } = require("sequelize");
+// Who sees the whole programme grid: Admin and Staff run programme delivery
+// across the portfolio, and the M&E Officer monitors all of it. Finance and
+// Mentor stay scoped to the programmes they are assigned to lead.
+const SEES_ALL_PROGRAMMES = ["Admin", "BDA", "ME"];
+
+// Running a programme's coaching sessions and milestones is a different
+// question from seeing it: that stays with Admin and whoever is assigned to
+// lead the programme, so a coach cannot act on a programme that is not theirs.
+const canAccessCohortProgram=async(req,program)=>req.user.role==="Admin"||!!(await CohortProgramLead.findOne({where:{cohortProgramId:program.id,userId:req.user.id}}));
 
 // Slides read per (startup, module) across a programme's modules. Progress is
 // measured on SlideReader rows, which the slide viewer already writes, so it
@@ -110,6 +134,56 @@ const moduleCompletionsByUser = async (cohortProgramId, userIds = []) => {
 // Programmes use real uuids, so this cannot collide.
 const UNASSIGNED_KEY = "unassigned";
 
+// The jobs a startup supports, taken from the team size it gives on its
+// business information rather than the jobsCreated column — nothing writes
+// that column, so reading it reported zero jobs everywhere.
+//
+// team is free text. Anything that is not a plain number counts as nothing
+// rather than being guessed at, so a prose answer cannot invent headcount.
+// Shared by the per-startup rows and the programme total so a roster always
+// adds up to the figure shown above it.
+const jobsOf = (business) => {
+  const team = Number(business?.team);
+  return Number.isFinite(team) ? team : 0;
+};
+
+// Tell the people running a programme that a coaching session was logged on
+// one of its startups.
+//
+// One row per lead, addressed by userId, because that is what the
+// notifications bell reads (it matches on userId or on the recipient's role).
+// The person who logged the session is skipped — they already know, and being
+// notified of your own action reads as a bug.
+//
+// Never throws: a notification that cannot be written must not undo a coaching
+// session that has already been recorded.
+const notifyProgramLeads = async (program, business, actor) => {
+  try {
+    const leads = await CohortProgramLead.findAll({
+      where: { cohortProgramId: program.id },
+      attributes: ["userId"],
+      raw: true,
+    });
+
+    const recipients = leads
+      .map((row) => row.userId)
+      .filter((userId) => userId && userId !== actor.id);
+
+    if (!recipients.length) return;
+
+    const who = actor.name || "A facilitator";
+
+    await Notification.bulkCreate(
+      recipients.map((userId) => ({
+        userId,
+        message: `${who} logged a coaching session for ${business.name} on ${program.title}`,
+      })),
+    );
+  } catch (error) {
+    console.error("Failed to notify program leads:", error.message);
+  }
+};
+
 // How many startups are in no programme, for the Unassigned tally.
 //
 // Counted the same way the Unassigned roster is listed, so the badge and the
@@ -139,7 +213,10 @@ const countUnassigned = async () => {
 // startups are not in one.
 const getCohortPrograms = async (req, res) => {
   try {
+    const visibleWhere={archivedAt:null};
+    if(!SEES_ALL_PROGRAMMES.includes(req.user.role)){const leads=await CohortProgramLead.findAll({where:{userId:req.user.id},attributes:["cohortProgramId"],raw:true});visibleWhere.id={ [Op.in]:leads.map(x=>x.cohortProgramId) };}
     const programs = await CohortProgram.findAll({
+      where:visibleWhere,
       order: [["title", "ASC"]],
     });
 
@@ -183,12 +260,65 @@ const getCohortPrograms = async (req, res) => {
   }
 };
 
+// The programmes the signed-in startup is enrolled in.
+//
+// Answers "am I on a programme, and which?" in one call, which the sidebar
+// needs to decide what a startup can reach. Returns every membership, not the
+// first — a startup can be on several programmes now.
+//
+// Anyone without a business simply has none, which is not an error: staff and
+// investors hit this through the same shared layout.
+const getMyCohortPrograms = async (req, res) => {
+  try {
+    const business = await Business.findOne({
+      where: { userId: req.user.id },
+      attributes: ["id", "uuid", "name"],
+    });
+
+    if (!business) {
+      return successResponse(res, { business: null, data: [], count: 0 });
+    }
+
+    const memberships = await CohortMembership.findAll({
+      where: { businessId: business.id },
+      attributes: ["status", "reportingStatus", "createdAt"],
+      include: [
+        {
+          model: CohortProgram,
+          required: true,
+          where:{archivedAt:null},
+          attributes: ["uuid", "title", "category", "startDate", "endDate"],
+        },
+      ],
+      // Most recently joined first, matching what the learner-facing routes
+      // resolve "mine" to when they have to pick one.
+      order: [["createdAt", "DESC"]],
+    });
+
+    const data = memberships.map((row) => ({
+      ...row.CohortProgram.toJSON(),
+      membershipStatus: row.status,
+      reportingStatus: row.reportingStatus,
+      enrolledAt: row.createdAt,
+    }));
+
+    successResponse(res, {
+      business: { uuid: business.uuid, name: business.name },
+      data,
+      count: data.length,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 // Public list for the sign-up form, which renders before an account exists.
 // Deliberately minimal: uuid and title only.
 const getPublicCohortPrograms = async (req, res) => {
   try {
     const programs = await CohortProgram.findAll({
       attributes: ["uuid", "title"],
+      where:{archivedAt:null,status:"active"},
       order: [["title", "ASC"]],
     });
 
@@ -203,7 +333,7 @@ const validateDates = (startDate, endDate) =>
 
 const createCohortProgram = async (req, res) => {
   try {
-    const { title, description, image, category, startDate, endDate } =
+    const { title, description, image, category, startDate, endDate,parentProgrammeId,recordType,objective,partner,geographicScope,programmeManagerId,reportingFrequency,targetParticipants,status } =
       req.body;
 
     if (!title || !String(title).trim()) {
@@ -219,6 +349,7 @@ const createCohortProgram = async (req, res) => {
         message: "Program start date cannot be after end date",
       });
     }
+    if(recordType==="cohort"){if(!parentProgrammeId)return res.status(400).json({status:false,message:"A cohort must belong to a programme"});const parent=await CohortProgram.findByPk(parentProgrammeId);if(!parent||parent.recordType!=="programme"||parent.archivedAt)return res.status(400).json({status:false,message:"Parent programme is invalid"});}
 
     const program = await CohortProgram.create({
       title: String(title).trim(),
@@ -227,6 +358,15 @@ const createCohortProgram = async (req, res) => {
       category: category || null,
       startDate: startDate || null,
       endDate: endDate || null,
+      parentProgrammeId:parentProgrammeId||null,
+      recordType:recordType==="cohort"?"cohort":"programme",
+      objective:objective||null,
+      partner:partner||null,
+      geographicScope:geographicScope||null,
+      programmeManagerId:programmeManagerId||null,
+      reportingFrequency:reportingFrequency||"quarterly",
+      targetParticipants:targetParticipants==null?null:Number(targetParticipants),
+      status:status||"active",
     });
 
     successResponse(res, program);
@@ -248,7 +388,7 @@ const updateCohortProgram = async (req, res) => {
       });
     }
 
-    const { title, description, image, category, startDate, endDate } =
+    const { title, description, image, category, startDate, endDate,parentProgrammeId,recordType,objective,partner,geographicScope,programmeManagerId,reportingFrequency,targetParticipants,status } =
       req.body;
 
     const startsAt = startDate === undefined ? program.startDate : startDate;
@@ -269,6 +409,8 @@ const updateCohortProgram = async (req, res) => {
     if (category !== undefined) payload.category = category;
     if (startDate !== undefined) payload.startDate = startDate || null;
     if (endDate !== undefined) payload.endDate = endDate || null;
+    for(const key of ["parentProgrammeId","objective","partner","geographicScope","programmeManagerId","targetParticipants"])if(req.body[key]!==undefined)payload[key]=req.body[key]||null;
+    for(const key of ["recordType","reportingFrequency","status"])if(req.body[key]!==undefined&&req.body[key])payload[key]=req.body[key];
 
     await program.update(payload);
 
@@ -294,14 +436,11 @@ const deleteCohortProgram = async (req, res) => {
       });
     }
 
-    const released = await CohortMembership.count({
-      where: { cohortProgramId: program.id },
-    });
-
-    await program.destroy();
+    const released = await CohortMembership.count({ where: { cohortProgramId: program.id } });
+    await program.update({archivedAt:new Date(),status:"archived"});
 
     successResponse(res, {
-      message: "Program deleted",
+      message: "Program archived",
       releasedStartups: released,
     });
   } catch (error) {
@@ -479,6 +618,9 @@ const getCohortStartups = async (req, res) => {
 
       return {
         ...startup.toJSON(),
+        // Overrides the jobsCreated column spread in above, which is empty on
+        // every record. The Jobs column on this table reads this field.
+        jobsCreated: jobsOf(startup),
         membershipStatus: membership.status || null,
         reportingStatus: membership.reportingStatus || null,
         enrolledAt: membership.createdAt || null,
@@ -681,7 +823,7 @@ const getCohortDashboard = async (req, res) => {
     const businesses = memberIds.length
       ? await Business.findAll({
           attributes: [
-            "jobsCreated",
+            "team",
             "capitalRaised",
             "revenue",
             "previousQuarterRevenue",
@@ -697,7 +839,12 @@ const getCohortDashboard = async (req, res) => {
         return acc + (Number.isFinite(n) ? n : 0);
       }, 0);
 
-    const jobsCreated = sum("jobsCreated");
+    // Summed with the same rule the per-startup Jobs column uses, so the
+    // total always equals the roster beneath it.
+    const jobsCreated = businesses.reduce(
+      (acc, row) => acc + jobsOf(row),
+      0,
+    );
     const capitalMobilised = sum("capitalRaised");
 
     // Programme-level growth compares the totals, not an average of per-startup
@@ -1036,9 +1183,10 @@ const getCohortSessions = async (req, res) => {
         message: "Program not found",
       });
     }
+    if(!await canAccessCohortProgram(req,program))return res.status(403).json({status:false,message:"You are not assigned to this program"});
 
     const sessions = await TrackerSession.findAll({
-      where: { cohortProgramId: program.id },
+      where: { cohortProgramId: program.id,...(req.user.role==="Mentor"?{mentorId:req.user.id}:{}) },
       order: [["sessionDate", "DESC"]],
       include: [
         { model: Business, attributes: ["uuid", "name"] },
@@ -1070,6 +1218,15 @@ const createCohortSession = async (req, res) => {
       actionsAgreed,
       nextSessionDate,
       flag,
+      durationMinutes,
+      mode,
+      topic,
+      challengeIdentified,
+      actionOwner,
+      actionDeadline,
+      actionStatus,
+      notes,
+      evidenceUrl,
     } = req.body;
 
     if (!businessUuid || !sessionDate || !sessionType) {
@@ -1096,6 +1253,7 @@ const createCohortSession = async (req, res) => {
         message: "Program not found",
       });
     }
+    if(!await canAccessCohortProgram(req,program))return res.status(403).json({status:false,message:"You are not assigned to this program"});
 
     const business = await Business.findOne({ where: { uuid: businessUuid } });
 
@@ -1112,6 +1270,7 @@ const createCohortSession = async (req, res) => {
         message: "That startup is not in this program",
       });
     }
+    if(req.user.role==="Mentor"&&membership.assignedMentorId!==req.user.id)return res.status(403).json({status:false,message:"You are not assigned to this startup"});
 
     // Link the grant-tracker enterprise when there is one, but never require
     // it — that requirement is what kept coaching inside the tracker.
@@ -1136,7 +1295,18 @@ const createCohortSession = async (req, res) => {
       actionsAgreed: actionsAgreed || null,
       nextSessionDate: nextSessionDate || null,
       flag: flag || "green",
+      durationMinutes: durationMinutes || null,
+      mode: mode || null,
+      topic: topic || null,
+      challengeIdentified: challengeIdentified || null,
+      actionOwner: actionOwner || null,
+      actionDeadline: actionDeadline || null,
+      actionStatus: actionStatus || "not_started",
+      notes: notes || null,
+      evidenceUrl: evidenceUrl || null,
     });
+
+    await notifyProgramLeads(program, business, req.user);
 
     successResponse(res, session);
   } catch (error) {
@@ -1144,10 +1314,152 @@ const createCohortSession = async (req, res) => {
   }
 };
 
+// A programme is run by a Business Development Advisor, and only by one: the
+// lead is who the cohort is answerable to. Admin assigns them but does not
+// lead programmes itself (it already reaches every programme regardless), and
+// Mentor and Finance were removed - they work on a cohort without running it.
+//
+// This governs both the candidate list and the check on save, so the two
+// cannot disagree.
+const LEAD_ROLES = ["BDA"];
+
+// The staff running a programme, plus everyone eligible to be added, so the
+// picker does not need a second call.
+const getCohortLeads = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const [leads, candidates] = await Promise.all([
+      CohortProgramLead.findAll({
+        where: { cohortProgramId: program.id },
+        include: [
+          {
+            model: User,
+            required: true,
+            attributes: ["uuid", "name", "email", "role", "image"],
+          },
+        ],
+        order: [["createdAt", "ASC"]],
+      }),
+      User.findAll({
+        where: { role: { [Op.in]: LEAD_ROLES } },
+        attributes: ["uuid", "name", "email", "role"],
+        order: [["name", "ASC"]],
+      }),
+    ]);
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      // required: true above drops rows whose user has been deleted, so a
+      // stale assignment cannot render as a blank lead.
+      data: leads.filter((row) => row.User).map((row) => row.User),
+      candidates,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Replace a programme's leads with exactly `userUuids`.
+const setCohortLeads = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const { userUuids } = req.body;
+
+    if (!Array.isArray(userUuids)) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "userUuids must be an array" });
+    }
+
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid },
+      transaction,
+    });
+
+    if (!program) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const wanted = [...new Set(userUuids.filter(Boolean))];
+
+    const users = wanted.length
+      ? await User.findAll({
+          where: { uuid: { [Op.in]: wanted }, role: { [Op.in]: LEAD_ROLES } },
+          attributes: ["id", "uuid"],
+          transaction,
+        })
+      : [];
+
+    // Naming someone who does not exist, or who cannot lead a programme, is a
+    // mistake worth reporting rather than quietly dropping.
+    if (users.length !== wanted.length) {
+      const found = new Set(users.map((row) => row.uuid));
+      await transaction.rollback();
+      return res.status(400).json({
+        status: false,
+        message: `Cannot lead a program: ${wanted
+          .filter((uuid) => !found.has(uuid))
+          .join(", ")}`,
+      });
+    }
+
+    const keepIds = users.map((row) => row.id);
+
+    await CohortProgramLead.destroy({
+      where: {
+        cohortProgramId: program.id,
+        ...(keepIds.length ? { userId: { [Op.notIn]: keepIds } } : {}),
+      },
+      transaction,
+    });
+
+    // Re-adding an existing lead would collide with the unique index, so only
+    // the genuinely new ones are inserted.
+    const existing = await CohortProgramLead.findAll({
+      where: { cohortProgramId: program.id },
+      attributes: ["userId"],
+      transaction,
+      raw: true,
+    });
+    const already = new Set(existing.map((row) => row.userId));
+    const toAdd = keepIds.filter((userId) => !already.has(userId));
+
+    if (toAdd.length) {
+      await CohortProgramLead.bulkCreate(
+        toAdd.map((userId) => ({ cohortProgramId: program.id, userId })),
+        { transaction },
+      );
+    }
+
+    await transaction.commit();
+    successResponse(res, { programUuid: program.uuid, leads: keepIds.length });
+  } catch (error) {
+    await transaction.rollback();
+    errorResponse(res, error);
+  }
+};
+
 const deleteCohortSession = async (req, res) => {
   try {
+    const program=await CohortProgram.findOne({where:{uuid:req.params.uuid}});
+    if(!program)return res.status(404).json({status:false,message:"Program not found"});
+    if(!await canAccessCohortProgram(req,program))return res.status(403).json({status:false,message:"You are not assigned to this program"});
     const session = await TrackerSession.findOne({
-      where: { uuid: req.params.sessionUuid },
+      where: { uuid: req.params.sessionUuid,cohortProgramId:program.id },
     });
 
     if (!session) {
@@ -1156,6 +1468,7 @@ const deleteCohortSession = async (req, res) => {
         message: "Session not found",
       });
     }
+    if(req.user.role==="Mentor"&&session.mentorId!==req.user.id)return res.status(403).json({status:false,message:"You can only manage your own sessions"});
 
     await session.destroy();
     successResponse(res, { message: "Session deleted" });
@@ -1164,7 +1477,1932 @@ const deleteCohortSession = async (req, res) => {
   }
 };
 
+const updateCohortSession=async(req,res)=>{try{const program=await CohortProgram.findOne({where:{uuid:req.params.uuid,archivedAt:null}});if(!program)return res.status(404).json({status:false,message:"Program not found"});if(!await canAccessCohortProgram(req,program))return res.status(403).json({status:false,message:"You are not assigned to this program"});const session=await TrackerSession.findOne({where:{uuid:req.params.sessionUuid,cohortProgramId:program.id}});if(!session)return res.status(404).json({status:false,message:"Session not found"});if(req.user.role==="Mentor"&&session.mentorId!==req.user.id)return res.status(403).json({status:false,message:"You can only update your own sessions"});const fields=["title","sessionDate","sessionType","facilitator","durationMinutes","mode","topic","issuesDiscussed","challengeIdentified","recommendationsGiven","actionsAgreed","actionOwner","actionDeadline","actionStatus","nextSessionDate","notes","evidenceUrl","flag"],payload=Object.fromEntries(fields.filter(k=>req.body[k]!==undefined).map(k=>[k,req.body[k]]));if(payload.actionStatus&&!['not_started','in_progress','completed','overdue','blocked'].includes(payload.actionStatus))return res.status(400).json({status:false,message:"Invalid action status"});await session.update(payload);successResponse(res,session);}catch(error){errorResponse(res,error);}};
+
+const updateParticipation=async(req,res)=>{try{const program=await CohortProgram.findOne({where:{uuid:req.params.uuid,archivedAt:null}}),business=await Business.findOne({where:{uuid:req.params.businessUuid}});if(!program||!business)return res.status(404).json({status:false,message:"Programme participation not found"});const membership=await CohortMembership.findOne({where:{cohortProgramId:program.id,businessId:business.id}});if(!membership)return res.status(404).json({status:false,message:"Programme participation not found"});const fields=["enrollmentDate","completionStatus","completionDate","assignedMentorId","assignedAdvisorId","baselineCompleted","endlineCompleted","attendanceRate","participationNotes"],payload=Object.fromEntries(fields.filter(k=>req.body[k]!==undefined).map(k=>[k,req.body[k]]));if(payload.attendanceRate!==undefined&&(Number(payload.attendanceRate)<0||Number(payload.attendanceRate)>100))return res.status(400).json({status:false,message:"Attendance rate must be between 0 and 100"});if(payload.assignedMentorId&&!await User.findOne({where:{id:payload.assignedMentorId,role:"Mentor"}}))return res.status(400).json({status:false,message:"Assigned mentor is invalid"});if(payload.assignedAdvisorId&&!await User.findOne({where:{id:payload.assignedAdvisorId,role:{[Op.in]:["BDA"]}}}))return res.status(400).json({status:false,message:"Assigned advisor is invalid"});await membership.update(payload);successResponse(res,membership);}catch(error){errorResponse(res,error);}};
+
+
+// ------------------------------------------------------------------ calendar
+//
+// The programme implementation calendar: the workplan turned into dated work.
+// It carries every kind of activity a programme runs - workshops, mentoring
+// sessions, site visits, investor events, reporting deadlines, grant
+// milestones, partner meetings - so a lead reads one schedule rather than
+// four screens.
+//
+// Rows live in me_activities, which already holds attendance and is what
+// MeEvidence points at, so evidence uploaded against an activity shows here
+// without a second link.
+//
+// Access is canAccessCohortProgram: Admin, or the Business Development
+// Advisor assigned to lead this programme.
+
+const CALENDAR_FIELDS = [
+  "name",
+  "activityType",
+  "activityDate",
+  "dueDate",
+  "location",
+  "facilitator",
+  "plannedParticipants",
+  "actualParticipants",
+  "durationMinutes",
+  "budgetPlanned",
+  "cost",
+  "deliverables",
+  "learningObjective",
+  "report",
+  "status",
+];
+
+const pickCalendar = (body) =>
+  Object.fromEntries(
+    CALENDAR_FIELDS.filter((key) => body[key] !== undefined).map((key) => [
+      key,
+      body[key] === "" ? null : body[key],
+    ]),
+  );
+
+// An activity is overdue when the date it was due by has passed and nobody has
+// marked it done. Derived rather than stored, so it cannot go stale in the
+// table while a scheduler is not running.
+const withDerived = (row, evidenceByActivity) => {
+  const data = row.toJSON ? row.toJSON() : row;
+  const due = data.dueDate || data.activityDate;
+  const open = !["completed", "cancelled"].includes(data.status);
+
+  return {
+    ...data,
+    overdue: open && due ? new Date(due) < new Date() : false,
+    participants: (data.attendance || []).length,
+    evidenceCount: evidenceByActivity.get(data.uuid) || 0,
+  };
+};
+
+const getCohortCalendar = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const where = { cohortProgramId: program.id };
+    if (req.query.activityType) where.activityType = req.query.activityType;
+    if (req.query.status) where.status = req.query.status;
+
+    const rows = await MeActivity.findAll({
+      where,
+      include: [
+        { model: User, as: "owner", attributes: ["uuid", "name", "email", "role"] },
+        { model: MeActivityAttendance, as: "attendance", attributes: ["uuid", "businessId", "attended"] },
+      ],
+      order: [["activityDate", "ASC"]],
+    });
+
+    // Evidence is filed against the activity uuid, so it is counted in one
+    // query rather than per row.
+    const evidence = rows.length
+      ? await MeEvidence.findAll({
+          where: {
+            cohortProgramId: program.id,
+            entityType: "activity",
+            entityUuid: { [Op.in]: rows.map((row) => row.uuid) },
+          },
+          attributes: ["entityUuid"],
+          raw: true,
+        })
+      : [];
+
+    const evidenceByActivity = new Map();
+    for (const row of evidence) {
+      evidenceByActivity.set(
+        row.entityUuid,
+        (evidenceByActivity.get(row.entityUuid) || 0) + 1,
+      );
+    }
+
+    const data = rows.map((row) => withDerived(row, evidenceByActivity));
+
+    // The figures a lead checks first: what is late, what is coming, and how
+    // the budget is tracking against it.
+    const summary = {
+      total: data.length,
+      completed: data.filter((row) => row.status === "completed").length,
+      overdue: data.filter((row) => row.overdue).length,
+      upcoming: data.filter(
+        (row) =>
+          !row.overdue &&
+          !["completed", "cancelled"].includes(row.status) &&
+          new Date(row.dueDate || row.activityDate) >= new Date(),
+      ).length,
+      budgetPlanned: data.reduce((sum, row) => sum + Number(row.budgetPlanned || 0), 0),
+      budgetSpent: data.reduce((sum, row) => sum + Number(row.cost || 0), 0),
+    };
+
+    // Everyone who can own a piece of work on this programme.
+    const owners = await User.findAll({
+      where: { role: { [Op.in]: ["Admin", "BDA", "Mentor", "Finance", "ME"] } },
+      attributes: ["uuid", "name", "email", "role"],
+      order: [["name", "ASC"]],
+    });
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      types: MeActivity.TYPES,
+      statuses: MeActivity.STATUSES,
+      owners,
+      summary,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Create or update one entry. The uuid in the path picks the programme; a
+// recordUuid in the path means an edit.
+const saveCohortCalendarEntry = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const payload = pickCalendar(req.body);
+
+    if (payload.activityType && !MeActivity.TYPES.includes(payload.activityType)) {
+      return res.status(400).json({
+        status: false,
+        message: "Activity type must be one of " + MeActivity.TYPES.join(", "),
+      });
+    }
+
+    if (payload.status && !MeActivity.STATUSES.includes(payload.status)) {
+      return res.status(400).json({
+        status: false,
+        message: "Status must be one of " + MeActivity.STATUSES.join(", "),
+      });
+    }
+
+    // The owner arrives as a user uuid; the column holds the id.
+    if (req.body.ownerUuid !== undefined) {
+      if (!req.body.ownerUuid) {
+        payload.ownerId = null;
+      } else {
+        const owner = await User.findOne({
+          where: { uuid: req.body.ownerUuid },
+          attributes: ["id"],
+        });
+
+        if (!owner) {
+          return res
+            .status(400)
+            .json({ status: false, message: "That owner does not exist" });
+        }
+
+        payload.ownerId = owner.id;
+      }
+    }
+
+    if (req.params.recordUuid) {
+      const record = await MeActivity.findOne({
+        where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+      });
+
+      if (!record) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Calendar entry not found" });
+      }
+
+      await record.update(payload);
+      return successResponse(res, record);
+    }
+
+    if (!String(payload.name || "").trim()) {
+      return res
+        .status(400)
+        .json({ status: false, message: "An activity name is required" });
+    }
+
+    if (!payload.activityDate) {
+      return res
+        .status(400)
+        .json({ status: false, message: "An activity date is required" });
+    }
+
+    const created = await MeActivity.create({
+      ...payload,
+      activityType: payload.activityType || "other",
+      cohortProgramId: program.id,
+      createdById: req.user ? req.user.id : null,
+    });
+
+    successResponse(res, created);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const deleteCohortCalendarEntry = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const record = await MeActivity.findOne({
+      where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+    });
+
+    if (!record) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Calendar entry not found" });
+    }
+
+    // Attendance rows hang off the activity and would otherwise be orphaned.
+    await MeActivityAttendance.destroy({ where: { activityId: record.id } });
+    await record.destroy();
+
+    successResponse(res, { uuid: req.params.recordUuid });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------------------ coaching
+//
+// Who is coaching whom on this programme, what they agreed to work on, when
+// they next meet, and what came out of the last visit.
+//
+// Nothing here is a new record: assignment lives on the membership and the
+// visits are TrackerSessions. This reads both as one roster so a Program Lead
+// sees the whole coaching picture without opening each enterprise.
+
+// A coach writes things an enterprise tells them in confidence. On a session
+// marked confidential the private notes are held back from everyone but the
+// coach who wrote them and Admin - the session, its agreed actions and its RAG
+// flag still show, so oversight is never blind, only incurious about the notes.
+const canReadPrivateNotes = (req, session) =>
+  req.user.role === "Admin" || session.mentorId === req.user.id;
+
+const shapeSession = (req, session) => {
+  const data = session.toJSON ? session.toJSON() : session;
+  const withheld = data.confidential && !canReadPrivateNotes(req, data);
+
+  return {
+    uuid: data.uuid,
+    sessionDate: data.sessionDate,
+    nextSessionDate: data.nextSessionDate,
+    sessionType: data.sessionType,
+    topic: data.topic,
+    durationMinutes: data.durationMinutes,
+    issuesDiscussed: data.issuesDiscussed,
+    recommendationsGiven: data.recommendationsGiven,
+    actionsAgreed: data.actionsAgreed,
+    actionOwner: data.actionOwner,
+    actionDeadline: data.actionDeadline,
+    actionStatus: data.actionStatus,
+    flag: data.flag,
+    confidential: !!data.confidential,
+    // Never send what the caller may not read, and say so rather than
+    // returning an empty field that reads as "no notes were taken".
+    notes: withheld ? null : data.notes,
+    notesWithheld: withheld,
+    mentor: data.Mentor
+      ? { uuid: data.Mentor.uuid, name: data.Mentor.name, role: data.Mentor.role }
+      : null,
+  };
+};
+
+const OPEN_ACTION_STATUSES = ["not_started", "in_progress", "overdue", "blocked"];
+
+const getCohortCoaching = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    // Who may read this, and how much of it.
+    //
+    // Admin and the programme lead see every enterprise. The M&E Officer sees
+    // them too - they already hold portfolio-wide M&E access. A coach is
+    // never a programme lead, so they are admitted on the strength of the
+    // enterprises actually assigned to them, and see only those: without this
+    // a mentor could not read or update their own coaching records.
+    const oversees =
+      (await canAccessCohortProgram(req, program)) || req.user.role === "ME";
+
+    const coachedByMe = oversees
+      ? null
+      : await CohortMembership.findAll({
+          where: {
+            cohortProgramId: program.id,
+            assignedMentorId: req.user.id,
+          },
+          attributes: ["id"],
+          raw: true,
+        });
+
+    if (!oversees && !(coachedByMe || []).length) {
+      return res.status(403).json({
+        status: false,
+        message: "You do not coach anyone on this program",
+      });
+    }
+
+    const memberships = await CohortMembership.findAll({
+      where: {
+        cohortProgramId: program.id,
+        ...(oversees ? {} : { assignedMentorId: req.user.id }),
+      },
+      include: [
+        { model: Business, required: true, attributes: ["id", "uuid", "name", "location"] },
+      ],
+    });
+
+    const businessIds = memberships.map((row) => row.businessId);
+
+    const sessions = businessIds.length
+      ? await TrackerSession.findAll({
+          where: {
+            cohortProgramId: program.id,
+            businessId: { [Op.in]: businessIds },
+          },
+          include: [
+            { model: User, as: "Mentor", attributes: ["uuid", "name", "role"] },
+          ],
+          order: [["sessionDate", "DESC"]],
+        })
+      : [];
+
+    // The people who can be put against an enterprise. Mentors coach; the
+    // advisors are the programme's own Business Development Advisors.
+    const [mentors, advisors] = await Promise.all([
+      User.findAll({
+        where: { role: "Mentor" },
+        attributes: ["id", "uuid", "name", "email"],
+        order: [["name", "ASC"]],
+      }),
+      User.findAll({
+        where: { role: "BDA" },
+        attributes: ["id", "uuid", "name", "email"],
+        order: [["name", "ASC"]],
+      }),
+    ]);
+
+    const byId = new Map(
+      [...mentors, ...advisors].map((row) => [row.id, row]),
+    );
+
+    const now = new Date();
+
+    const data = memberships.map((membership) => {
+      const mine = sessions.filter(
+        (row) => row.businessId === membership.businessId,
+      );
+
+      const shaped = mine.map((row) => shapeSession(req, row));
+      const last = shaped[0] || null;
+
+      // The next visit is the soonest future date anyone has set, whether it
+      // was entered as a session date or promised as a follow-up.
+      const upcoming = mine
+        .flatMap((row) => [row.nextSessionDate, row.sessionDate])
+        .filter((value) => value && new Date(value) >= now)
+        .sort((a, b) => new Date(a) - new Date(b));
+
+      const mentor = byId.get(membership.assignedMentorId);
+      const advisor = byId.get(membership.assignedAdvisorId);
+
+      return {
+        business: membership.Business,
+        membershipUuid: membership.uuid,
+        supportAreas: membership.supportAreas || "",
+        mentor: mentor ? { uuid: mentor.uuid, name: mentor.name } : null,
+        advisor: advisor ? { uuid: advisor.uuid, name: advisor.name } : null,
+        sessionCount: shaped.length,
+        nextSession: upcoming[0] || null,
+        lastSession: last,
+        openActions: shaped.filter((row) =>
+          OPEN_ACTION_STATUSES.includes(row.actionStatus),
+        ).length,
+        // The most recent RAG flag a coach set: the progress read.
+        flag: last ? last.flag : null,
+        sessions: shaped,
+      };
+    });
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      mentors: mentors.map((row) => ({ uuid: row.uuid, name: row.name, email: row.email })),
+      advisors: advisors.map((row) => ({ uuid: row.uuid, name: row.name, email: row.email })),
+      summary: {
+        enterprises: data.length,
+        withMentor: data.filter((row) => row.mentor).length,
+        withoutMentor: data.filter((row) => !row.mentor).length,
+        openActions: data.reduce((sum, row) => sum + row.openActions, 0),
+        atRisk: data.filter((row) => row.flag === "red").length,
+      },
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Assign the coach and advisor, and record what they agreed to work on.
+// Assignment is the Program Lead's call, so this is narrower than reading:
+// Admin or the advisor leading this programme, never a coach.
+const setCohortCoaching = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    if (!["Admin", "BDA"].includes(req.user.role)) {
+      return res.status(403).json({
+        status: false,
+        message: "Only the program lead assigns coaches",
+      });
+    }
+
+    const business = await Business.findOne({
+      where: { uuid: req.params.businessUuid },
+    });
+
+    const membership = business
+      ? await CohortMembership.findOne({
+          where: { cohortProgramId: program.id, businessId: business.id },
+        })
+      : null;
+
+    if (!membership) {
+      return res
+        .status(404)
+        .json({ status: false, message: "This startup is not on the program" });
+    }
+
+    const payload = {};
+
+    if (req.body.supportAreas !== undefined) {
+      payload.supportAreas = req.body.supportAreas || null;
+    }
+
+    // Both arrive as user uuids and are checked against the role that may
+    // hold them, so a mentor cannot be filed as the advisor or the reverse.
+    for (const [key, column, role] of [
+      ["mentorUuid", "assignedMentorId", "Mentor"],
+      ["advisorUuid", "assignedAdvisorId", "BDA"],
+    ]) {
+      if (req.body[key] === undefined) continue;
+
+      if (!req.body[key]) {
+        payload[column] = null;
+        continue;
+      }
+
+      const person = await User.findOne({
+        where: { uuid: req.body[key], role },
+        attributes: ["id"],
+      });
+
+      if (!person) {
+        return res.status(400).json({
+          status: false,
+          message:
+            role === "Mentor"
+              ? "That mentor does not exist"
+              : "That business development advisor does not exist",
+        });
+      }
+
+      payload[column] = person.id;
+    }
+
+    await membership.update(payload);
+
+    successResponse(res, {
+      businessUuid: req.params.businessUuid,
+      supportAreas: membership.supportAreas,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ----------------------------------------------------------------- documents
+//
+// The programme document library: agreements, proposals, participant
+// documents, training materials, attendance sheets, photos, reports, invoices,
+// due-diligence packs, grant evidence and contracts.
+//
+// Each document is tagged by programme, and optionally by enterprise,
+// activity and reporting period. Every upload against it is a version, and the
+// document names which one is authoritative - so "which file is current" is
+// answered by the data, not by reading filenames.
+
+const documentsFor = (program, query) => {
+  const where = { cohortProgramId: program.id, archivedAt: null };
+  if (query.category) where.category = query.category;
+  if (query.reportingPeriod) where.reportingPeriod = query.reportingPeriod;
+  return where;
+};
+
+const shapeDocument = (row) => {
+  const data = row.toJSON ? row.toJSON() : row;
+  const versions = (data.versions || []).sort(
+    (a, b) => b.versionNumber - a.versionNumber,
+  );
+
+  return {
+    uuid: data.uuid,
+    title: data.title,
+    description: data.description,
+    category: data.category,
+    reportingPeriod: data.reportingPeriod,
+    business: data.Business
+      ? { uuid: data.Business.uuid, name: data.Business.name }
+      : null,
+    activity: data.activity
+      ? { uuid: data.activity.uuid, name: data.activity.name }
+      : null,
+    uploadedBy: data.uploadedBy ? data.uploadedBy.name : null,
+    createdAt: data.createdAt,
+    versionCount: versions.length,
+    // The authoritative file, called out rather than left to be inferred.
+    current: versions.find((row) => row.id === data.currentVersionId) ||
+      versions[0] ||
+      null,
+    versions,
+  };
+};
+
+const getProgramDocuments = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    // Reading the library is open to the roles that run or report on the
+    // programme; writing is narrower, below.
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const where = documentsFor(program, req.query);
+
+    // Tag filters arrive as uuids and are resolved to ids here, so a caller
+    // never has to know the numeric keys.
+    if (req.query.businessUuid) {
+      const business = await Business.findOne({
+        where: { uuid: req.query.businessUuid },
+        attributes: ["id"],
+      });
+      where.businessId = business ? business.id : -1;
+    }
+
+    if (req.query.activityUuid) {
+      const activity = await MeActivity.findOne({
+        where: { uuid: req.query.activityUuid },
+        attributes: ["id"],
+      });
+      where.activityId = activity ? activity.id : -1;
+    }
+
+    const rows = await ProgramDocument.findAll({
+      where,
+      include: [
+        { model: Business, attributes: ["uuid", "name"] },
+        { model: MeActivity, as: "activity", attributes: ["uuid", "name"] },
+        { model: User, as: "uploadedBy", attributes: ["name"] },
+        {
+          model: ProgramDocumentVersion,
+          as: "versions",
+          include: [{ model: User, as: "uploadedBy", attributes: ["name"] }],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+
+    const data = rows.map(shapeDocument);
+
+    // What the library holds, so a lead can see at a glance whether the
+    // programme's paperwork is actually being filed.
+    const byCategory = {};
+    for (const row of data) {
+      byCategory[row.category] = (byCategory[row.category] || 0) + 1;
+    }
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      categories: ProgramDocument.CATEGORIES,
+      canUpload: await canAccessCohortProgram(req, program),
+      summary: {
+        documents: data.length,
+        versions: data.reduce((sum, row) => sum + row.versionCount, 0),
+        tagged: data.filter((row) => row.business || row.activity).length,
+        byCategory,
+      },
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Resolve the optional tags from uuids. Returns null when one was given but
+// does not exist, so a typo is refused rather than silently filed untagged.
+const resolveTags = async (body) => {
+  const tags = {};
+
+  if (body.businessUuid) {
+    const business = await Business.findOne({
+      where: { uuid: body.businessUuid },
+      attributes: ["id"],
+    });
+    if (!business) return null;
+    tags.businessId = business.id;
+  }
+
+  if (body.activityUuid) {
+    const activity = await MeActivity.findOne({
+      where: { uuid: body.activityUuid },
+      attributes: ["id"],
+    });
+    if (!activity) return null;
+    tags.activityId = activity.id;
+  }
+
+  if (body.reportingPeriod !== undefined) {
+    tags.reportingPeriod = body.reportingPeriod || null;
+  }
+
+  return tags;
+};
+
+// Filing a document, and filing a new version of one, are the same act with
+// the same rules - so one handler does both. A recordUuid in the path means
+// "another version of this"; without it, a new document.
+const saveProgramDocument = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+      transaction,
+    });
+
+    if (!program) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    // Filing is for the people who run the programme, not everyone who reads
+    // it: an M&E Officer or Finance can see the library without adding to it.
+    if (!(await canAccessCohortProgram(req, program))) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    if (!req.file) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "A file is required" });
+    }
+
+    const tags = await resolveTags(req.body);
+
+    if (!tags) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "That enterprise or activity does not exist" });
+    }
+
+    let document;
+
+    if (req.params.recordUuid) {
+      document = await ProgramDocument.findOne({
+        where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+        transaction,
+      });
+
+      if (!document) {
+        await transaction.rollback();
+        return res
+          .status(404)
+          .json({ status: false, message: "Document not found" });
+      }
+    } else {
+      if (!String(req.body.title || "").trim()) {
+        await transaction.rollback();
+        return res
+          .status(400)
+          .json({ status: false, message: "A document title is required" });
+      }
+
+      const category = req.body.category || "other";
+
+      if (!ProgramDocument.CATEGORIES.includes(category)) {
+        await transaction.rollback();
+        return res.status(400).json({
+          status: false,
+          message:
+            "Category must be one of " + ProgramDocument.CATEGORIES.join(", "),
+        });
+      }
+
+      document = await ProgramDocument.create(
+        {
+          ...tags,
+          cohortProgramId: program.id,
+          category,
+          title: String(req.body.title).trim(),
+          description: req.body.description || null,
+          uploadedById: req.user ? req.user.id : null,
+        },
+        { transaction },
+      );
+    }
+
+    // Version numbers run 1, 2, 3 in upload order, counted from what is
+    // already filed rather than from a column that could drift.
+    const previous = await ProgramDocumentVersion.max("versionNumber", {
+      where: { documentId: document.id },
+      transaction,
+    });
+
+    const version = await ProgramDocumentVersion.create(
+      {
+        documentId: document.id,
+        versionNumber: (Number(previous) || 0) + 1,
+        fileName: req.file.originalname,
+        fileUrl: `/files/${req.file.filename}`,
+        storageKey: req.file.filename,
+        mimeType: req.file.mimetype,
+        sizeBytes: req.file.size,
+        notes: req.body.notes || null,
+        uploadedById: req.user ? req.user.id : null,
+      },
+      { transaction },
+    );
+
+    // The newest upload becomes the authoritative one.
+    await document.update({ currentVersionId: version.id }, { transaction });
+
+    await transaction.commit();
+
+    successResponse(res, {
+      uuid: document.uuid,
+      versionNumber: version.versionNumber,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    errorResponse(res, error);
+  }
+};
+
+// Retag or rename. The files are untouched - this is the label, not the
+// contents.
+const updateProgramDocument = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const document = await ProgramDocument.findOne({
+      where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+    });
+
+    if (!document) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Document not found" });
+    }
+
+    const tags = await resolveTags(req.body);
+
+    if (!tags) {
+      return res
+        .status(400)
+        .json({ status: false, message: "That enterprise or activity does not exist" });
+    }
+
+    const payload = { ...tags };
+
+    if (req.body.title !== undefined) {
+      if (!String(req.body.title).trim()) {
+        return res
+          .status(400)
+          .json({ status: false, message: "A document title is required" });
+      }
+      payload.title = String(req.body.title).trim();
+    }
+
+    if (req.body.description !== undefined) {
+      payload.description = req.body.description || null;
+    }
+
+    if (req.body.category !== undefined) {
+      if (!ProgramDocument.CATEGORIES.includes(req.body.category)) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Category must be one of " + ProgramDocument.CATEGORIES.join(", "),
+        });
+      }
+      payload.category = req.body.category;
+    }
+
+    await document.update(payload);
+    successResponse(res, { uuid: document.uuid });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Archived, never destroyed: a contract that has been superseded is still the
+// record of what was agreed at the time.
+const archiveProgramDocument = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const document = await ProgramDocument.findOne({
+      where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+    });
+
+    if (!document) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Document not found" });
+    }
+
+    await document.update({ archivedAt: new Date() });
+    successResponse(res, { uuid: document.uuid });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------------ communications
+//
+// Outbound: what the programme lead sends its cohort - announcements, workshop
+// and milestone reminders, survey and reporting requests.
+//
+// Inbound: what the system raises for staff - activities past their date,
+// milestones waiting on review, participants falling behind, risks escalating.
+//
+// Both land in Notification, which is what the bell already reads. The send
+// itself is recorded in ProgramAnnouncement so a lead can answer "did we
+// remind them?" without counting notification rows.
+
+// Who a send reaches. Returns the owning user of each enterprise, since a
+// notification is read by a person, not a company.
+const recipientsFor = async (program, audience, businessUuids) => {
+  const memberships = await CohortMembership.findAll({
+    where: { cohortProgramId: program.id },
+    attributes: ["businessId"],
+    raw: true,
+  });
+
+  let businessIds = memberships.map((row) => row.businessId);
+
+  if (audience === "selected") {
+    const chosen = await Business.findAll({
+      where: { uuid: { [Op.in]: (businessUuids || []).filter(Boolean) } },
+      attributes: ["id"],
+      raw: true,
+    });
+    const allowed = new Set(businessIds);
+    businessIds = chosen.map((row) => row.id).filter((id) => allowed.has(id));
+  }
+
+  if (audience === "behind") {
+    // "Behind" is not a guess: an open risk flag, or a reporting period whose
+    // due date has passed without being verified.
+    const [risky, late] = await Promise.all([
+      MeRiskFlag.findAll({
+        where: { cohortProgramId: program.id, status: "open" },
+        attributes: ["businessId"],
+        raw: true,
+      }),
+      MePeriodicReport.findAll({
+        where: {
+          cohortProgramId: program.id,
+          dueDate: { [Op.lt]: new Date() },
+          status: { [Op.in]: ["draft", "submitted", "overdue"] },
+        },
+        attributes: ["businessId"],
+        raw: true,
+      }),
+    ]);
+
+    const flagged = new Set([
+      ...risky.map((row) => row.businessId),
+      ...late.map((row) => row.businessId),
+    ]);
+    businessIds = businessIds.filter((id) => flagged.has(id));
+  }
+
+  if (!businessIds.length) return [];
+
+  // A business whose owner account is missing cannot be written to; it is
+  // dropped rather than counted as reached.
+  const businesses = await Business.findAll({
+    where: { id: { [Op.in]: businessIds } },
+    attributes: ["id", "userId"],
+    raw: true,
+  });
+
+  return [...new Set(businesses.map((row) => row.userId).filter(Boolean))];
+};
+
+const sendProgramAnnouncement = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+      transaction,
+    });
+
+    if (!program) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const { messageType = "announcement", audience = "cohort" } = req.body;
+
+    if (!ProgramAnnouncement.TYPES.includes(messageType)) {
+      await transaction.rollback();
+      return res.status(400).json({
+        status: false,
+        message: "Message type must be one of " + ProgramAnnouncement.TYPES.join(", "),
+      });
+    }
+
+    if (!ProgramAnnouncement.AUDIENCES.includes(audience)) {
+      await transaction.rollback();
+      return res.status(400).json({
+        status: false,
+        message: "Audience must be one of " + ProgramAnnouncement.AUDIENCES.join(", "),
+      });
+    }
+
+    if (!String(req.body.subject || "").trim()) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "A subject is required" });
+    }
+
+    if (!String(req.body.body || "").trim()) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "A message is required" });
+    }
+
+    const userIds = await recipientsFor(
+      program,
+      audience,
+      req.body.businessUuids,
+    );
+
+    if (!userIds.length) {
+      await transaction.rollback();
+      return res.status(400).json({
+        status: false,
+        message:
+          audience === "behind"
+            ? "No enterprise on this program is currently behind"
+            : "That selection reaches nobody",
+      });
+    }
+
+    const subject = String(req.body.subject).trim();
+
+    const announcement = await ProgramAnnouncement.create(
+      {
+        cohortProgramId: program.id,
+        messageType,
+        audience,
+        subject,
+        body: String(req.body.body).trim(),
+        recipientCount: userIds.length,
+        sentById: req.user ? req.user.id : null,
+      },
+      { transaction },
+    );
+
+    // One notification per recipient - that is what the bell reads.
+    await Notification.bulkCreate(
+      userIds.map((userId) => ({
+        userId,
+        to: "Enterprenuer",
+        message: `${program.title}: ${subject}`,
+      })),
+      { transaction },
+    );
+
+    await transaction.commit();
+
+    successResponse(res, {
+      uuid: announcement.uuid,
+      recipientCount: userIds.length,
+    });
+  } catch (error) {
+    await transaction.rollback();
+    errorResponse(res, error);
+  }
+};
+
+const getProgramAnnouncements = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const rows = await ProgramAnnouncement.findAll({
+      where: { cohortProgramId: program.id },
+      include: [{ model: User, as: "sentBy", attributes: ["name"] }],
+      order: [["createdAt", "DESC"]],
+      limit: 100,
+    });
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      types: ProgramAnnouncement.TYPES,
+      audiences: ProgramAnnouncement.AUDIENCES,
+      canSend: await canAccessCohortProgram(req, program),
+      count: rows.length,
+      data: rows.map((row) => {
+        const data = row.toJSON();
+        return {
+          uuid: data.uuid,
+          messageType: data.messageType,
+          audience: data.audience,
+          subject: data.subject,
+          body: data.body,
+          recipientCount: data.recipientCount,
+          sentBy: data.sentBy ? data.sentBy.name : null,
+          createdAt: data.createdAt,
+        };
+      }),
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// What the programme needs someone to look at. Read-only: it reports the
+// state, and raising it as notifications is a separate, deliberate act.
+const programAlerts = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const now = new Date();
+
+    const [overdueActivities, reportsAwaitingReview, behind, risks] =
+      await Promise.all([
+        // Calendar work whose date has passed and which nobody has closed.
+        MeActivity.findAll({
+          where: {
+            cohortProgramId: program.id,
+            status: { [Op.notIn]: ["completed", "cancelled"] },
+            [Op.or]: [
+              { dueDate: { [Op.lt]: now } },
+              { dueDate: null, activityDate: { [Op.lt]: now } },
+            ],
+          },
+          attributes: ["uuid", "name", "activityType", "activityDate", "dueDate"],
+          order: [["activityDate", "ASC"]],
+        }),
+
+        // Submitted and waiting on a verifier.
+        MePeriodicReport.findAll({
+          where: { cohortProgramId: program.id, status: "submitted" },
+          attributes: ["uuid", "reportingPeriod", "businessId", "dueDate"],
+        }),
+
+        // Participants falling behind: a reporting period past its due date.
+        MePeriodicReport.findAll({
+          where: {
+            cohortProgramId: program.id,
+            dueDate: { [Op.lt]: now },
+            status: { [Op.in]: ["draft", "overdue"] },
+          },
+          attributes: ["uuid", "reportingPeriod", "businessId", "dueDate"],
+        }),
+
+        // Risks a coach or the scanner has raised and nobody has closed.
+        MeRiskFlag.findAll({
+          where: { cohortProgramId: program.id, status: "open" },
+          attributes: ["uuid", "businessId", "riskLevel", "reasons", "detectedAt"],
+          order: [["detectedAt", "DESC"]],
+        }),
+      ]);
+
+    // Names for anything keyed by business, so the list reads as enterprises
+    // rather than ids.
+    const businessIds = [
+      ...new Set(
+        [...reportsAwaitingReview, ...behind, ...risks]
+          .map((row) => row.businessId)
+          .filter(Boolean),
+      ),
+    ];
+
+    const businesses = businessIds.length
+      ? await Business.findAll({
+          where: { id: { [Op.in]: businessIds } },
+          attributes: ["id", "name"],
+          raw: true,
+        })
+      : [];
+
+    const nameOf = new Map(businesses.map((row) => [row.id, row.name]));
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      summary: {
+        overdueActivities: overdueActivities.length,
+        awaitingReview: reportsAwaitingReview.length,
+        fallingBehind: behind.length,
+        openRisks: risks.length,
+        escalated: risks.filter((row) => row.riskLevel === "critical").length,
+      },
+      overdueActivities: overdueActivities.map((row) => ({
+        uuid: row.uuid,
+        name: row.name,
+        activityType: row.activityType,
+        due: row.dueDate || row.activityDate,
+      })),
+      awaitingReview: reportsAwaitingReview.map((row) => ({
+        uuid: row.uuid,
+        reportingPeriod: row.reportingPeriod,
+        business: nameOf.get(row.businessId) || null,
+      })),
+      fallingBehind: behind.map((row) => ({
+        uuid: row.uuid,
+        reportingPeriod: row.reportingPeriod,
+        business: nameOf.get(row.businessId) || null,
+        due: row.dueDate,
+      })),
+      risks: risks.map((row) => ({
+        uuid: row.uuid,
+        business: nameOf.get(row.businessId) || null,
+        riskLevel: row.riskLevel,
+        reasons: Array.isArray(row.reasons) ? row.reasons : [],
+        detectedAt: row.detectedAt,
+      })),
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Raise the current alerts to the people who run the programme. Deliberate
+// rather than automatic: a lead decides when the team is told, and nothing
+// here writes to enterprises.
+const raiseProgramAlerts = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const now = new Date();
+
+    const [overdue, awaitingReview, behind, escalated] = await Promise.all([
+      MeActivity.count({
+        where: {
+          cohortProgramId: program.id,
+          status: { [Op.notIn]: ["completed", "cancelled"] },
+          [Op.or]: [
+            { dueDate: { [Op.lt]: now } },
+            { dueDate: null, activityDate: { [Op.lt]: now } },
+          ],
+        },
+      }),
+      MePeriodicReport.count({
+        where: { cohortProgramId: program.id, status: "submitted" },
+      }),
+      MePeriodicReport.count({
+        where: {
+          cohortProgramId: program.id,
+          dueDate: { [Op.lt]: now },
+          status: { [Op.in]: ["draft", "overdue"] },
+        },
+      }),
+      MeRiskFlag.count({
+        where: {
+          cohortProgramId: program.id,
+          status: "open",
+          riskLevel: "critical",
+        },
+      }),
+    ]);
+
+    const lines = [];
+    if (overdue) lines.push(`${overdue} overdue activity(s)`);
+    if (awaitingReview) lines.push(`${awaitingReview} report(s) awaiting review`);
+    if (behind) lines.push(`${behind} participant report(s) overdue`);
+    if (escalated) lines.push(`${escalated} escalated risk(s)`);
+
+    if (!lines.length) {
+      return successResponse(res, { raised: 0, message: "Nothing needs attention" });
+    }
+
+    // The programme's own leads, plus whoever asked - staff, never enterprises.
+    const leads = await CohortProgramLead.findAll({
+      where: { cohortProgramId: program.id },
+      attributes: ["userId"],
+      raw: true,
+    });
+
+    const userIds = [
+      ...new Set([
+        ...leads.map((row) => row.userId),
+        req.user ? req.user.id : null,
+      ].filter(Boolean)),
+    ];
+
+    const message = `${program.title} needs attention: ${lines.join(", ")}`;
+
+    await Notification.bulkCreate(
+      userIds.map((userId) => ({ userId, to: "BDA", message })),
+    );
+
+    successResponse(res, { raised: userIds.length, message });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------------------- reports
+//
+// Monthly, quarterly, donor and final reports, built from the programme's own
+// records instead of rebuilt from a spreadsheet each time.
+//
+// composeProgramReport computes the figures and returns them without saving,
+// so a lead can see what a period looks like before committing to it.
+// Saving freezes that snapshot onto the report: a report sent to a donor in
+// October must still say in March what it said in October, which recomputing
+// on read would quietly break.
+
+// A date filter for a column, or nothing when the report covers all time.
+const inPeriod = (column, from, to) => {
+  if (!from && !to) return {};
+  const range = {};
+  if (from) range[Op.gte] = from;
+  if (to) range[Op.lte] = to;
+  return { [column]: range };
+};
+
+const sum = (rows, key) =>
+  rows.reduce((total, row) => total + Number(row[key] || 0), 0);
+
+// Everything a report says about a programme over a period. Pure computation:
+// it reads, and never writes.
+const buildSnapshot = async (program, from, to) => {
+  const memberships = await CohortMembership.findAll({
+    where: { cohortProgramId: program.id },
+    attributes: ["businessId", "status", "completionStatus"],
+    raw: true,
+  });
+
+  const businessIds = [...new Set(memberships.map((row) => row.businessId))];
+
+  const [
+    activities,
+    employment,
+    funding,
+    reports,
+    risks,
+    indicators,
+    grants,
+  ] = await Promise.all([
+    MeActivity.findAll({
+      where: {
+        cohortProgramId: program.id,
+        ...inPeriod("activityDate", from, to),
+      },
+      attributes: [
+        "uuid", "name", "activityType", "activityDate", "status",
+        "actualParticipants", "plannedParticipants", "budgetPlanned", "cost",
+      ],
+      raw: true,
+    }),
+
+    // Demographics are counted from verified employment rows only - the same
+    // bar the M&E headline figures use, so a report cannot claim more than
+    // has been checked.
+    MeEmploymentRecord.findAll({
+      where: {
+        cohortProgramId: program.id,
+        verificationStatus: "verified",
+        ...inPeriod("reportingDate", from, to),
+      },
+      attributes: [
+        "permanentMale", "permanentFemale", "temporaryMale", "temporaryFemale",
+        "youthEmployees", "employeesWithDisabilities", "jobsCreated",
+      ],
+      raw: true,
+    }),
+
+    MeFundingLinkage.findAll({
+      where: {
+        cohortProgramId: program.id,
+        status: "funded",
+        ...inPeriod("receivedDate", from, to),
+      },
+      attributes: ["amountReceived", "currency", "opportunityType", "counterparty"],
+      raw: true,
+    }),
+
+    MePeriodicReport.findAll({
+      where: {
+        cohortProgramId: program.id,
+        ...inPeriod("createdAt", from, to),
+      },
+      attributes: [
+        "uuid", "businessId", "reportingPeriod", "status",
+        "keyMilestone", "biggestChallenge", "supportRequired",
+      ],
+      raw: true,
+    }),
+
+    MeRiskFlag.findAll({
+      where: { cohortProgramId: program.id, status: "open" },
+      attributes: ["uuid", "businessId", "riskLevel", "reasons"],
+      raw: true,
+    }),
+
+    MeIndicator.findAll({
+      where: { cohortProgramId: program.id, archivedAt: null },
+      attributes: ["id", "uuid", "name", "unit", "baseline", "target"],
+      raw: true,
+    }).catch(() => []),
+
+    // Grants hang off the enterprise, not the programme, so they are reached
+    // through the roster.
+    businessIds.length
+      ? Milestone.findAll({
+          where: { businessId: { [Op.in]: businessIds } },
+          attributes: ["uuid", "businessId", "trancheAmount", "disbursed", "status"],
+          raw: true,
+        })
+      : [],
+  ]);
+
+  // Latest verified value per indicator, so "where we are" is one number
+  // rather than a series.
+  const indicatorValues = indicators.length
+    ? await MeIndicatorValue.findAll({
+        where: { indicatorId: { [Op.in]: indicators.map((row) => row.id) } },
+        attributes: ["indicatorId", "value", "periodEnd"],
+        order: [["periodEnd", "DESC"]],
+        raw: true,
+      }).catch(() => [])
+    : [];
+
+  const latestByIndicator = new Map();
+  for (const row of indicatorValues) {
+    if (!latestByIndicator.has(row.indicatorId)) {
+      latestByIndicator.set(row.indicatorId, row.value);
+    }
+  }
+
+  const businesses = businessIds.length
+    ? await Business.findAll({
+        where: { id: { [Op.in]: businessIds } },
+        attributes: ["id", "name", "location"],
+        raw: true,
+      })
+    : [];
+
+  const nameOf = new Map(businesses.map((row) => [row.id, row.name]));
+
+  const completed = activities.filter((row) => row.status === "completed");
+
+  const male = sum(employment, "permanentMale") + sum(employment, "temporaryMale");
+  const female =
+    sum(employment, "permanentFemale") + sum(employment, "temporaryFemale");
+
+  const byType = {};
+  for (const row of completed) {
+    byType[row.activityType] = (byType[row.activityType] || 0) + 1;
+  }
+
+  const budgetPlanned = sum(activities, "budgetPlanned");
+  const budgetSpent = sum(activities, "cost");
+
+  const disbursedGrants = grants.filter((row) => row.disbursed);
+
+  return {
+    period: { from: from || null, to: to || null },
+
+    participants: {
+      enrolled: businessIds.length,
+      active: memberships.filter((row) => row.status === "active").length,
+      completed: memberships.filter((row) => row.completionStatus === "completed").length,
+      // Attendance across the activities that actually ran.
+      reached: sum(completed, "actualParticipants"),
+    },
+
+    activities: {
+      total: activities.length,
+      completed: completed.length,
+      byType,
+    },
+
+    demographics: {
+      male,
+      female,
+      total: male + female,
+      youth: sum(employment, "youthEmployees"),
+      withDisabilities: sum(employment, "employeesWithDisabilities"),
+      jobsCreated: sum(employment, "jobsCreated"),
+      // Said out loud, because a demographic split that only covers verified
+      // rows is not the same as one covering everybody.
+      basis: "Verified employment records only",
+    },
+
+    capital: {
+      raised: sum(funding, "amountReceived"),
+      deals: funding.length,
+      byType: funding.reduce((acc, row) => {
+        acc[row.opportunityType] =
+          (acc[row.opportunityType] || 0) + Number(row.amountReceived || 0);
+        return acc;
+      }, {}),
+    },
+
+    grants: {
+      disbursed: sum(disbursedGrants, "trancheAmount"),
+      tranchesDisbursed: disbursedGrants.length,
+      tranchesOutstanding: grants.length - disbursedGrants.length,
+      committed: sum(grants, "trancheAmount"),
+    },
+
+    budget: {
+      planned: budgetPlanned,
+      spent: budgetSpent,
+      utilisation: budgetPlanned
+        ? Math.round((budgetSpent / budgetPlanned) * 100)
+        : null,
+    },
+
+    indicators: indicators.map((row) => ({
+      name: row.name,
+      unit: row.unit,
+      baseline: row.baseline,
+      target: row.target,
+      current: latestByIndicator.get(row.id) ?? null,
+    })),
+
+    // Verbatim from the enterprises' own reports - the report quotes them
+    // rather than paraphrasing.
+    challenges: reports
+      .filter((row) => String(row.biggestChallenge || "").trim())
+      .slice(0, 10)
+      .map((row) => ({
+        business: nameOf.get(row.businessId) || null,
+        period: row.reportingPeriod,
+        text: row.biggestChallenge,
+      })),
+
+    caseStudies: reports
+      .filter((row) => String(row.keyMilestone || "").trim())
+      .slice(0, 6)
+      .map((row) => ({
+        business: nameOf.get(row.businessId) || null,
+        period: row.reportingPeriod,
+        text: row.keyMilestone,
+      })),
+
+    risks: risks.map((row) => ({
+      business: nameOf.get(row.businessId) || null,
+      riskLevel: row.riskLevel,
+      reasons: Array.isArray(row.reasons) ? row.reasons : [],
+    })),
+
+    reporting: {
+      submitted: reports.filter((row) =>
+        ["submitted", "under_review", "verified"].includes(row.status),
+      ).length,
+      verified: reports.filter((row) => row.status === "verified").length,
+      outstanding: reports.filter((row) =>
+        ["draft", "overdue"].includes(row.status),
+      ).length,
+    },
+  };
+};
+
+// Preview: what a report over this period would say, computed and returned
+// without being stored.
+const composeProgramReport = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const snapshot = await buildSnapshot(
+      program,
+      req.query.from || null,
+      req.query.to || null,
+    );
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      types: ProgramReport.TYPES,
+      sections: ProgramReport.NARRATIVE_SECTIONS,
+      canSave: await canAccessCohortProgram(req, program),
+      snapshot,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const getProgramReports = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    // One report in full when asked for by uuid; otherwise the list, without
+    // the snapshots - they are large and the list only needs the headers.
+    if (req.params.recordUuid) {
+      const report = await ProgramReport.findOne({
+        where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+        include: [{ model: User, as: "createdBy", attributes: ["name"] }],
+      });
+
+      if (!report) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Report not found" });
+      }
+
+      const data = report.toJSON();
+      return successResponse(res, {
+        program: { uuid: program.uuid, title: program.title },
+        sections: ProgramReport.NARRATIVE_SECTIONS,
+        canSave: await canAccessCohortProgram(req, program),
+        report: {
+          ...data,
+          createdBy: data.createdBy ? data.createdBy.name : null,
+        },
+      });
+    }
+
+    const rows = await ProgramReport.findAll({
+      where: { cohortProgramId: program.id },
+      attributes: [
+        "uuid", "reportType", "title", "periodStart", "periodEnd",
+        "status", "generatedAt", "createdAt",
+      ],
+      include: [{ model: User, as: "createdBy", attributes: ["name"] }],
+      order: [["createdAt", "DESC"]],
+    });
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      types: ProgramReport.TYPES,
+      canSave: await canAccessCohortProgram(req, program),
+      count: rows.length,
+      data: rows.map((row) => {
+        const data = row.toJSON();
+        return { ...data, createdBy: data.createdBy ? data.createdBy.name : null };
+      }),
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Save a report: the figures are recomputed once, here, and frozen onto it.
+// A recordUuid edits an existing draft - its narrative changes, its snapshot
+// does not, unless the caller explicitly asks to refresh it.
+const saveProgramReport = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    if (req.params.recordUuid) {
+      const report = await ProgramReport.findOne({
+        where: { uuid: req.params.recordUuid, cohortProgramId: program.id },
+      });
+
+      if (!report) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Report not found" });
+      }
+
+      if (report.status === "final") {
+        return res.status(400).json({
+          status: false,
+          message: "A final report cannot be edited. Duplicate it instead.",
+        });
+      }
+
+      const payload = {};
+      if (req.body.title !== undefined) payload.title = req.body.title;
+      if (req.body.narrative !== undefined) payload.narrative = req.body.narrative;
+
+      if (req.body.status !== undefined) {
+        if (!ProgramReport.STATUSES.includes(req.body.status)) {
+          return res.status(400).json({
+            status: false,
+            message: "Status must be one of " + ProgramReport.STATUSES.join(", "),
+          });
+        }
+        payload.status = req.body.status;
+      }
+
+      // Refreshing is deliberate: a draft can be re-based on today's figures,
+      // but it never happens behind the lead's back.
+      if (req.body.refresh) {
+        payload.snapshot = await buildSnapshot(
+          program,
+          report.periodStart,
+          report.periodEnd,
+        );
+        payload.generatedAt = new Date();
+      }
+
+      await report.update(payload);
+      return successResponse(res, { uuid: report.uuid, status: report.status });
+    }
+
+    const reportType = req.body.reportType || "monthly";
+
+    if (!ProgramReport.TYPES.includes(reportType)) {
+      return res.status(400).json({
+        status: false,
+        message: "Report type must be one of " + ProgramReport.TYPES.join(", "),
+      });
+    }
+
+    if (!String(req.body.title || "").trim()) {
+      return res
+        .status(400)
+        .json({ status: false, message: "A report title is required" });
+    }
+
+    const from = req.body.periodStart || null;
+    const to = req.body.periodEnd || null;
+
+    if (from && to && new Date(from) > new Date(to)) {
+      return res.status(400).json({
+        status: false,
+        message: "The reporting period cannot end before it starts",
+      });
+    }
+
+    const snapshot = await buildSnapshot(program, from, to);
+
+    const report = await ProgramReport.create({
+      cohortProgramId: program.id,
+      reportType,
+      title: String(req.body.title).trim(),
+      periodStart: from,
+      periodEnd: to,
+      status: "draft",
+      snapshot,
+      narrative: req.body.narrative || {},
+      generatedAt: new Date(),
+      createdById: req.user ? req.user.id : null,
+    });
+
+    successResponse(res, { uuid: report.uuid });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
+  composeProgramReport,
+  getProgramReports,
+  saveProgramReport,
+  sendProgramAnnouncement,
+  getProgramAnnouncements,
+  programAlerts,
+  raiseProgramAlerts,
+  getProgramDocuments,
+  saveProgramDocument,
+  updateProgramDocument,
+  archiveProgramDocument,
+  getCohortCoaching,
+  setCohortCoaching,
+  getCohortCalendar,
+  saveCohortCalendarEntry,
+  deleteCohortCalendarEntry,
   UNASSIGNED_KEY,
   getCohortDashboard,
   setStartupStatus,
@@ -1174,6 +3412,7 @@ module.exports = {
   getCohortSessions,
   createCohortSession,
   deleteCohortSession,
+  updateCohortSession,
   getCohortPrograms,
   getPublicCohortPrograms,
   createCohortProgram,
@@ -1181,4 +3420,8 @@ module.exports = {
   deleteCohortProgram,
   getCohortStartups,
   setCohortStartups,
+  getCohortLeads,
+  setCohortLeads,
+  getMyCohortPrograms,
+  updateParticipation,
 };

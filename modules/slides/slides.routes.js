@@ -13,7 +13,7 @@ const { requireRoles } = require("../../utils/authorization");
 
 // Course content is authored by staff. Learners read it but must not be able
 // to write to it — these routes were previously open to any signed-in user.
-const AUTHORS = ["Admin", "Staff", "Reviewer"];
+const AUTHORS = ["Admin", "BDA"];
 
 const router = Router();
 router.post("/", validateJWT, requireRoles(AUTHORS), createSlide);

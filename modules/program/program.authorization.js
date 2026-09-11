@@ -11,11 +11,10 @@ const { Program } = require("../../models");
 //   course      -> learn-and-grow Class Rooms
 const MANAGERS = {
   cohort: ["Admin"],
-  grant: ["Finance", "Admin", "Staff", "Reviewer"],
-  mentorship: ["Mentor", "Admin", "Staff", "Reviewer"],
+  grant: ["Finance", "Admin", "BDA"],
+  mentorship: ["Mentor", "Admin", "BDA"],
   // Staff upload courses and choose which programmes may open them.
-  // "Staff" users are stored as either "Staff" or "Reviewer" (see SignUp).
-  course: ["Admin", "Staff", "Reviewer"],
+  course: ["Admin", "BDA"],
 };
 
 // Deleting is narrower than editing: removing a course destroys its modules

@@ -25,6 +25,9 @@
     "swagger-ui-express": "^5.0.1"
   },
   "scripts": {
+    "test:me": "node modules/me/me.calculations.test.js && node modules/me/me.defer.test.js",
+    "test:me-rbac": "node scripts/me_rbac_smoke.js",
+    "test:me-integration": "node modules/me/me.integration.test.js",
     "seed:crat-catalog": "node scripts/seed_crat_catalog.js",
     "test:tracker-rbac": "bash scripts/tracker_rbac_smoke.sh",
     "seed:programs": "node scripts/seed_programs.js"

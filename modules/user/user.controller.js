@@ -12,6 +12,7 @@ const {
   PitchMaterial,
   CohortProgram,
   CohortMembership,
+  sequelize,
 } = require("../../models");
 const getUrl = require("../../utils/cloudinary_upload");
 
@@ -153,9 +154,26 @@ const pushSMS = async (req, res) => {
   }
 };
 
+// Anyone may sign themselves up as one of these.
+const PUBLIC_SIGNUP_ROLES = ["Enterprenuer", "Investor", "Mentor"];
+
+// Internal staff accounts - Business Development Advisor, Finance Officer,
+// M&E Officer and Admin - are never self-registered. An Admin creates them
+// through createInternalUser below.
+const INTERNAL_ROLES = ["BDA", "Finance", "ME", "Admin"];
+
 const registerUser = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
+
+    // The sign-up form only offers the public roles, but the endpoint is open,
+    // so the restriction is enforced here rather than trusted from the client.
+    if (!PUBLIC_SIGNUP_ROLES.includes(role)) {
+      return res.status(403).json({
+        status: false,
+        message: "This role can only be created by an administrator",
+      });
+    }
     const user = await User.findOne({ where: { email } });
     let image = null;
     if (user) {
@@ -306,6 +324,16 @@ const updateUser = async (req, res) => {
     // Track if role is being changed
     const oldRole = userDetails.role;
     const roleChanged = otherFields.role && otherFields.role !== oldRole;
+
+    // This endpoint is also used for e-mail confirmation and activation, so it
+    // cannot be Admin-only as a whole - but granting a role is Admin-only, or
+    // any signed-in user could promote themselves.
+    if (roleChanged && user.role !== "Admin") {
+      return res.status(403).json({
+        status: false,
+        message: "Only an administrator can change a user role",
+      });
+    }
 
     const response = await userDetails.update(updateData);
 
@@ -482,11 +510,7 @@ const getReviewers = async (req, res) => {
       limit: req.limit, //leta ngapi
       order: [["createdAt", "DESC"]],
       include: [Business],
-      where: {
-        role: {
-          [Op.or]: ["Reviewer", "Staff"],
-        },
-      },
+      where: { role: "BDA" },
     });
 
     successResponse(res, { count, data: rows, page: req.page });
@@ -746,9 +770,24 @@ const getEnterprenuers = async (req, res) => {
         [Op.or]: [
           { name: { [Op.like]: like } },
           { email: { [Op.like]: like } },
-          // search by business name/email using Sequelize.col
-          Sequelize.where(Sequelize.col("Business.name"), { [Op.like]: like }),
-          Sequelize.where(Sequelize.col("Business.email"), { [Op.like]: like }),
+          // Searching the startup's own name or email cannot reference
+          // Business.name from here. The Business include reaches a hasMany
+          // (its cohort memberships), so Sequelize pages this query with a
+          // subquery, and the joined columns are not in scope for the outer
+          // WHERE — it fails with "Unknown column 'Business.name'".
+          //
+          // Selecting the owning userIds instead gives the same result without
+          // depending on the join being flattened.
+          {
+            id: {
+              [Op.in]: sequelize.literal(
+                `(SELECT userId FROM Businesses
+                  WHERE userId IS NOT NULL
+                    AND (name LIKE ${sequelize.escape(like)}
+                      OR email LIKE ${sequelize.escape(like)}))`,
+              ),
+            },
+          },
         ],
       },
     });
@@ -1028,6 +1067,59 @@ const getHash = async (req, res) => {
     errorResponse(res, error);
   }
 };
+// Create an internal staff account. Admin-only: these roles are deliberately
+// absent from the public sign-up form, so this is the only way they exist.
+// The account is created already confirmed - an Admin vouching for it is the
+// confirmation - so the person can sign in as soon as they have the password.
+const createInternalUser = async (req, res) => {
+  try {
+    const { name, email, phone, password, role } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        status: false,
+        message: "Name, email and password are required",
+      });
+    }
+
+    if (!INTERNAL_ROLES.includes(role)) {
+      return res.status(400).json({
+        status: false,
+        message: "Unsupported role for an internal account",
+      });
+    }
+
+    if (String(password).length < 6) {
+      return res.status(400).json({
+        status: false,
+        message: "Password must be at least 6 characters long",
+      });
+    }
+
+    if (await User.findOne({ where: { email } })) {
+      return res.status(403).json({
+        status: false,
+        message: "Email is already registered",
+      });
+    }
+
+    const created = await User.create({
+      name,
+      email,
+      phone,
+      role,
+      password: bcrypt.hashSync(password, 10),
+      emailConfirmed: true,
+    });
+
+    // Never echo the hash back to the client.
+    const { password: _omit, ...safe } = created.toJSON();
+    successResponse(res, safe);
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -1056,4 +1148,5 @@ module.exports = {
   getInterestedInvestors,
   getMyDetails,
   getUsersByRole,
+  createInternalUser,
 };

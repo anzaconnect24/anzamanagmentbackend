@@ -31,7 +31,7 @@ const DEFAULT_DOMAIN_WEIGHTS = {
 const DEFAULT_DOMAIN_ORDER = Object.keys(DEFAULT_DOMAIN_WEIGHTS);
 
 const isAdmin = (role) => role === "Admin";
-const isReviewer = (role) => role === "Staff";
+const isReviewer = (role) => role === "BDA";
 const isEntrepreneur = (role) => role === "Enterprenuer";
 
 const normalizeKey = (value) =>

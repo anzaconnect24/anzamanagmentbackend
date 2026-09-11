@@ -36,7 +36,7 @@ const router = Router();
 router.get(
   "/mentor/overview",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   getMentorOverview,
 );
 router.get(
@@ -48,87 +48,87 @@ router.get(
 router.get(
   "/mentor/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   listMentorWeeklyLogs,
 );
 router.post(
   "/mentor/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer"]),
+  requireRoles(["Mentor", "BDA"]),
   createWeeklyLog,
 );
 
 router.get(
   "/programs/:programUuid/overview",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   getTrackerProgramOverview,
 );
 
 router.get(
   "/enterprises",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   listMentorEnterprises,
 );
 router.post(
   "/enterprises",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   upsertMentorEnterprise,
 );
 router.patch(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   updateMentorEnterprise,
 );
 router.delete(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   deleteMentorEnterprise,
 );
 router.get(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   getMentorEnterpriseDetails,
 );
 router.patch(
   "/enterprises/:uuid/tranche-stages",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   updateMentorEnterpriseTrancheStages,
 );
 router.patch(
   "/enterprises/:uuid/kpis",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance", "Enterprenuer"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance", "Enterprenuer"]),
   updateMentorEnterpriseKpis,
 );
 router.patch(
   "/enterprises/:uuid/budget-document",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance", "Enterprenuer"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance", "Enterprenuer"]),
   updateEnterpriseBudgetDocument,
 );
 router.post(
   "/enterprises/:uuid/sessions",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer"]),
+  requireRoles(["Mentor", "BDA"]),
   createMentorEnterpriseSession,
 );
 router.post(
   "/enterprises/:uuid/weekly-logs",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer"]),
+  requireRoles(["Mentor", "BDA"]),
   createEnterpriseWeeklyLog,
 );
 router.post(
   "/enterprises/:uuid/milestones",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer"]),
+  requireRoles(["Mentor", "BDA"]),
   createEnterpriseMilestone,
 );
 
@@ -150,8 +150,7 @@ router.get(
   validateJWT,
   requireRoles([
     "Mentor",
-    "Staff",
-    "Reviewer",
+    "BDA",
     "Enterprenuer",
     "Admin",
     "Finance",
@@ -173,7 +172,7 @@ router.patch(
 router.patch(
   "/milestones/:uuid/review",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   reviewMilestone,
 );
 

@@ -118,7 +118,7 @@ const getReviewersStatus = async(req, res) =>{
             limit: limit, //leta ngapi
             order:[['createdAt','DESC']],
             distinct:true,
-            where:{role:"Reviewer"},
+            where:{role:"BDA"},
             include:{
                 model: Business,
                 where:{uuid},

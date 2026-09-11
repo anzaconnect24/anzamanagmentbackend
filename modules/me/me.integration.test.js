@@ -1,0 +1,17 @@
+"use strict";
+const assert=require("assert");
+const db=require("../../models");
+const {CohortProgram,CohortMembership,Business,MeAssessment,MePeriodicReport,MeFundingLinkage,MeEmploymentRecord,MeEvidence,MeGoal,MeGoalMilestone,TrackerSession,sequelize}=db;
+(async()=>{const tx=await sequelize.transaction();let checks=0;try{const business=await Business.findOne({transaction:tx});assert(business,"A local business fixture is required");
+const program=await CohortProgram.create({title:`M&E Test ${Date.now()}`,recordType:"programme",status:"active",reportingFrequency:"monthly"},{transaction:tx});assert(program.uuid);checks++;
+const cohort=await CohortProgram.create({title:"Test cohort",recordType:"cohort",parentProgrammeId:program.id,status:"active"},{transaction:tx});assert.equal(cohort.parentProgrammeId,program.id);checks++;
+const membership=await CohortMembership.create({cohortProgramId:program.id,businessId:business.id,enrollmentDate:new Date(),status:"active"},{transaction:tx});assert(membership.uuid);checks++;
+let duplicate=false;try{await CohortMembership.create({cohortProgramId:program.id,businessId:business.id},{transaction:tx})}catch{duplicate=true}assert(duplicate,"Duplicate enrolment must fail");checks++;
+const baseline=await MeAssessment.create({cohortProgramId:program.id,cohortMembershipId:membership.id,businessId:business.id,assessmentType:"baseline",assessmentDate:new Date(),status:"submitted",performanceMetrics:{monthlyRevenue:0}},{transaction:tx});assert.equal(baseline.assessmentType,"baseline");checks++;
+const report=await MePeriodicReport.create({cohortProgramId:program.id,cohortMembershipId:membership.id,businessId:business.id,reportingPeriod:`test-${Date.now()}`,status:"submitted",revenue:0},{transaction:tx});assert.equal(Number(report.revenue),0);checks++;
+const funding=await MeFundingLinkage.create({cohortProgramId:program.id,businessId:business.id,opportunityType:"grant",amountReceived:0,status:"identified"},{transaction:tx});assert(funding.uuid);checks++;
+const period=`test-${Date.now()}`;await MeEmploymentRecord.create({cohortProgramId:program.id,businessId:business.id,reportingPeriod:period,reportingDate:new Date(),jobsCreated:0},{transaction:tx});let duplicateJobs=false;try{await MeEmploymentRecord.create({cohortProgramId:program.id,businessId:business.id,reportingPeriod:period,reportingDate:new Date()},{transaction:tx})}catch{duplicateJobs=true}assert(duplicateJobs,"Duplicate employment period must fail");checks++;
+const goal=await MeGoal.create({cohortProgramId:program.id,businessId:business.id,title:"Test goal"},{transaction:tx});const milestone=await MeGoalMilestone.create({goalId:goal.id,title:"Test milestone",status:"completed"},{transaction:tx});assert.equal(milestone.status,"completed");checks++;
+const evidence=await MeEvidence.create({cohortProgramId:program.id,businessId:business.id,entityType:"periodic_report",entityUuid:report.uuid,evidenceType:"report",fileUrl:"http://localhost/test.pdf",uploadedById:business.userId},{transaction:tx});assert.equal(evidence.verificationStatus,"pending");checks++;
+const session=await TrackerSession.create({cohortProgramId:program.id,mentorId:business.userId,entreprenuerId:business.userId,businessId:business.id,createdById:business.userId,sessionDate:new Date(),sessionType:"coaching",actionStatus:"not_started"},{transaction:tx});assert(session.uuid);checks++;
+console.log(`${checks} transactional M&E integration checks passed`);await tx.rollback();}catch(e){await tx.rollback();throw e;}})().finally(()=>sequelize.close());

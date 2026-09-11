@@ -8,12 +8,31 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class CohortProgram extends Model {
     static associate(models) {
+      CohortProgram.belongsTo(models.CohortProgram, {
+        foreignKey: "parentProgrammeId",
+        as: "Programme",
+      });
+      CohortProgram.hasMany(models.CohortProgram, {
+        foreignKey: "parentProgrammeId",
+        as: "Cohorts",
+      });
       CohortProgram.hasMany(models.CohortMembership, {
         foreignKey: "cohortProgramId",
         sourceKey: "id",
         onDelete: "CASCADE",
       });
+      // The staff running this programme, and who get told about it.
+      CohortProgram.hasMany(models.CohortProgramLead, {
+        foreignKey: "cohortProgramId",
+        sourceKey: "id",
+        onDelete: "CASCADE",
+      });
       // Classes this cohort has been given access to.
+      CohortProgram.hasMany(models.CourseProgramAccess, {
+        foreignKey: "cohortProgramId",
+        onDelete: "cascade",
+      });
+
       CohortProgram.hasMany(models.ClassProgramAccess, {
         foreignKey: "cohortProgramId",
         sourceKey: "id",
@@ -54,6 +73,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATEONLY,
         allowNull: true,
       },
+      parentProgrammeId: { type: DataTypes.INTEGER, allowNull: true },
+      recordType: { type: DataTypes.STRING, allowNull: false, defaultValue: "programme" },
+      objective: { type: DataTypes.TEXT, allowNull: true },
+      partner: { type: DataTypes.STRING, allowNull: true },
+      geographicScope: { type: DataTypes.STRING, allowNull: true },
+      programmeManagerId: { type: DataTypes.INTEGER, allowNull: true },
+      reportingFrequency: { type: DataTypes.STRING, allowNull: false, defaultValue: "quarterly" },
+      targetParticipants: { type: DataTypes.INTEGER, allowNull: true },
+      status: { type: DataTypes.STRING, allowNull: false, defaultValue: "active" },
+      archivedAt: { type: DataTypes.DATE, allowNull: true },
     },
     {
       sequelize,

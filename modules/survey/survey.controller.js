@@ -11,7 +11,8 @@ const {
 } = require("../../models");
 const { Op } = require("sequelize");
 
-const AUTHOR_ROLES = ["Admin", "Staff", "Reviewer", "Finance"];
+// Must stay in step with AUTHORS in survey.routes.js.
+const AUTHOR_ROLES = ["ME"];
 
 // Model getters parse the JSON columns, but a raw query returns them as text.
 const asList = (value) => {

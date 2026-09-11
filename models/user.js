@@ -85,6 +85,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "mentorId",
         as: "trackerSessions",
       });
+
+      // Programmes this person runs.
+      User.hasMany(models.CohortProgramLead, {
+        foreignKey: "userId",
+        onDelete: "CASCADE",
+      });
     }
   }
   User.init(

@@ -23,8 +23,8 @@ const router = Router();
 
 // Workshops, learning enrolments and the resource library, all scoped to one
 // programme. Staff run them; learners read them and join.
-const AUTHORS = ["Admin", "Staff", "Reviewer"];
-const STAFF_VIEWERS = ["Admin", "Staff", "Reviewer", "Finance", "Mentor"];
+const AUTHORS = ["Admin", "BDA"];
+const STAFF_VIEWERS = ["Admin", "BDA", "Finance", "Mentor"];
 
 // --- workshops -----------------------------------------------------------
 // Listing is open to learners: they need to see what is coming and join it.

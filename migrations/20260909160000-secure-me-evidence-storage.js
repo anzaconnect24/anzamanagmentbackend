@@ -1,0 +1,1 @@
+"use strict";module.exports={async up(q,S){const d=await q.describeTable("me_evidence");if(!d.storageKey)await q.addColumn("me_evidence","storageKey",{type:S.STRING,allowNull:true});await q.addIndex("me_evidence",["storageKey"],{name:"me_evidence_storage_key"}).catch(()=>{});},async down(q){await q.removeColumn("me_evidence","storageKey");}};

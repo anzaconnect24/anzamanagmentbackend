@@ -13,8 +13,8 @@ const router = Router();
 
 // Learning content: Course -> Module -> Slides. A module holds its slides
 // directly, so there is no lesson resource here any more.
-const AUTHORS = ["Admin", "Staff", "Reviewer"];
-const STAFF_VIEWERS = ["Admin", "Staff", "Reviewer", "Finance", "Mentor"];
+const AUTHORS = ["Admin", "BDA"];
+const STAFF_VIEWERS = ["Admin", "BDA", "Finance", "Mentor"];
 
 // The outline of a course, with the caller's own progress. The uuid may name
 // a course, a programme, or "mine" for the learner's own programme.

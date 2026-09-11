@@ -26,6 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
+  CourseEnrollment.SOURCES = ["self", "staff"];
+
   CourseEnrollment.STATUSES = [
     "not_started",
     "in_progress",
@@ -46,6 +48,16 @@ module.exports = (sequelize, DataTypes) => {
       businessId: { type: DataTypes.INTEGER, allowNull: false },
       userId: { type: DataTypes.INTEGER, allowNull: true },
       enrolledAt: { type: DataTypes.DATE, allowNull: true },
+      // How the record came about. Only "self" means the startup chose the
+      // course; "staff" covers a roster assignment and the programme-wide
+      // backfill, neither of which is the startup enrolling. Defaults to
+      // "staff" so a path that forgets to set it cannot inflate the
+      // self-enrolment count.
+      enrolledBy: {
+        type: DataTypes.ENUM("self", "staff"),
+        allowNull: false,
+        defaultValue: "staff",
+      },
       startedAt: { type: DataTypes.DATE, allowNull: true },
       completedAt: { type: DataTypes.DATE, allowNull: true },
       dueAt: { type: DataTypes.DATE, allowNull: true },

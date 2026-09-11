@@ -6,7 +6,7 @@ const { requireRoles } = require("../../utils/authorization");
 
 // Quizzes are authored and graded by staff. Learners sit them and read their
 // own attempts — these write routes were open to any signed-in user.
-const AUTHORS = ["Admin", "Staff", "Reviewer"];
+const AUTHORS = ["Admin", "BDA"];
 
 // Quiz CRUD
 router.post(

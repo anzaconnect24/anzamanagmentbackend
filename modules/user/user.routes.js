@@ -1,9 +1,11 @@
 const { Router } = require("express");
 const { validateJWT } = require("../../utils/validateJWT");
+const { requireRoles } = require("../../utils/authorization");
 const router = Router();
 const upload = require("../../utils/upload");
 const {
   registerUser,
+  createInternalUser,
   loginUser,
   deleteUser,
   updateUser,
@@ -34,6 +36,15 @@ const {
 const { getPagination } = require("../../utils/getPagination");
 
 router.post("/register", upload.single("file"), registerUser);
+
+// Business Development Advisor, Finance Officer, M&E Officer and Admin
+// accounts are created here by an Admin - they are not on the sign-up form.
+router.post(
+  "/internal",
+  validateJWT,
+  requireRoles(["Admin"]),
+  createInternalUser,
+);
 router.post("/message", validateJWT, sendMessage);
 router.post("/sms", validateJWT, pushSMS);
 router.post("/reset-password", sendPasswordLink);

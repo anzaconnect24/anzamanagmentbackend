@@ -3,9 +3,11 @@ const {
   Course,
   CourseEnrollment,
   CohortProgram,
+  CourseProgramAccess,
   CohortMembership,
   Business,
   Module,
+  Lesson,
   Slide,
   SlideReader,
   Workshop,
@@ -17,10 +19,61 @@ const {
 } = require("../../models");
 const { Op } = require("sequelize");
 
-const AUTHOR_ROLES = ["Admin", "Staff", "Reviewer"];
+const AUTHOR_ROLES = ["Admin", "BDA"];
 const isAuthor = (req) => AUTHOR_ROLES.includes(req.user && req.user.role);
 
 const findProgramme = (uuid) => CohortProgram.findOne({ where: { uuid } });
+
+// Course ids a programme can show: the ones it owns, plus the ones other
+// programmes own that have been shared with it.
+const sharedCourseIds = async (cohortProgramId) => {
+  const rows = await CourseProgramAccess.findAll({
+    where: { cohortProgramId },
+    attributes: ["courseId"],
+    raw: true,
+  });
+  return rows.map((row) => row.courseId);
+};
+
+// Every programme a course is on: its home, plus the ones it is shared to.
+const courseProgrammeIds = async (courseId, homeId) => {
+  const rows = await CourseProgramAccess.findAll({
+    where: { courseId },
+    attributes: ["cohortProgramId"],
+    raw: true,
+  });
+  return [...new Set([homeId, ...rows.map((row) => row.cohortProgramId)])];
+};
+
+// Replace a course’s shared programmes with exactly the ones named. The
+// home programme is skipped: it is already on the course itself, and
+// storing it twice would double the course in that listing.
+const syncCourseAccess = async (course, programUuids, transaction) => {
+  if (!Array.isArray(programUuids)) return;
+
+  const wanted = await CohortProgram.findAll({
+    where: { uuid: { [Op.in]: programUuids.filter(Boolean) } },
+    attributes: ["id"],
+    raw: true,
+    transaction,
+  });
+
+  const ids = wanted
+    .map((row) => row.id)
+    .filter((id) => id !== course.cohortProgramId);
+
+  await CourseProgramAccess.destroy({
+    where: { courseId: course.id },
+    transaction,
+  });
+
+  if (ids.length) {
+    await CourseProgramAccess.bulkCreate(
+      ids.map((cohortProgramId) => ({ courseId: course.id, cohortProgramId })),
+      { transaction },
+    );
+  }
+};
 
 // The enterprise the signed-in learner belongs to, and every programme it is
 // on. A startup can hold several memberships, so access has to be judged
@@ -205,9 +258,14 @@ const getCourses = async (req, res) => {
         .json({ status: false, message: "Program not found" });
     }
 
+    const shared = await sharedCourseIds(programme.id);
+
     const courses = await Course.findAll({
       where: {
-        cohortProgramId: programme.id,
+        [Op.or]: [
+          { cohortProgramId: programme.id },
+          ...(shared.length ? [{ id: { [Op.in]: shared } }] : []),
+        ],
         archivedAt: null,
         ...(isAuthor(req) ? {} : { status: "published" }),
       },
@@ -250,12 +308,31 @@ const getCourses = async (req, res) => {
         : [],
     ]);
 
+    // Lessons hang off modules, so a card counts them through the modules
+    // that were just gathered rather than with a join of its own.
+    const moduleIds = modules.map((row) => row.id);
+
+    const lessons = moduleIds.length
+      ? await Lesson.findAll({
+          attributes: ["id", "moduleId"],
+          where: { moduleId: { [Op.in]: moduleIds }, archivedAt: null },
+          raw: true,
+        })
+      : [];
+
+    const courseOfModule = new Map(modules.map((row) => [row.id, row.courseId]));
+
     const countBy = (rows, courseId) =>
       rows.filter((row) => row.courseId === courseId).length;
+
+    const countLessons = (courseId) =>
+      lessons.filter((row) => courseOfModule.get(row.moduleId) === courseId)
+        .length;
 
     const data = courses.map((course) =>
       shapeCourse(course, {
         modules: countBy(modules, course.id),
+        lessons: countLessons(course.id),
         workshops: countBy(workshops, course.id),
         resources: countBy(resources, course.id),
         enrolled: countBy(enrollments, course.id),
@@ -351,10 +428,15 @@ const getCourse = async (req, res) => {
     if (!isAuthor(req)) {
       const mine = await myEnterprise(req.user.id);
 
-      // A learner may only open a published course on one of their programmes.
+      // A learner may only open a published course on one of their
+      // programmes - its home programme, or one it has been shared to.
+      const onProgrammes = mine
+        ? await courseProgrammeIds(course.id, course.cohortProgramId)
+        : [];
+
       if (
         !mine ||
-        !mine.cohortProgramIds.includes(course.cohortProgramId) ||
+        !onProgrammes.some((id) => mine.cohortProgramIds.includes(id)) ||
         course.status !== "published"
       ) {
         return res
@@ -399,7 +481,12 @@ const getCourse = async (req, res) => {
       LearningResource.count({
         where: { courseId: course.id, archivedAt: null },
       }),
-      CourseEnrollment.count({ where: { courseId: course.id } }),
+      // Only startups who enrolled themselves. A roster assignment or the
+      // programme-wide backfill creates a learning record without the
+      // startup choosing the course, and must not inflate this.
+      CourseEnrollment.count({
+        where: { courseId: course.id, enrolledBy: "self" },
+      }),
     ]);
 
     const modules = moduleRows.length;
@@ -559,6 +646,9 @@ const createCourse = async (req, res) => {
       createdById: req.user ? req.user.id : null,
     });
 
+    // The other programmes this course is offered to.
+    await syncCourseAccess(course, req.body.programUuids);
+
     // Only a published course is announced — a draft is not open to anyone.
     if (course.status === "published") await announceCourse(course);
 
@@ -601,6 +691,9 @@ const updateCourse = async (req, res) => {
     const wasDraft = course.status !== "published";
 
     await course.update(payload);
+
+    // Absent means "leave the sharing alone"; an empty array clears it.
+    await syncCourseAccess(course, req.body.programUuids);
 
     // A course that has just been published is new to its startups, even
     // though the row itself is not.
@@ -832,6 +925,7 @@ const enroll = async (req, res) => {
         businessId: mine.business.id,
         userId: req.user.id,
         enrolledAt: new Date(),
+        enrolledBy: "self",
       },
     });
 
@@ -891,6 +985,7 @@ const setEnrollments = async (req, res) => {
           businessId: business.id,
           userId: business.userId,
           enrolledAt: new Date(),
+          enrolledBy: "staff",
         },
         transaction,
       });
@@ -1086,7 +1181,68 @@ const getCourseEnrollments = async (req, res) => {
   }
 };
 
+// Every course across every programme, each with the programmes it is
+// visible to. Feeds the admin course library, which is the one place a
+// course is written once and offered to several cohorts.
+const getAllCourses = async (req, res) => {
+  try {
+    const courses = await Course.findAll({
+      where: { archivedAt: null },
+      order: [["createdAt", "DESC"]],
+    });
+
+    const programmes = await CohortProgram.findAll({
+      where: { archivedAt: null },
+      attributes: ["id", "uuid", "title", "category", "image"],
+      raw: true,
+    });
+    const byId = new Map(programmes.map((row) => [row.id, row]));
+
+    const access = await CourseProgramAccess.findAll({
+      attributes: ["courseId", "cohortProgramId"],
+      raw: true,
+    });
+
+    const sharedByCourse = new Map();
+    for (const row of access) {
+      if (!sharedByCourse.has(row.courseId)) sharedByCourse.set(row.courseId, []);
+      sharedByCourse.get(row.courseId).push(row.cohortProgramId);
+    }
+
+    const counts = await Module.findAll({
+      attributes: ["id", "courseId"],
+      raw: true,
+    });
+
+    const data = courses.map((course) => {
+      const ids = [
+        ...new Set([
+          course.cohortProgramId,
+          ...(sharedByCourse.get(course.id) || []),
+        ]),
+      ];
+
+      return {
+        ...shapeCourse(course, {
+          modules: counts.filter((row) => row.courseId === course.id).length,
+        }),
+        home: byId.get(course.cohortProgramId) || null,
+        programs: ids.map((id) => byId.get(id)).filter(Boolean),
+        programUuids: ids
+          .map((id) => byId.get(id))
+          .filter(Boolean)
+          .map((row) => row.uuid),
+      };
+    });
+
+    successResponse(res, { count: data.length, data });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
+  getAllCourses,
   getCourses,
   getNewCourseCount,
   getCourse,

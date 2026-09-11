@@ -14,10 +14,15 @@ const {
 
 const router = Router();
 
-// Surveys a programme runs. Staff write them; the startups on the programme
-// answer the published ones. Both sides are checked in the controller against
-// the caller's own programme, so a startup cannot reach another's survey.
-const AUTHORS = ["Admin", "Staff", "Reviewer", "Finance"];
+// Surveys a programme runs. Surveys are an M&E instrument, so the M&E Officer
+// is the only role that writes them - they moved off Staff with the rest of
+// M&E, and Admin and Finance were removed after that. The startups on the
+// programme answer the published ones. Both sides are checked in the
+// controller against the caller's own programme, so a startup cannot reach
+// another's survey.
+//
+// Must stay in step with AUTHOR_ROLES in survey.controller.js.
+const AUTHORS = ["ME"];
 
 // Listing and opening are shared: what comes back depends on the role.
 router.get("/", validateJWT, getSurveys);

@@ -79,6 +79,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      durationMinutes: DataTypes.INTEGER,
+      mode: DataTypes.STRING,
+      topic: DataTypes.STRING,
+      challengeIdentified: DataTypes.TEXT,
+      actionOwner: DataTypes.STRING,
+      actionDeadline: DataTypes.DATEONLY,
+      actionStatus: { type: DataTypes.STRING, allowNull: false, defaultValue: "not_started" },
+      notes: DataTypes.TEXT,
+      evidenceUrl: DataTypes.TEXT,
       issuesDiscussed: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -94,6 +103,13 @@ module.exports = (sequelize, DataTypes) => {
       nextSessionDate: {
         type: DataTypes.DATEONLY,
         allowNull: true,
+      },
+      // Private notes on a confidential session are withheld from everyone
+      // but the coach who wrote them and Admin.
+      confidential: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       flag: {
         type: DataTypes.ENUM("green", "amber", "red"),

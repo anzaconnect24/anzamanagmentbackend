@@ -44,7 +44,7 @@ const getMentorEnterpriseByUuid = async (mentorId, enterpriseUuid) => {
 };
 
 const isMentorScopedRole = (role) =>
-  ["Mentor", "Staff", "Reviewer"].includes(String(role || ""));
+  ["Mentor", "BDA"].includes(String(role || ""));
 
 const isFinanceOrAdminRole = (role) =>
   ["Admin", "Finance"].includes(String(role || ""));
@@ -202,7 +202,7 @@ const syncEntrepreneurAssignment = async ({ entreprenuerId, mentorId }) => {
 const listMentorEnterprises = async (req, res) => {
   try {
     const role = req.user.role;
-    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
+    const isStaffScopedRole = ["BDA"].includes(role);
     let where = {};
 
     if (isMentorScopedRole(role) && !isStaffScopedRole) {
@@ -617,7 +617,7 @@ const getMentorEnterpriseDetails = async (req, res) => {
   try {
     const role = req.user.role;
     const { uuid } = req.params;
-    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
+    const isStaffScopedRole = ["BDA"].includes(role);
 
     const where = { uuid };
     if (isMentorScopedRole(role) && !isStaffScopedRole) {
@@ -1683,9 +1683,9 @@ const listMilestones = async (req, res) => {
     const role = req.user.role;
     const where = {};
     const { entreprenuer_uuid, business_uuid } = req.query;
-    const isStaffScopedRole = ["Staff", "Reviewer"].includes(role);
+    const isStaffScopedRole = ["BDA"].includes(role);
 
-    if (["Mentor", "Staff", "Reviewer"].includes(role)) {
+    if (["Mentor", "BDA"].includes(role)) {
       where.mentorId = req.user.id;
     } else if (role === "Enterprenuer") {
       where.entreprenuerId = req.user.id;
@@ -1693,7 +1693,7 @@ const listMilestones = async (req, res) => {
 
     if (
       entreprenuer_uuid &&
-      ["Mentor", "Staff", "Reviewer", "Admin", "Finance"].includes(role)
+      ["Mentor", "BDA", "Admin", "Finance"].includes(role)
     ) {
       const entrepreneur = await User.findOne({
         where: { uuid: entreprenuer_uuid },
@@ -1728,7 +1728,7 @@ const listMilestones = async (req, res) => {
 
     if (
       business_uuid &&
-      ["Mentor", "Staff", "Reviewer", "Admin", "Finance"].includes(role)
+      ["Mentor", "BDA", "Admin", "Finance"].includes(role)
     ) {
       const business = await Business.findOne({
         where: { uuid: business_uuid },

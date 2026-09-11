@@ -159,9 +159,11 @@ const SOURCES = {
     label: "Jobs created",
     unit: "jobs",
     automatic: true,
-    describes: "Summed from the jobs figure on each enterprise record.",
-    resolve: async (_programId, roster) =>
-      sumOver(roster.businesses, "jobsCreated"),
+    describes: "Summed from the team size on each enterprise record.",
+    // Same source as the programme portfolio's Jobs figure: the team size on
+    // the business information. The jobsCreated column is never written, so
+    // reading it here would report zero jobs for every programme.
+    resolve: async (_programId, roster) => sumOver(roster.businesses, "team"),
   },
 
   capital_raised: {

@@ -18,7 +18,7 @@ const { Op } = require("sequelize");
 // modules authored while it existed keep their history. Slides have always
 // carried moduleId, so nothing had to move.
 
-const AUTHOR_ROLES = ["Admin", "Staff", "Reviewer"];
+const AUTHOR_ROLES = ["Admin", "BDA"];
 const isAuthor = (req) => AUTHOR_ROLES.includes(req.user && req.user.role);
 
 // The programme the signed-in startup is enrolled in.

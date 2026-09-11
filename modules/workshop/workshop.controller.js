@@ -17,7 +17,7 @@ const {
 } = require("../../models");
 const { Op } = require("sequelize");
 
-const AUTHOR_ROLES = ["Admin", "Staff", "Reviewer"];
+const AUTHOR_ROLES = ["Admin", "BDA"];
 const isAuthor = (req) => AUTHOR_ROLES.includes(req.user && req.user.role);
 
 const findProgramme = (uuid) => CohortProgram.findOne({ where: { uuid } });
@@ -820,6 +820,7 @@ const getEnrollments = async (req, res) => {
           businessId: business.id,
           userId: business.userId,
           enrolledAt: joined ? joined.createdAt : new Date(),
+          enrolledBy: "staff",
         },
       });
     }

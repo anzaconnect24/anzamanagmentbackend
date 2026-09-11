@@ -3,6 +3,7 @@ const { validateJWT } = require("../../utils/validateJWT");
 const { requireRoles } = require("../../utils/authorization");
 const {
   getCourses,
+  getAllCourses,
   getNewCourseCount,
   getCourse,
   createCourse,
@@ -19,13 +20,23 @@ const router = Router();
 
 // Courses inside a programme. Startups enrol in a course; its modules,
 // workshops and resources hang off it.
-const AUTHORS = ["Admin", "Staff", "Reviewer"];
-const STAFF_VIEWERS = ["Admin", "Staff", "Reviewer", "Finance", "Mentor"];
+const AUTHORS = ["Admin", "BDA"];
+const STAFF_VIEWERS = ["Admin", "BDA", "Finance", "Mentor"];
 
 // Listing is shared: staff see every course on the programme including
 // drafts, a learner sees the published ones on their own programme. Passing
 // "mine" as the programme lets a learner ask without knowing its uuid.
 router.get("/programs/:uuid/courses", validateJWT, getCourses);
+
+// The whole course library, across programmes. Admin-only: it is where a
+// course is written once and chosen to appear on several cohorts.
+// Declared before "/courses/:courseUuid" so "courses" is not read as a uuid.
+router.get(
+  "/courses",
+  validateJWT,
+  requireRoles(["Admin"]),
+  getAllCourses,
+);
 router.post(
   "/programs/:uuid/courses",
   validateJWT,

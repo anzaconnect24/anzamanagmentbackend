@@ -13,7 +13,7 @@ const router = Router();
 router.post(
   "/",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   createCoachingSession,
 );
 
@@ -23,8 +23,7 @@ router.get(
   validateJWT,
   requireRoles([
     "Mentor",
-    "Staff",
-    "Reviewer",
+    "BDA",
     "Admin",
     "Finance",
     "Enterprenuer",
@@ -36,7 +35,7 @@ router.get(
 router.delete(
   "/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "Staff", "Reviewer", "Admin", "Finance"]),
+  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
   deleteCoachingSession,
 );
 

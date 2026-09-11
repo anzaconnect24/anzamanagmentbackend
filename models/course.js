@@ -12,6 +12,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "cohortProgramId",
         targetKey: "id",
       });
+      // The extra programmes this course is offered to, on top of its home.
+      Course.hasMany(models.CourseProgramAccess, {
+        foreignKey: "courseId",
+        onDelete: "cascade",
+      });
+
       Course.hasMany(models.Module, {
         foreignKey: "courseId",
         sourceKey: "id",

@@ -121,7 +121,7 @@ const getUserCounts = async (req, res) => {
     });
     const reviewers = await User.count({
       where: {
-        role: "Reviewer",
+        role: "BDA",
       },
     });
     const admins = await User.count({

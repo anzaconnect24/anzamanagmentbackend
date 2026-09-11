@@ -1,0 +1,3 @@
+"use strict";
+const { Model } = require("sequelize");
+module.exports=(sequelize,D)=>{class MeActivityAttendance extends Model{static associate(m){this.belongsTo(m.MeActivity,{foreignKey:"activityId"});this.belongsTo(m.Business,{foreignKey:"businessId"});}} MeActivityAttendance.init({uuid:{type:D.UUID,defaultValue:D.UUIDV4,unique:true},activityId:{type:D.INTEGER,allowNull:false},businessId:{type:D.INTEGER,allowNull:false},attended:{type:D.BOOLEAN,defaultValue:true},completed:{type:D.BOOLEAN,defaultValue:false},satisfactionScore:D.DECIMAL(5,2),preTestScore:D.DECIMAL(5,2),postTestScore:D.DECIMAL(5,2),notes:D.TEXT},{sequelize,modelName:"MeActivityAttendance",tableName:"me_activity_attendance"});return MeActivityAttendance;};
