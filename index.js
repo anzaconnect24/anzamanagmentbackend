@@ -17,6 +17,7 @@ const BusinessReviewRoutes = require("./modules/business_review/business_review.
 const ProgramRoutes = require("./modules/program/program.routes");
 const ProgramApplicationRoutes = require("./modules/programApplication/programApplication.routes");
 const CohortRoutes = require("./modules/cohort/cohort.routes");
+const FeedRoutes = require("./modules/feed/feed.routes");
 const SurveyRoutes = require("./modules/survey/survey.routes");
 const MeRoutes = require("./modules/me/me.routes");
 const LessonRoutes = require("./modules/lesson/lesson.routes");
@@ -190,6 +191,8 @@ app.use("/program-applications", ProgramApplicationRoutes);
 // Startups-by-program. Its own tables, its own routes — independent of the
 // shared /programs resource used by courses, grants and the mentorship tracker.
 app.use("/cohort-programs", CohortRoutes);
+// The live feed: one board for every signed-in user, no role gate.
+app.use("/feed", FeedRoutes);
 app.use("/surveys", SurveyRoutes);
 app.use("/me", MeRoutes);
 app.use("/learning", LessonRoutes);

@@ -28,6 +28,11 @@ const {
   getProgramDocuments,
   sendProgramAnnouncement,
   composeProgramReport,
+  programOverview,
+  getGrantRecipients,
+  getProgramWorkplan,
+  saveProgramWorkplan,
+  setGrantRecipients,
   getProgramReports,
   saveProgramReport,
   getProgramAnnouncements,
@@ -36,6 +41,8 @@ const {
   saveProgramDocument,
   updateProgramDocument,
   archiveProgramDocument,
+  saveProgramDocumentFolder,
+  deleteProgramDocumentFolder,
   setCohortCoaching,
   saveCohortCalendarEntry,
   deleteCohortCalendarEntry,
@@ -118,6 +125,46 @@ router.delete(
   deleteCohortSession,
 );
 router.patch("/:uuid/sessions/:sessionUuid",validateJWT,requireRoles(COACH_ROLES),updateCohortSession);
+
+// The workplan: outputs, their activities, and when each runs. Saved whole,
+// because that is how a plan is edited.
+router.get(
+  "/:uuid/workplan",
+  validateJWT,
+  requireRoles(DOCUMENT_ROLES),
+  getProgramWorkplan,
+);
+router.put(
+  "/:uuid/workplan",
+  validateJWT,
+  requireRoles(CALENDAR_ROLES),
+  saveProgramWorkplan,
+);
+
+// Who on this programme receives a grant. The Program Lead decides, which is
+// where the grant process now begins; the Finance Officer disburses against
+// the roster they set.
+router.get(
+  "/:uuid/grant-recipients",
+  validateJWT,
+  requireRoles(DOCUMENT_ROLES),
+  getGrantRecipients,
+);
+router.put(
+  "/:uuid/grant-recipients",
+  validateJWT,
+  requireRoles(CALENDAR_ROLES),
+  setGrantRecipients,
+);
+
+// The programme dashboard: the lead’s landing screen. Composes the same
+// figures the reports and the alert board use, with traffic lights over them.
+router.get(
+  "/:uuid/overview",
+  validateJWT,
+  requireRoles(DOCUMENT_ROLES),
+  programOverview,
+);
 
 // Programme reports. "compose" computes a period without saving, so a lead
 // can see it before committing; saving freezes those figures onto the report.
@@ -214,6 +261,28 @@ router.delete(
   validateJWT,
   requireRoles(CALENDAR_ROLES),
   archiveProgramDocument,
+);
+
+// Folders within the library. They are read back with the documents
+// themselves, so there is no GET here — only the filing itself, which is
+// limited to the people who run the programme.
+router.post(
+  "/:uuid/document-folders",
+  validateJWT,
+  requireRoles(CALENDAR_ROLES),
+  saveProgramDocumentFolder,
+);
+router.patch(
+  "/:uuid/document-folders/:recordUuid",
+  validateJWT,
+  requireRoles(CALENDAR_ROLES),
+  saveProgramDocumentFolder,
+);
+router.delete(
+  "/:uuid/document-folders/:recordUuid",
+  validateJWT,
+  requireRoles(CALENDAR_ROLES),
+  deleteProgramDocumentFolder,
 );
 
 // Who coaches whom, what they agreed to work on, and how it is going.

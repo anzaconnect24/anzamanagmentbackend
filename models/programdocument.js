@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "cohortProgramId",
       });
       ProgramDocument.belongsTo(models.Business, { foreignKey: "businessId" });
+      ProgramDocument.belongsTo(models.ProgramDocumentFolder, {
+        foreignKey: "folderId",
+        as: "folder",
+      });
       ProgramDocument.belongsTo(models.MeActivity, {
         foreignKey: "activityId",
         as: "activity",
@@ -67,6 +71,7 @@ module.exports = (sequelize, DataTypes) => {
       cohortProgramId: { type: DataTypes.INTEGER, allowNull: false },
       businessId: DataTypes.INTEGER,
       activityId: DataTypes.INTEGER,
+      folderId: DataTypes.INTEGER,
       reportingPeriod: DataTypes.STRING,
       category: { type: DataTypes.STRING, allowNull: false },
       title: { type: DataTypes.STRING, allowNull: false },

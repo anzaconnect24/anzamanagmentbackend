@@ -14,6 +14,8 @@ const {
   ProgramDocument,
   ProgramAnnouncement,
   ProgramReport,
+  ProgramWorkplanOutput,
+  ProgramWorkplanActivity,
   MeEmploymentRecord,
   MeFundingLinkage,
   MeIndicator,
@@ -21,6 +23,7 @@ const {
   MeRiskFlag,
   MePeriodicReport,
   ProgramDocumentVersion,
+  ProgramDocumentFolder,
   MeActivityAttendance,
   MeEvidence,
   CratAssessment,
@@ -2077,6 +2080,15 @@ const shapeDocument = (row) => {
     description: data.description,
     category: data.category,
     reportingPeriod: data.reportingPeriod,
+    // Null means "Unfiled", which the screen says out loud rather than
+    // leaving as a blank.
+    folder: data.folder
+      ? {
+          uuid: data.folder.uuid,
+          name: data.folder.name,
+          colour: data.folder.colour,
+        }
+      : null,
     business: data.Business
       ? { uuid: data.Business.uuid, name: data.Business.name }
       : null,
@@ -2138,9 +2150,26 @@ const getProgramDocuments = async (req, res) => {
       where.activityId = activity ? activity.id : -1;
     }
 
+    // "none" asks for the unfiled documents, which is a real question a lead
+    // asks — what has been dropped in without being put anywhere.
+    if (req.query.folderUuid === "none") {
+      where.folderId = null;
+    } else if (req.query.folderUuid) {
+      const folder = await ProgramDocumentFolder.findOne({
+        where: { uuid: req.query.folderUuid, cohortProgramId: program.id },
+        attributes: ["id"],
+      });
+      where.folderId = folder ? folder.id : -1;
+    }
+
     const rows = await ProgramDocument.findAll({
       where,
       include: [
+        {
+          model: ProgramDocumentFolder,
+          as: "folder",
+          attributes: ["uuid", "name", "colour"],
+        },
         { model: Business, attributes: ["uuid", "name"] },
         { model: MeActivity, as: "activity", attributes: ["uuid", "name"] },
         { model: User, as: "uploadedBy", attributes: ["name"] },
@@ -2162,9 +2191,43 @@ const getProgramDocuments = async (req, res) => {
       byCategory[row.category] = (byCategory[row.category] || 0) + 1;
     }
 
+    // The folders, with how much each holds. Counted over the whole library
+    // rather than the filtered view, so opening one folder does not make the
+    // others look empty.
+    const folders = await ProgramDocumentFolder.findAll({
+      where: { cohortProgramId: program.id, archivedAt: null },
+      order: [
+        ["position", "ASC"],
+        ["name", "ASC"],
+      ],
+    });
+
+    const filed = await ProgramDocument.findAll({
+      where: { cohortProgramId: program.id, archivedAt: null },
+      attributes: ["folderId"],
+      raw: true,
+    });
+
+    const perFolder = {};
+    let unfiled = 0;
+
+    for (const row of filed) {
+      if (row.folderId === null) unfiled += 1;
+      else perFolder[row.folderId] = (perFolder[row.folderId] || 0) + 1;
+    }
+
     successResponse(res, {
       program: { uuid: program.uuid, title: program.title },
       categories: ProgramDocument.CATEGORIES,
+      colours: ProgramDocumentFolder.COLOURS,
+      folders: folders.map((folder) => ({
+        uuid: folder.uuid,
+        name: folder.name,
+        colour: folder.colour,
+        position: folder.position,
+        documents: perFolder[folder.id] || 0,
+      })),
+      unfiled,
       canUpload: await canAccessCohortProgram(req, program),
       summary: {
         documents: data.length,
@@ -2182,8 +2245,27 @@ const getProgramDocuments = async (req, res) => {
 
 // Resolve the optional tags from uuids. Returns null when one was given but
 // does not exist, so a typo is refused rather than silently filed untagged.
-const resolveTags = async (body) => {
+const resolveTags = async (body, program) => {
   const tags = {};
+
+  // An empty folderUuid is meaningful — it moves the document back to
+  // Unfiled — so the field is read for presence, not for truthiness.
+  if (body.folderUuid !== undefined) {
+    if (!body.folderUuid) {
+      tags.folderId = null;
+    } else {
+      const folder = await ProgramDocumentFolder.findOne({
+        where: {
+          uuid: body.folderUuid,
+          cohortProgramId: program.id,
+          archivedAt: null,
+        },
+        attributes: ["id"],
+      });
+      if (!folder) return null;
+      tags.folderId = folder.id;
+    }
+  }
 
   if (body.businessUuid) {
     const business = await Business.findOne({
@@ -2245,13 +2327,13 @@ const saveProgramDocument = async (req, res) => {
         .json({ status: false, message: "A file is required" });
     }
 
-    const tags = await resolveTags(req.body);
+    const tags = await resolveTags(req.body, program);
 
     if (!tags) {
       await transaction.rollback();
       return res
         .status(400)
-        .json({ status: false, message: "That enterprise or activity does not exist" });
+        .json({ status: false, message: "That folder, enterprise or activity does not exist" });
     }
 
     let document;
@@ -2367,12 +2449,12 @@ const updateProgramDocument = async (req, res) => {
         .json({ status: false, message: "Document not found" });
     }
 
-    const tags = await resolveTags(req.body);
+    const tags = await resolveTags(req.body, program);
 
     if (!tags) {
       return res
         .status(400)
-        .json({ status: false, message: "That enterprise or activity does not exist" });
+        .json({ status: false, message: "That folder, enterprise or activity does not exist" });
     }
 
     const payload = { ...tags };
@@ -2441,6 +2523,215 @@ const archiveProgramDocument = async (req, res) => {
     await document.update({ archivedAt: new Date() });
     successResponse(res, { uuid: document.uuid });
   } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------- document folders
+//
+// Folders are the programme's own filing, over and above the category tags.
+// They are created by whoever runs the programme, named freely, and carry a
+// colour so a library of them can be read at a glance.
+
+// The next unused colour, so two folders made in a row never look alike. Once
+// the palette is exhausted it wraps — ten distinguishable folders is already
+// more than a screen reads comfortably.
+const nextColour = (taken) => {
+  const free = ProgramDocumentFolder.COLOURS.find(
+    (colour) => !taken.includes(colour),
+  );
+  return (
+    free ||
+    ProgramDocumentFolder.COLOURS[taken.length % ProgramDocumentFolder.COLOURS.length]
+  );
+};
+
+// Creating a folder and renaming or recolouring one are the same act with the
+// same rules, so one handler does both: a recordUuid in the path means "this
+// folder", without it means a new one.
+const saveProgramDocumentFolder = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    // Filing structure is for the people who run the programme; M&E and
+    // Finance read the library without rearranging it.
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    if (
+      req.body.colour &&
+      !ProgramDocumentFolder.COLOURS.includes(req.body.colour)
+    ) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Colour must be one of " + ProgramDocumentFolder.COLOURS.join(", "),
+      });
+    }
+
+    const siblings = await ProgramDocumentFolder.findAll({
+      where: { cohortProgramId: program.id, archivedAt: null },
+      attributes: ["id", "uuid", "name", "colour"],
+      raw: true,
+    });
+
+    const name = String(req.body.name || "").trim();
+
+    if (req.params.recordUuid) {
+      const folder = await ProgramDocumentFolder.findOne({
+        where: {
+          uuid: req.params.recordUuid,
+          cohortProgramId: program.id,
+          archivedAt: null,
+        },
+      });
+
+      if (!folder) {
+        return res
+          .status(404)
+          .json({ status: false, message: "Folder not found" });
+      }
+
+      const payload = {};
+
+      if (req.body.name !== undefined) {
+        if (!name) {
+          return res
+            .status(400)
+            .json({ status: false, message: "A folder name is required" });
+        }
+
+        const clash = siblings.find(
+          (row) =>
+            row.uuid !== folder.uuid &&
+            row.name.toLowerCase() === name.toLowerCase(),
+        );
+
+        if (clash) {
+          return res.status(400).json({
+            status: false,
+            message: `This program already has a folder called "${name}"`,
+          });
+        }
+
+        payload.name = name;
+      }
+
+      if (req.body.colour !== undefined) payload.colour = req.body.colour;
+      if (req.body.position !== undefined) {
+        payload.position = Number(req.body.position) || 0;
+      }
+
+      await folder.update(payload);
+
+      return successResponse(res, {
+        uuid: folder.uuid,
+        name: folder.name,
+        colour: folder.colour,
+      });
+    }
+
+    if (!name) {
+      return res
+        .status(400)
+        .json({ status: false, message: "A folder name is required" });
+    }
+
+    // Two folders with the same name in one library is a filing mistake, not
+    // a preference — refuse it rather than let documents scatter between them.
+    if (siblings.some((row) => row.name.toLowerCase() === name.toLowerCase())) {
+      return res.status(400).json({
+        status: false,
+        message: `This program already has a folder called "${name}"`,
+      });
+    }
+
+    const folder = await ProgramDocumentFolder.create({
+      cohortProgramId: program.id,
+      name,
+      colour:
+        req.body.colour || nextColour(siblings.map((row) => row.colour)),
+      position: siblings.length,
+      createdById: req.user ? req.user.id : null,
+    });
+
+    successResponse(res, {
+      uuid: folder.uuid,
+      name: folder.name,
+      colour: folder.colour,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Removing a folder removes the folder, never the documents: they return to
+// Unfiled, where they can be put somewhere else. A folder is a label.
+const deleteProgramDocumentFolder = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+      transaction,
+    });
+
+    if (!program) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const folder = await ProgramDocumentFolder.findOne({
+      where: {
+        uuid: req.params.recordUuid,
+        cohortProgramId: program.id,
+        archivedAt: null,
+      },
+      transaction,
+    });
+
+    if (!folder) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Folder not found" });
+    }
+
+    // Set loose explicitly: the folder is archived rather than deleted, so the
+    // database's ON DELETE SET NULL never fires for it.
+    const [released] = await ProgramDocument.update(
+      { folderId: null },
+      { where: { folderId: folder.id }, transaction },
+    );
+
+    await folder.update({ archivedAt: new Date() }, { transaction });
+
+    await transaction.commit();
+
+    successResponse(res, { uuid: folder.uuid, released });
+  } catch (error) {
+    await transaction.rollback();
     errorResponse(res, error);
   }
 };
@@ -3386,7 +3677,987 @@ const saveProgramReport = async (req, res) => {
   }
 };
 
+
+// ---------------------------------------------------------------- lead view
+//
+// The programme dashboard: the first screen a Program Lead opens, answering
+// two questions - are we on track, and what needs attention today.
+//
+// It composes what the other endpoints already compute rather than counting
+// again: buildSnapshot for the figures, the same definitions of overdue and
+// falling behind that the alert board uses. One place decides what a number
+// means, so the dashboard and the report can never disagree.
+
+// Traffic lights. The thresholds are written here, once, and returned with
+// the payload so the screen can show why something is amber rather than
+// leaving a lead to guess at the rule.
+const GREEN = "on_track";
+const AMBER = "attention";
+const RED = "critical";
+
+// Higher is better: completion, attendance, KPI achievement.
+const upIsGood = (value, { amber, red }) => {
+  if (value === null || value === undefined) return null;
+  if (value < red) return RED;
+  if (value < amber) return AMBER;
+  return GREEN;
+};
+
+// Lower is better: overdue counts, open risks.
+const downIsGood = (value, { amber, red }) => {
+  if (value === null || value === undefined) return null;
+  if (value >= red) return RED;
+  if (value >= amber) return AMBER;
+  return GREEN;
+};
+
+// Budget is a band: well under is as much a signal as over.
+const budgetLight = (utilisation) => {
+  if (utilisation === null || utilisation === undefined) return null;
+  if (utilisation > 110) return RED;
+  if (utilisation > 100 || utilisation < 50) return AMBER;
+  return GREEN;
+};
+
+const THRESHOLDS = {
+  cohortProgress: { amber: 60, red: 30, direction: "up", unit: "% completed" },
+  attendance: { amber: 70, red: 50, direction: "up", unit: "% of expected" },
+  kpiAchievement: { amber: 70, red: 40, direction: "up", unit: "% of target" },
+  diagnostic: { amber: 60, red: 30, direction: "up", unit: "% with an endline" },
+  budget: { amber: 100, red: 110, direction: "band", unit: "% utilisation" },
+  overdueReports: { amber: 1, red: 5, direction: "down", unit: "reports" },
+  pendingApprovals: { amber: 3, red: 10, direction: "down", unit: "items" },
+  risks: { amber: 1, red: 3, direction: "down", unit: "open flags" },
+  overdueActivities: { amber: 1, red: 5, direction: "down", unit: "activities" },
+};
+
+// The worst light wins: a programme with one critical area is not "on track"
+// because everything else is green.
+const overallOf = (lights) => {
+  const values = lights.filter(Boolean);
+  if (values.includes(RED)) return RED;
+  if (values.includes(AMBER)) return AMBER;
+  return values.length ? GREEN : null;
+};
+
+const programOverview = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    // The whole programme, not a reporting window: a dashboard answers "where
+    // are we now", which is cumulative.
+    const snapshot = await buildSnapshot(program, null, null);
+
+    const now = new Date();
+
+    const memberships = await CohortMembership.findAll({
+      where: { cohortProgramId: program.id },
+      attributes: ["businessId", "status", "attendanceRate", "baselineCompleted", "endlineCompleted"],
+      raw: true,
+    });
+
+    const businessIds = [...new Set(memberships.map((row) => row.businessId))];
+
+    const [upcoming, overdueActivities, evidencePending, milestones, risks] =
+      await Promise.all([
+        MeActivity.findAll({
+          where: {
+            cohortProgramId: program.id,
+            status: { [Op.notIn]: ["completed", "cancelled"] },
+            activityDate: { [Op.gte]: now },
+          },
+          attributes: ["uuid", "name", "activityType", "activityDate", "dueDate"],
+          order: [["activityDate", "ASC"]],
+          limit: 6,
+        }),
+
+        MeActivity.count({
+          where: {
+            cohortProgramId: program.id,
+            status: { [Op.notIn]: ["completed", "cancelled"] },
+            [Op.or]: [
+              { dueDate: { [Op.lt]: now } },
+              { dueDate: null, activityDate: { [Op.lt]: now } },
+            ],
+          },
+        }),
+
+        MeEvidence.count({
+          where: { cohortProgramId: program.id, verificationStatus: "pending" },
+        }).catch(() => 0),
+
+        businessIds.length
+          ? Milestone.findAll({
+              where: { businessId: { [Op.in]: businessIds } },
+              attributes: ["uuid", "businessId", "status", "disbursed", "verificationRequested", "trancheAmount"],
+              raw: true,
+            })
+          : [],
+
+        MeRiskFlag.findAll({
+          where: { cohortProgramId: program.id, status: "open" },
+          attributes: ["uuid", "businessId", "riskLevel", "reasons"],
+          raw: true,
+        }),
+      ]);
+
+    const businesses = businessIds.length
+      ? await Business.findAll({
+          where: { id: { [Op.in]: businessIds } },
+          attributes: ["id", "name"],
+          raw: true,
+        })
+      : [];
+
+    const nameOf = new Map(businesses.map((row) => [row.id, row.name]));
+
+    // --- the measures the lights are read from -------------------------
+    const enrolled = memberships.length;
+
+    // A measure with nothing behind it yet is not zero - it is unmeasured,
+    // and lighting it red would have every new programme open as critical.
+    // Each of these returns null until there is something to judge, and the
+    // screen says "not yet measured" rather than showing a false alarm.
+    const programmeEnded =
+      program.endDate && new Date(program.endDate) < now;
+
+    const cohortProgress =
+      !enrolled || (!snapshot.participants.completed && !programmeEnded)
+        ? null
+        : Math.round((snapshot.participants.completed / enrolled) * 100);
+
+    // Attendance as recorded per enterprise on the roster, averaged over the
+    // ones that actually have a figure.
+    const attendances = memberships
+      .map((row) => Number(row.attendanceRate))
+      .filter((value) => Number.isFinite(value));
+
+    // Nothing has run yet, so there is no attendance to report on.
+    const attendance =
+      !attendances.length || !snapshot.activities.completed
+        ? null
+        : Math.round(attendances.reduce((a, b) => a + b, 0) / attendances.length);
+
+    // Diagnostic improvement: how much of the cohort has been measured twice.
+    // Without an endline there is no improvement to speak of.
+    const withEndline = memberships.filter((row) => row.endlineCompleted).length;
+    const withBaseline = memberships.filter((row) => row.baselineCompleted).length;
+
+    // Until a baseline exists there is no improvement to measure against.
+    const diagnostic =
+      !enrolled || !withBaseline
+        ? null
+        : Math.round((withEndline / enrolled) * 100);
+
+    // KPI achievement: indicators at or above target, of those with a target.
+    const targeted = snapshot.indicators.filter(
+      (row) => row.target !== null && row.target !== undefined && row.target !== "",
+    );
+
+    const achieved = targeted.filter(
+      (row) => Number(row.current) >= Number(row.target),
+    ).length;
+
+    const kpiAchievement = targeted.length
+      ? Math.round((achieved / targeted.length) * 100)
+      : null;
+
+    const awaitingReview = snapshot.reporting.submitted - snapshot.reporting.verified;
+    const milestonesAwaiting = milestones.filter(
+      (row) => row.verificationRequested && !row.disbursed,
+    ).length;
+
+    const pendingApprovals = awaitingReview + milestonesAwaiting + evidencePending;
+
+    // Enterprises needing a look: a risk flag, or an overdue report of their
+    // own. Named, because "3 need intervention" is not actionable.
+    const riskBusinesses = new Set(risks.map((row) => row.businessId));
+
+    const needIntervention = businesses
+      .filter((row) => riskBusinesses.has(row.id))
+      .map((row) => {
+        const theirs = risks.filter((flag) => flag.businessId === row.id);
+        return {
+          name: row.name,
+          level: theirs.some((flag) => flag.riskLevel === "critical")
+            ? "critical"
+            : "attention",
+          reasons: [
+            ...new Set(theirs.flatMap((flag) => (Array.isArray(flag.reasons) ? flag.reasons : []))),
+          ].slice(0, 3),
+        };
+      });
+
+    const lights = {
+      cohortProgress: upIsGood(cohortProgress, THRESHOLDS.cohortProgress),
+      attendance: upIsGood(attendance, THRESHOLDS.attendance),
+      diagnostic: upIsGood(diagnostic, THRESHOLDS.diagnostic),
+      kpiAchievement: upIsGood(kpiAchievement, THRESHOLDS.kpiAchievement),
+      budget: budgetLight(snapshot.budget.utilisation),
+      overdueReports: downIsGood(snapshot.reporting.outstanding, THRESHOLDS.overdueReports),
+      overdueActivities: downIsGood(overdueActivities, THRESHOLDS.overdueActivities),
+      pendingApprovals: downIsGood(pendingApprovals, THRESHOLDS.pendingApprovals),
+      risks: downIsGood(risks.length, THRESHOLDS.risks),
+    };
+
+    successResponse(res, {
+      program: {
+        uuid: program.uuid,
+        title: program.title,
+        status: program.status,
+        startDate: program.startDate,
+        endDate: program.endDate,
+      },
+
+      overall: overallOf(Object.values(lights)),
+      lights,
+      thresholds: THRESHOLDS,
+
+      measures: {
+        cohortProgress,
+        attendance,
+        diagnostic,
+        kpiAchievement,
+        budgetUtilisation: snapshot.budget.utilisation,
+        overdueReports: snapshot.reporting.outstanding,
+        overdueActivities,
+        pendingApprovals,
+        openRisks: risks.length,
+      },
+
+      cohort: {
+        enrolled,
+        active: snapshot.participants.active,
+        completed: snapshot.participants.completed,
+        reached: snapshot.participants.reached,
+      },
+
+      activities: {
+        completed: snapshot.activities.completed,
+        total: snapshot.activities.total,
+        upcoming: upcoming.map((row) => ({
+          uuid: row.uuid,
+          name: row.name,
+          activityType: row.activityType,
+          when: row.dueDate || row.activityDate,
+        })),
+      },
+
+      milestones: {
+        total: milestones.length,
+        disbursed: milestones.filter((row) => row.disbursed).length,
+        awaitingReview: milestonesAwaiting,
+      },
+
+      finance: {
+        grantsDisbursed: snapshot.grants.disbursed,
+        grantsCommitted: snapshot.grants.committed,
+        capitalFacilitated: snapshot.capital.raised,
+        budgetPlanned: snapshot.budget.planned,
+        budgetSpent: snapshot.budget.spent,
+      },
+
+      approvals: {
+        reportsAwaitingReview: awaitingReview,
+        milestonesAwaitingReview: milestonesAwaiting,
+        evidencePending,
+      },
+
+      indicators: snapshot.indicators,
+      needIntervention,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------------ grant recipients
+//
+// Not every startup on a programme gets a grant. The Program Lead decides who
+// does, which is where the grant process now starts - it used to begin with
+// the Finance Officer picking startups in Grant Management.
+//
+// The roster is stored the way the existing grant tracker already reads it: a
+// JSON line on the linked grant Program behind __TRACKER_STARTUPS__. Writing
+// the established format rather than a new table is deliberate - milestones,
+// tranche disbursement, the BDA tracker and the startup's own Grant
+// Management view all read that marker, and moving the storage would have
+// meant rewriting every one of them at once.
+
+const STARTUPS_MARKER = "__TRACKER_STARTUPS__:";
+const CATEGORIES_MARKER = "__TRACKER_CATEGORIES__:";
+const COHORT_MARKER = "__TRACKER_COHORT__:";
+const BDAS_MARKER = "__TRACKER_BDAS__:";
+
+const parseMarker = (text, marker) => {
+  const raw = String(text || "");
+  const idx = raw.lastIndexOf(marker);
+  if (idx === -1) return [];
+  const line = raw.slice(idx + marker.length).split("\n")[0].trim();
+  try {
+    const value = JSON.parse(line);
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+};
+
+// The human half of the description, with every marker line removed.
+const cleanDescription = (text) =>
+  String(text || "")
+    .split("\n")
+    .filter(
+      (line) =>
+        ![STARTUPS_MARKER, CATEGORIES_MARKER, COHORT_MARKER, BDAS_MARKER].some(
+          (marker) => line.trimStart().startsWith(marker),
+        ),
+    )
+    .join("\n")
+    .trim();
+
+const buildDescription = (description, categories, startups, cohortUuid, bdas) => {
+  let out =
+    `${cleanDescription(description)}\n\n` +
+    `${STARTUPS_MARKER}${JSON.stringify(startups || [])}\n` +
+    `${CATEGORIES_MARKER}${JSON.stringify(categories || [])}`;
+
+  if (cohortUuid) out += `\n${COHORT_MARKER}${JSON.stringify([cohortUuid])}`;
+  if (bdas && bdas.length) out += `\n${BDAS_MARKER}${JSON.stringify(bdas)}`;
+
+  return out;
+};
+
+// The grant programme that tracks this cohort.
+//
+// New ones carry a cohort link marker. The ones already in the database do
+// not — they predate that link and are typed "program", not "grant" — so a
+// marker-only lookup would miss them, and the first save would open a second
+// grant programme beside the first, orphaning every recipient already
+// recorded against it. Those are matched on title instead and adopted: the
+// link is written on that first save, so the match is exact from then on.
+const grantProgramFor = async (program) => {
+  const tracked = await Program.findAll({
+    where: { description: { [Op.like]: `%${STARTUPS_MARKER}%` } },
+  });
+
+  const linked = tracked.find((row) =>
+    parseMarker(row.description, COHORT_MARKER).includes(program.uuid),
+  );
+
+  if (linked) return linked;
+
+  // Only ever adopt one that no other cohort has claimed, so two cohorts of
+  // the same name cannot end up fighting over a single roster.
+  const title = String(program.title || "").trim().toLowerCase();
+
+  return (
+    tracked.find(
+      (row) =>
+        String(row.title || "").trim().toLowerCase() === title &&
+        parseMarker(row.description, COHORT_MARKER).length === 0,
+    ) || null
+  );
+};
+
+const getGrantRecipients = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    // Everyone on the programme is a candidate; the lead picks from them.
+    const memberships = await CohortMembership.findAll({
+      where: { cohortProgramId: program.id },
+      include: [
+        {
+          model: Business,
+          required: true,
+          attributes: ["id", "uuid", "name", "location", "userId"],
+          include: [{ model: BusinessSector, attributes: ["name"] }],
+        },
+      ],
+    });
+
+    const grantProgram = await grantProgramFor(program);
+    const recipients = grantProgram
+      ? parseMarker(grantProgram.description, STARTUPS_MARKER)
+      : [];
+
+    const byBusiness = new Map(
+      recipients
+        .filter((row) => row && row.businessUuid)
+        .map((row) => [row.businessUuid, row]),
+    );
+
+    // The grant detail page is addressed by the entrepreneur behind the
+    // business, so the owning account is resolved here — the lead should not
+    // have to look it up to open a recipient's grant.
+    const ownerIds = [
+      ...new Set(
+        memberships
+          .map((row) => row.Business && row.Business.userId)
+          .filter(Boolean),
+      ),
+    ];
+
+    const owners = ownerIds.length
+      ? await User.findAll({
+          where: { id: { [Op.in]: ownerIds } },
+          attributes: ["id", "uuid"],
+          raw: true,
+        })
+      : [];
+
+    const ownerUuid = new Map(owners.map((row) => [row.id, row.uuid]));
+
+    const candidates = memberships
+      .filter((row) => row.Business)
+      .map((row) => {
+        const held = byBusiness.get(row.Business.uuid) || null;
+
+        return {
+          businessUuid: row.Business.uuid,
+          // Falls back to whatever the roster already recorded, for a startup
+          // whose owner account has since been removed.
+          entreprenuerUuid:
+            ownerUuid.get(row.Business.userId) || held?.entreprenuerUuid || null,
+          name: row.Business.name,
+          location: row.Business.location,
+          sector: row.Business.BusinessSector?.name || null,
+          isRecipient: !!held,
+          grantUsd: held ? Number(held.grantUsd || 0) : 0,
+          grantPurpose: held ? held.grantPurpose || "" : "",
+          // Read-only here: disbursement is the Finance Officer's step, and a
+          // lead editing the roster must never appear to undo it.
+          disbursed: held ? !!held.disbursed : false,
+          disbursedAmount: held ? Number(held.disbursedAmount || 0) : 0,
+          utilized: held ? Number(held.utilized || 0) : 0,
+        };
+      });
+
+    successResponse(res, {
+      program: { uuid: program.uuid, title: program.title },
+      grantProgram: grantProgram
+        ? { uuid: grantProgram.uuid, title: grantProgram.title }
+        : null,
+      canEdit: await canAccessCohortProgram(req, program),
+      summary: {
+        onProgramme: candidates.length,
+        recipients: candidates.filter((row) => row.isRecipient).length,
+        committed: candidates.reduce(
+          (total, row) => total + (row.isRecipient ? row.grantUsd : 0),
+          0,
+        ),
+        disbursed: candidates.reduce(
+          (total, row) => total + (row.disbursed ? row.disbursedAmount || row.grantUsd : 0),
+          0,
+        ),
+      },
+      count: candidates.length,
+      data: candidates,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Replace the grant roster with exactly the startups named.
+//
+// Existing members are carried over whole and only their grant figure and
+// purpose updated: disbursement, utilisation, tranches and the assigned BDA
+// live on those same objects, and rebuilding them from scratch would erase a
+// disbursement the Finance Officer had already recorded.
+const setGrantRecipients = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const wanted = Array.isArray(req.body.recipients) ? req.body.recipients : null;
+
+    if (!wanted) {
+      return res
+        .status(400)
+        .json({ status: false, message: "recipients must be an array" });
+    }
+
+    const memberships = await CohortMembership.findAll({
+      where: { cohortProgramId: program.id },
+      include: [
+        {
+          model: Business,
+          required: true,
+          attributes: ["id", "uuid", "name", "userId"],
+          include: [{ model: BusinessSector, attributes: ["name"] }],
+        },
+      ],
+    });
+
+    const onProgramme = new Map(
+      memberships.filter((row) => row.Business).map((row) => [row.Business.uuid, row]),
+    );
+
+    // A startup that is not on the programme cannot be given its grant.
+    const stray = wanted.find((row) => !onProgramme.has(row.businessUuid));
+    if (stray) {
+      return res.status(400).json({
+        status: false,
+        message: "One of those startups is not on this program",
+      });
+    }
+
+    let grantProgram = await grantProgramFor(program);
+
+    // The first time a lead awards a grant on a programme there is nothing to
+    // track against yet, so the grant programme is opened here rather than
+    // waiting on the Finance Officer to create it.
+    if (!grantProgram) {
+      grantProgram = await Program.create({
+        title: program.title,
+        // Both are NOT NULL on this legacy table.
+        programCategory: program.category || "Grant",
+        image: program.image || "/images/business-class-hero.svg",
+        description: buildDescription(
+          `Grant tracking for ${program.title}.`,
+          [],
+          [],
+          program.uuid,
+          [],
+        ),
+        type: "grant",
+        startDate: program.startDate || null,
+        endDate: program.endDate || null,
+        image: program.image || null,
+      });
+    }
+
+    const existing = parseMarker(grantProgram.description, STARTUPS_MARKER);
+    const byBusiness = new Map(
+      existing.filter((row) => row && row.businessUuid).map((row) => [row.businessUuid, row]),
+    );
+
+    const next = wanted.map((row) => {
+      const membership = onProgramme.get(row.businessUuid);
+      const business = membership.Business;
+      const held = byBusiness.get(row.businessUuid);
+
+      // Everything already recorded against this startup is preserved; only
+      // what the lead controls is written.
+      return {
+        ...(held || {
+          entreprenuerUuid: null,
+          businessUuid: business.uuid,
+          disbursedAmount: 0,
+          utilized: 0,
+          reportDate: null,
+          disbursed: false,
+          overdueReports: 0,
+        }),
+        businessUuid: business.uuid,
+        name: business.name,
+        sector: business.BusinessSector?.name || held?.sector || null,
+        grantUsd: Number(row.grantUsd || 0),
+        grantPurpose: String(row.grantPurpose || ""),
+      };
+    });
+
+    // Roster entries for startups that are not on this programme's current
+    // membership are carried through untouched. They were put there by
+    // someone — a startup that has since left, or one added directly in Grant
+    // Management — and a lead editing their own selection must not silently
+    // delete a record they cannot even see on this screen.
+    const chosen = new Set(next.map((row) => row.businessUuid));
+
+    const untouched = existing.filter(
+      (row) =>
+        row &&
+        row.businessUuid &&
+        !chosen.has(row.businessUuid) &&
+        !onProgramme.has(row.businessUuid),
+    );
+
+    await grantProgram.update({
+      description: buildDescription(
+        grantProgram.description,
+        parseMarker(grantProgram.description, CATEGORIES_MARKER),
+        [...next, ...untouched],
+        program.uuid,
+        parseMarker(grantProgram.description, BDAS_MARKER),
+      ),
+    });
+
+    successResponse(res, {
+      grantProgramUuid: grantProgram.uuid,
+      recipients: next.length,
+      committed: next.reduce((total, row) => total + Number(row.grantUsd || 0), 0),
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+
+// ------------------------------------------------------------------ workplan
+//
+// The programme workplan: outputs, the activities that deliver each, and a
+// month-by-week grid showing when each runs.
+//
+// The grid columns are computed here rather than in the page, so the server
+// decides once what "week 2 of February" means and every reader — the screen,
+// a future export, a report — agrees.
+
+const DAY = 24 * 60 * 60 * 1000;
+
+const asDate = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const iso = (date) => date.toISOString().slice(0, 10);
+
+// Month columns, each split into the weeks that start within it. A week is a
+// calendar week beginning Monday, which is how a plan is read aloud.
+const buildColumns = (from, to) => {
+  const months = [];
+  if (!from || !to || from > to) return months;
+
+  // Back up to the Monday on or before the start, so the first cell is a whole
+  // week rather than a stub.
+  const cursor = new Date(from);
+  cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
+
+  let guard = 0;
+
+  while (cursor <= to && guard < 520) {
+    const weekStart = new Date(cursor);
+    const weekEnd = new Date(cursor.getTime() + 6 * DAY);
+
+    const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
+    let month = months[months.length - 1];
+
+    if (!month || month.key !== key) {
+      month = {
+        key,
+        label: weekStart.toLocaleDateString("en-GB", { month: "long" }),
+        year: weekStart.getFullYear(),
+        weeks: [],
+      };
+      months.push(month);
+    }
+
+    month.weeks.push({ start: iso(weekStart), end: iso(weekEnd) });
+
+    cursor.setDate(cursor.getDate() + 7);
+    guard += 1;
+  }
+
+  return months;
+};
+
+const getProgramWorkplan = async (req, res) => {
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+    });
+
+    if (!program) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    const oversees =
+      (await canAccessCohortProgram(req, program)) ||
+      ["ME", "Finance"].includes(req.user.role);
+
+    if (!oversees) {
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const outputs = await ProgramWorkplanOutput.findAll({
+      where: { cohortProgramId: program.id },
+      include: [
+        {
+          model: ProgramWorkplanActivity,
+          as: "activities",
+          include: [{ model: User, as: "owner", attributes: ["uuid", "name"] }],
+        },
+      ],
+      order: [
+        ["position", "ASC"],
+        [{ model: ProgramWorkplanActivity, as: "activities" }, "position", "ASC"],
+      ],
+    });
+
+    const data = outputs.map((output) => {
+      const row = output.toJSON();
+      return {
+        uuid: row.uuid,
+        title: row.title,
+        description: row.description,
+        activities: (row.activities || []).map((activity) => ({
+          uuid: activity.uuid,
+          title: activity.title,
+          startDate: activity.startDate,
+          endDate: activity.endDate,
+          status: activity.status,
+          owner: activity.owner
+            ? { uuid: activity.owner.uuid, name: activity.owner.name }
+            : null,
+        })),
+      };
+    });
+
+    // The grid spans whatever the plan actually covers, falling back to the
+    // programme's own dates so an empty plan still opens on a sensible range.
+    const dates = data
+      .flatMap((output) => output.activities)
+      .flatMap((activity) => [asDate(activity.startDate), asDate(activity.endDate)])
+      .filter(Boolean);
+
+    const from =
+      dates.length > 0
+        ? new Date(Math.min(...dates.map((d) => d.getTime())))
+        : asDate(program.startDate) || new Date();
+
+    const to =
+      dates.length > 0
+        ? new Date(Math.max(...dates.map((d) => d.getTime())))
+        : asDate(program.endDate) ||
+          new Date(from.getTime() + 90 * DAY);
+
+    successResponse(res, {
+      program: {
+        uuid: program.uuid,
+        title: program.title,
+        startDate: program.startDate,
+        endDate: program.endDate,
+      },
+      statuses: ProgramWorkplanActivity.STATUSES,
+      canEdit: await canAccessCohortProgram(req, program),
+      months: buildColumns(from, to),
+      owners: await User.findAll({
+        where: { role: { [Op.in]: ["Admin", "BDA", "Mentor", "Finance", "ME"] } },
+        attributes: ["uuid", "name", "role"],
+        order: [["name", "ASC"]],
+      }),
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+// Replace the whole plan with what was sent.
+//
+// A workplan is edited as one document — rows reordered, activities moved
+// between outputs, several dates nudged at once — so saving it whole is what
+// the editing actually does. Sent as one transaction: a half-written plan
+// would be worse than none.
+const saveProgramWorkplan = async (req, res) => {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const program = await CohortProgram.findOne({
+      where: { uuid: req.params.uuid, archivedAt: null },
+      transaction,
+    });
+
+    if (!program) {
+      await transaction.rollback();
+      return res
+        .status(404)
+        .json({ status: false, message: "Program not found" });
+    }
+
+    if (!(await canAccessCohortProgram(req, program))) {
+      await transaction.rollback();
+      return res
+        .status(403)
+        .json({ status: false, message: "You are not assigned to this program" });
+    }
+
+    const outputs = Array.isArray(req.body.outputs) ? req.body.outputs : null;
+
+    if (!outputs) {
+      await transaction.rollback();
+      return res
+        .status(400)
+        .json({ status: false, message: "outputs must be an array" });
+    }
+
+    for (const output of outputs) {
+      if (!String(output.title || "").trim()) {
+        await transaction.rollback();
+        return res
+          .status(400)
+          .json({ status: false, message: "Every output needs a title" });
+      }
+
+      for (const activity of output.activities || []) {
+        if (!String(activity.title || "").trim()) {
+          await transaction.rollback();
+          return res
+            .status(400)
+            .json({ status: false, message: "Every activity needs a title" });
+        }
+
+        if (
+          activity.status &&
+          !ProgramWorkplanActivity.STATUSES.includes(activity.status)
+        ) {
+          await transaction.rollback();
+          return res.status(400).json({
+            status: false,
+            message:
+              "Status must be one of " +
+              ProgramWorkplanActivity.STATUSES.join(", "),
+          });
+        }
+
+        const start = asDate(activity.startDate);
+        const end = asDate(activity.endDate);
+
+        if (start && end && start > end) {
+          await transaction.rollback();
+          return res.status(400).json({
+            status: false,
+            message: `"${activity.title}" cannot end before it starts`,
+          });
+        }
+      }
+    }
+
+    // Owners arrive as user uuids; the column holds the id.
+    const ownerUuids = [
+      ...new Set(
+        outputs
+          .flatMap((output) => output.activities || [])
+          .map((activity) => activity.ownerUuid)
+          .filter(Boolean),
+      ),
+    ];
+
+    const owners = ownerUuids.length
+      ? await User.findAll({
+          where: { uuid: { [Op.in]: ownerUuids } },
+          attributes: ["id", "uuid"],
+          raw: true,
+          transaction,
+        })
+      : [];
+
+    const ownerId = new Map(owners.map((row) => [row.uuid, row.id]));
+
+    // Rewritten wholesale: the activities cascade with their outputs.
+    await ProgramWorkplanOutput.destroy({
+      where: { cohortProgramId: program.id },
+      transaction,
+    });
+
+    for (const [index, output] of outputs.entries()) {
+      const created = await ProgramWorkplanOutput.create(
+        {
+          cohortProgramId: program.id,
+          title: String(output.title).trim(),
+          description: output.description || null,
+          position: index,
+        },
+        { transaction },
+      );
+
+      const activities = Array.isArray(output.activities)
+        ? output.activities
+        : [];
+
+      for (const [order, activity] of activities.entries()) {
+        await ProgramWorkplanActivity.create(
+          {
+            outputId: created.id,
+            title: String(activity.title).trim(),
+            startDate: activity.startDate || null,
+            endDate: activity.endDate || null,
+            ownerId: ownerId.get(activity.ownerUuid) || null,
+            status: activity.status || "planned",
+            position: order,
+          },
+          { transaction },
+        );
+      }
+    }
+
+    await transaction.commit();
+
+    successResponse(res, {
+      outputs: outputs.length,
+      activities: outputs.reduce(
+        (total, output) => total + (output.activities || []).length,
+        0,
+      ),
+    });
+  } catch (error) {
+    await transaction.rollback();
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
+  getProgramWorkplan,
+  saveProgramWorkplan,
+  getGrantRecipients,
+  setGrantRecipients,
+  programOverview,
   composeProgramReport,
   getProgramReports,
   saveProgramReport,
@@ -3398,6 +4669,8 @@ module.exports = {
   saveProgramDocument,
   updateProgramDocument,
   archiveProgramDocument,
+  saveProgramDocumentFolder,
+  deleteProgramDocumentFolder,
   getCohortCoaching,
   setCohortCoaching,
   getCohortCalendar,
