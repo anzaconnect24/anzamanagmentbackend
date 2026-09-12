@@ -15,6 +15,28 @@ module.exports = (sequelize, DataTypes) => {
         as: "comments",
         onDelete: "cascade",
       });
+
+      // A repost is a post pointing at another, so it appears in the feed
+      // under the name of whoever reshared it.
+      FeedPost.belongsTo(models.FeedPost, {
+        foreignKey: "repostOfId",
+        as: "repostOf",
+      });
+      FeedPost.hasMany(models.FeedPost, {
+        foreignKey: "repostOfId",
+        as: "reposts",
+      });
+
+      FeedPost.hasMany(models.FeedSave, {
+        foreignKey: "postId",
+        as: "saves",
+        onDelete: "cascade",
+      });
+      FeedPost.hasMany(models.FeedView, {
+        foreignKey: "postId",
+        as: "views",
+        onDelete: "cascade",
+      });
     }
   }
 
@@ -27,6 +49,7 @@ module.exports = (sequelize, DataTypes) => {
         unique: true,
       },
       authorId: { type: DataTypes.INTEGER, allowNull: false },
+      repostOfId: DataTypes.INTEGER,
       title: DataTypes.STRING,
       body: { type: DataTypes.TEXT, allowNull: false },
       imageUrl: DataTypes.TEXT,

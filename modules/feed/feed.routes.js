@@ -6,6 +6,8 @@ const {
   createPost,
   removePost,
   reactToPost,
+  repostPost,
+  savePost,
   getComments,
   createComment,
   removeComment,
@@ -30,6 +32,10 @@ router.delete("/:uuid", validateJWT, removePost);
 
 // Like, dislike, or take it back — all one call.
 router.put("/:uuid/reaction", validateJWT, reactToPost);
+
+// Reshare a post, or save it for later — both toggle.
+router.post("/:uuid/repost", validateJWT, repostPost);
+router.put("/:uuid/save", validateJWT, savePost);
 
 router.get("/:uuid/comments", validateJWT, getComments);
 router.post("/:uuid/comments", validateJWT, createComment);

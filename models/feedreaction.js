@@ -1,8 +1,8 @@
 "use strict";
 const { Model } = require("sequelize");
 
-// One person's reaction to one post: 1 for a like, -1 for a dislike.
-// Taking it back deletes the row.
+// One person's reaction to one post, held by name. Taking it back deletes
+// the row, so "no opinion" is the absence of a record rather than a value.
 module.exports = (sequelize, DataTypes) => {
   class FeedReaction extends Model {
     static associate(models) {
@@ -17,8 +17,15 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  FeedReaction.LIKE = 1;
-  FeedReaction.DISLIKE = -1;
+  // What a reader can say about a post without writing a comment. Ordered as
+  // the page shows them: the two thumbs first, the rest behind the picker.
+  FeedReaction.KINDS = [
+    "like",
+    "dislike",
+    "love",
+    "celebrate",
+    "insightful",
+  ];
 
   FeedReaction.init(
     {
@@ -30,7 +37,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       postId: { type: DataTypes.INTEGER, allowNull: false },
       userId: { type: DataTypes.INTEGER, allowNull: false },
-      value: { type: DataTypes.INTEGER, allowNull: false },
+      kind: { type: DataTypes.STRING, allowNull: false },
     },
     {
       sequelize,

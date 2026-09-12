@@ -18,6 +18,7 @@ const ProgramRoutes = require("./modules/program/program.routes");
 const ProgramApplicationRoutes = require("./modules/programApplication/programApplication.routes");
 const CohortRoutes = require("./modules/cohort/cohort.routes");
 const FeedRoutes = require("./modules/feed/feed.routes");
+const CalendarRoutes = require("./modules/calendar/calendar.routes");
 const SurveyRoutes = require("./modules/survey/survey.routes");
 const MeRoutes = require("./modules/me/me.routes");
 const LessonRoutes = require("./modules/lesson/lesson.routes");
@@ -193,6 +194,8 @@ app.use("/program-applications", ProgramApplicationRoutes);
 app.use("/cohort-programs", CohortRoutes);
 // The live feed: one board for every signed-in user, no role gate.
 app.use("/feed", FeedRoutes);
+// Everyone's calendar: published events, plus private reminders.
+app.use("/calendar", CalendarRoutes);
 app.use("/surveys", SurveyRoutes);
 app.use("/me", MeRoutes);
 app.use("/learning", LessonRoutes);
