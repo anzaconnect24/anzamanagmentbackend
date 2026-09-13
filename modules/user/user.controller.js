@@ -18,6 +18,7 @@ const getUrl = require("../../utils/cloudinary_upload");
 
 const { generateJwtTokens } = require("../../utils/generateJwtTokens");
 const { successResponse, errorResponse } = require("../../utils/responses");
+const { maskContact, maskContacts } = require("../../utils/contact_privacy");
 const { logLogin } = require("../../utils/activity_logger");
 const bcrypt = require("bcrypt");
 const { Op, where, Sequelize } = require("sequelize");
@@ -158,9 +159,9 @@ const pushSMS = async (req, res) => {
 const PUBLIC_SIGNUP_ROLES = ["Enterprenuer", "Investor", "Mentor"];
 
 // Internal staff accounts - Business Development Advisor, Finance Officer,
-// M&E Officer and Admin - are never self-registered. An Admin creates them
-// through createInternalUser below.
-const INTERNAL_ROLES = ["BDA", "Finance", "ME", "Admin"];
+// M&E Officer, Capital Facilitation Manager ("CFM") and Admin - are never
+// self-registered. An Admin creates them through createInternalUser below.
+const INTERNAL_ROLES = ["BDA", "Finance", "ME", "CFM", "Admin"];
 
 const registerUser = async (req, res) => {
   try {
@@ -553,7 +554,8 @@ const getInvestors = async (req, res) => {
     });
     const totalPages =
       count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);
-    successResponse(res, { count, data: rows, page, totalPages });
+    // A startup sees an investor's contacts only after an approved introduction.
+    successResponse(res, { count, data: await maskContacts(req.user, rows, "Investor"), page, totalPages });
   } catch (error) {
     errorResponse(res, error);
   }
@@ -797,7 +799,8 @@ const getEnterprenuers = async (req, res) => {
         : parseInt(response.count / req.limit);
     successResponse(res, {
       count: response.count,
-      data: response.rows,
+      // An investor sees a startup's contacts only after an approved introduction.
+      data: await maskContacts(req.user, response.rows, "Enterprenuer"),
       page: req.page,
       totalPages,
     });
@@ -1032,7 +1035,7 @@ const getUserDetails = async (req, res) => {
         },
       ],
     });
-    successResponse(res, user);
+    successResponse(res, await maskContact(req.user, user));
   } catch (error) {
     errorResponse(res, error);
   }
@@ -1053,7 +1056,7 @@ const getUserBusiness = async (req, res) => {
         },
       ],
     });
-    successResponse(res, user);
+    successResponse(res, await maskContact(req.user, user));
   } catch (error) {
     errorResponse(res, error);
   }

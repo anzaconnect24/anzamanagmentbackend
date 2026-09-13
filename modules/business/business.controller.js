@@ -437,10 +437,13 @@ const getWaitingBusinesses = async (req, res) => {
       where: {
         status: "waiting",
       },
+      // An application without a sector still needs a decision, so the sector
+      // is optional here.
       include: [
         { model: User, required: true },
-        { model: BusinessSector, required: true },
+        { model: BusinessSector, required: false },
       ],
+      distinct: true,
     });
     const totalPages =
       count % limit > 0 ? parseInt(count / limit) + 1 : parseInt(count / limit);

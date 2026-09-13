@@ -30,7 +30,8 @@
     "test:me-integration": "node modules/me/me.integration.test.js",
     "seed:crat-catalog": "node scripts/seed_crat_catalog.js",
     "test:tracker-rbac": "bash scripts/tracker_rbac_smoke.sh",
-    "seed:programs": "node scripts/seed_programs.js"
+    "seed:programs": "node scripts/seed_programs.js",
+    "backfill:capital": "node scripts/backfill_capital.js"
   },
   "devDependencies": {
     "swagger-autogen": "^2.23.7"

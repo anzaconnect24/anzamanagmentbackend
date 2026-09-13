@@ -11,4 +11,4 @@ build
 package-lock.json
 
 # Google OAuth credentials - sensitive
-client_secret_*.json
+client_secret_*.jsonprivate_files/

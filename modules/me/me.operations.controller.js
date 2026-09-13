@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const {
-  User, Business, CohortProgram, CohortMembership, CohortProgramLead, MeAssessment, MePeriodicReport,
+  User, Business, BusinessSector, CohortProgram, CohortMembership, CohortProgramLead, MeAssessment, MePeriodicReport,
   MeBusinessMetric, MeEvidence, MeDataQualityFlag, MeAssessmentTemplate, MeAssessmentQuestion, MeIndicator, MeIndicatorValue, MeEmploymentRecord, MeFundingLinkage, MeImpactRecord, MeActivity, MeRiskFlag, MeGoal, TrackerSession, sequelize,
 } = require("../../models");
 const { successResponse, errorResponse } = require("../../utils/responses");
@@ -38,15 +38,26 @@ const evidenceLinkExists=async(ctx,type,uuid)=>{const t=String(type||"").toLower
 
 exports.portfolioDashboard = async (req, res) => {
   try {
-    const pWhere = { archivedAt: null, ...(req.query.status ? { status: req.query.status } : {}) };
+    // Filters narrow which programmes the dashboard reads: by status, and/or to
+    // one programme by uuid. Both can be combined.
+    const pWhere = {
+      archivedAt: null,
+      ...(req.query.status ? { status: req.query.status } : {}),
+      ...(req.query.program ? { uuid: String(req.query.program) } : {}),
+    };
     const programs = await CohortProgram.findAll({ where: pWhere, attributes: ["id", "uuid", "title", "targetParticipants", "status"], raw: true });
+    // Every live programme, whatever is filtered - the dropdown needs them all,
+    // or choosing one programme would leave nothing else to switch back to.
+    // Read before the empty early return for the same reason.
+    const programmeOptions = await CohortProgram.findAll({ where: { archivedAt: null }, attributes: ["uuid", "title"], order: [["title", "ASC"]], raw: true });
     const ids = programs.map((x) => x.id);
     const empty = {
       programmes: 0, entrepreneursSupported: 0, activeBusinesses: 0, jobsCreated: 0,
       capitalMobilised: 0, activitiesCompleted: 0, openRisks: 0, programmesData: [],
       gender: { male: 0, female: 0 }, workforce: { permanent: 0, temporary: 0, youth: 0, withDisabilities: 0 },
-      geography: { locations: 0, rows: [] }, dataCollection: { collected: 0, pending: 0, rate: 0 },
+      geography: { locations: 0, rows: [] }, sectors: { count: 0, rows: [] }, dataCollection: { collected: 0, pending: 0, rate: 0 },
       submissionTrend: [], fieldOfficers: { active: 0, rows: [] }, feedback: [],
+      programmeOptions,
     };
     if (!ids.length) return successResponse(res, empty);
 
@@ -74,7 +85,7 @@ exports.portfolioDashboard = async (req, res) => {
       // Workforce composition is self-reported per period, so it is counted
       // from verified rows only - the same bar the headline jobs figure uses.
       MeEmploymentRecord.findAll({ where: verifiedOnly, attributes: ["permanentMale", "permanentFemale", "temporaryMale", "temporaryFemale", "youthEmployees", "employeesWithDisabilities"], raw: true }),
-      businessIds.length ? Business.findAll({ where: { id: { [Op.in]: businessIds } }, attributes: ["id", "name", "location"], raw: true }) : [],
+      businessIds.length ? Business.findAll({ where: { id: { [Op.in]: businessIds } }, attributes: ["id", "name", "location", "businessSectorId"], raw: true }) : [],
       MePeriodicReport.count({ where: { ...inPrograms, status: { [Op.in]: COLLECTED } } }),
       MePeriodicReport.count({ where: { ...inPrograms, status: { [Op.in]: PENDING } } }),
       MePeriodicReport.findAll({ where: { ...inPrograms, createdAt: { [Op.gte]: trendStart } }, attributes: ["createdAt"], raw: true }),
@@ -106,6 +117,35 @@ exports.portfolioDashboard = async (req, res) => {
       rows: [...byLocation.entries()]
         .map(([location, count]) => ({ location, businesses: count }))
         .sort((a, b) => b.businesses - a.businesses),
+    };
+
+    // The sectors those same startups are registered under. Counted from the
+    // one business list the rest of the dashboard uses, so a startup is in
+    // exactly one sector row and the rows add up to entrepreneursSupported.
+    // "Active" follows the membership status, as activeBusinesses does.
+    const activeIds = new Set(memberships.filter((x) => x.status === "active").map((x) => x.businessId));
+    const sectorIds = [...new Set(businesses.map((b) => b.businessSectorId).filter(Boolean))];
+    const sectorNames = new Map(
+      (sectorIds.length
+        ? await BusinessSector.findAll({ where: { id: { [Op.in]: sectorIds } }, attributes: ["id", "name"], raw: true })
+        : []
+      ).map((s) => [s.id, s.name]),
+    );
+    const bySector = new Map();
+    for (const b of businesses) {
+      const name = sectorNames.get(b.businessSectorId) || "Not recorded";
+      const row = bySector.get(name) || { sector: name, businesses: 0, active: 0 };
+      row.businesses += 1;
+      if (activeIds.has(b.id)) row.active += 1;
+      bySector.set(name, row);
+    }
+    const sectors = {
+      count: [...bySector.keys()].filter((k) => k !== "Not recorded").length,
+      // Largest first; an unrecorded sector always sinks to the bottom so it
+      // never reads as the portfolio's leading sector.
+      rows: [...bySector.values()].sort((a, b) =>
+        (a.sector === "Not recorded") - (b.sector === "Not recorded") || b.businesses - a.businesses,
+      ),
     };
 
     const trend = new Map();
@@ -176,6 +216,7 @@ exports.portfolioDashboard = async (req, res) => {
       gender,
       workforce,
       geography,
+      sectors,
       dataCollection: {
         collected,
         pending,
@@ -185,6 +226,7 @@ exports.portfolioDashboard = async (req, res) => {
       fieldOfficers: { active: officerRows.length, rows: officerRows.slice(0, 8) },
       feedback,
       programmesData,
+      programmeOptions,
     });
   } catch (e) {
     errorResponse(res, e);

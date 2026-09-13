@@ -41,6 +41,9 @@ const updateLog = async (req, res) => {
         uuid,
       },
     });
+    if (log && log.module === "capital") {
+      return res.status(403).json({ status: false, message: "Capital facilitation audit records cannot be changed" });
+    }
     //find user
 
     if (status) {
@@ -64,6 +67,12 @@ const deleteLog = async (req, res) => {
         uuid,
       },
     });
+    if (!log) {
+      return res.status(404).json({ status: false, message: "Log not found" });
+    }
+    if (log.module === "capital") {
+      return res.status(403).json({ status: false, message: "Capital facilitation audit records cannot be changed" });
+    }
     const response = await log.destroy();
     successResponse(res, response);
   } catch (error) {

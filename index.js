@@ -64,6 +64,8 @@ const TrackerRoutes = require("./modules/tracker/tracker.routes");
 const CoachingSessionRoutes = require("./modules/coaching-sessions/coachingSession.routes");
 const AiReportRoutes = require("./modules/ai_reports/aiReports.routes");
 const CourseRatingRoutes = require("./modules/course_ratings/courseRatings.routes");
+const CapitalRoutes = require("./modules/capital/capital.routes");
+const { startCapitalSweep } = require("./modules/capital/capital.sweep");
 const {
   usersTag,
   statsTag,
@@ -239,6 +241,9 @@ app.use("/tracker", TrackerRoutes);
 app.use("/coaching-sessions", CoachingSessionRoutes);
 app.use("/ai-reports", AiReportRoutes);
 app.use("/course-ratings", CourseRatingRoutes);
+// Capital facilitation: the Capital Facilitation Manager's deal flow, and the
+// enterprise and capital-provider sides of it.
+app.use("/capital", CapitalRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
@@ -255,6 +260,9 @@ app.get("/", (req, res) => {
 const port = Number(process.env.PORT) || 4000;
 const server = app.listen(port, () => {
   console.log(`Server started at port ${port}`);
+  // Hourly capital reminders: quiet opportunities, overdue due diligence,
+  // upcoming meetings.
+  startCapitalSweep();
 });
 
 server.on("error", (error) => {

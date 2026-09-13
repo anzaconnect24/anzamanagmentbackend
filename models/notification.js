@@ -29,6 +29,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
       },
+      // What the notification is about (e.g. "capital.request.submitted") and
+      // where it opens. Null for the older notifications that had neither.
+      type: {
+        type: DataTypes.STRING(60),
+        allowNull: true,
+      },
+      link: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       sequelize,

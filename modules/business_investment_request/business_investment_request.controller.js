@@ -14,6 +14,7 @@ const {
 } = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
 const { where, Op } = require("sequelize");
+const { mirrorInvestmentRequest } = require("../capital/capital.hooks");
 
 const createBusinessInvestmentRequest = async (req, res) => {
   try {
@@ -51,6 +52,10 @@ const createBusinessInvestmentRequest = async (req, res) => {
       businessId: business.id,
       investorId: investor ? investor.id : null,
     });
+
+    // The request also lands in the Capital Facilitation Manager's review
+    // queue, which is where capital requests are now worked.
+    await mirrorInvestmentRequest(req, response);
 
     // Send notification to investor if specified
     if (investor) {

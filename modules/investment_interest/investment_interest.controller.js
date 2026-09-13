@@ -1,6 +1,7 @@
 const { errorResponse, successResponse } = require("../../utils/responses")
 const {InvestmentInterest,User,Business} = require("../../models");
 const { sendEmail } = require("../../utils/send_email");
+const { mirrorInvestmentInterest } = require("../capital/capital.hooks");
 
 const createInvestmentInterest = async(req,res)=>{
     try {
@@ -20,7 +21,10 @@ const createInvestmentInterest = async(req,res)=>{
                 }
             })
         }
-        var response = await InvestmentInterest.create({businessId:business.id,userId:user.id,from})        
+        var response = await InvestmentInterest.create({businessId:business.id,userId:user.id,from})
+        // Interest goes to Anza's Capital Facilitation Manager for review
+        // before it reaches the startup.
+        await mirrorInvestmentInterest(req,response,business)
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)

@@ -1,6 +1,7 @@
 const { User, Conversation } = require("../../models");
 const { Op } = require("sequelize");
 const { successResponse, errorResponse } = require("../../utils/responses");
+const { directContact } = require("../../utils/capital_gate");
 const createConversation = async (req, res) => {
   try {
     const { lastMessage, to, type } = req.body;
@@ -10,6 +11,15 @@ const createConversation = async (req, res) => {
         uuid: to,
       },
     });
+    if (!toUser) {
+      return res.status(404).json({ status: false, message: "User not found" });
+    }
+    // Startups and investors reach each other through capital facilitation
+    // until Anza has approved an introduction and moved it to direct contact.
+    const gate = await directContact(fromUser, toUser);
+    if (!gate.allowed) {
+      return res.status(403).json({ status: false, message: gate.message });
+    }
     const conversation = await Conversation.findOne({
       where: {
         [Op.and]: [

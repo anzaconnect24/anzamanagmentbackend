@@ -1,5 +1,6 @@
 const {User,Message,Conversation} = require("../../models");
 const { successResponse, errorResponse } = require("../../utils/responses");
+const { directContact } = require("../../utils/capital_gate");
 
 const createMessage = async(req,res)=>{
     try {
@@ -9,9 +10,27 @@ const createMessage = async(req,res)=>{
                 uuid:conversation_uuid
             }
         })
+        if(!conversation){
+            return res.status(404).json({status:false,message:"Conversation not found"})
+        }
+        // A conversation opened before the capital facilitation rule is held to
+        // it too: no startup-investor messages until Anza allows direct contact.
+        const [one,two] = await Promise.all([
+            User.findByPk(conversation.from,{attributes:["id","role"]}),
+            User.findByPk(conversation.to,{attributes:["id","role"]}),
+        ])
+        if(one && two){
+            const gate = await directContact(one,two)
+            if(!gate.allowed){
+                return res.status(403).json({status:false,message:gate.message})
+            }
+        }
         const response = await Message.create({
             message,conversationId:conversation.id})
-        req.io.to(conversation.uuid).emit("newMessage",response)
+        // Socket.io is not attached to requests in this API; emit only if it is.
+        if(req.io){
+            req.io.to(conversation.uuid).emit("newMessage",response)
+        }
         successResponse(res,response)
     } catch (error) {
         errorResponse(res,error)

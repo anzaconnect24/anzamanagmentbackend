@@ -1,8 +1,10 @@
 "use strict";
 const { Model } = require("sequelize");
 
-// One startup's submission for one survey. The unique index on
-// (surveyId, businessId) is what stops a startup answering twice.
+// One submission for one survey. A startup answers once per business - the
+// unique index on (surveyId, businessId) holds that. Anyone who runs no
+// business (a mentor or investor a survey was sent to by name) answers once per
+// account, which the controller checks by userId.
 module.exports = (sequelize, DataTypes) => {
   class SurveyResponse extends Model {
     static associate(models) {
@@ -13,6 +15,12 @@ module.exports = (sequelize, DataTypes) => {
       SurveyResponse.belongsTo(models.Business, {
         foreignKey: "businessId",
         targetKey: "id",
+      });
+      // The account that submitted, which is the only name there is for a
+      // respondent without a business.
+      SurveyResponse.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "respondent",
       });
       SurveyResponse.hasMany(models.SurveyAnswer, {
         foreignKey: "responseId",
