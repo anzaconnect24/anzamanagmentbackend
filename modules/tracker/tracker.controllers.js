@@ -9,6 +9,7 @@ const {
   User,
   Program,
   MentorEntreprenuer,
+  Notification,
 } = require("../../models");
 
 const csvEscape = (value) => {
@@ -61,7 +62,9 @@ const getEntrepreneurEnterpriseByUuid = async (entrepreneurId, enterpriseUuid) =
 const getScopedEnterpriseByUuid = async (req, enterpriseUuid) => {
   const role = req.user?.role;
 
-  if (isFinanceOrAdminRole(role)) {
+  // Every Business Development Advisor reviews every startup's grant, as a
+  // programme lead does, so they reach any enterprise like Finance and Admin.
+  if (isFinanceOrAdminRole(role) || role === "BDA") {
     return TrackerEnterprise.findOne({
       where: { uuid: enterpriseUuid },
     });
@@ -650,21 +653,7 @@ const getMentorEnterpriseDetails = async (req, res) => {
       });
     }
 
-    if (isStaffScopedRole) {
-      const assignment = await MentorEntreprenuer.findOne({
-        where: {
-          mentorId: req.user.id,
-          entreprenuerId: enterprise.entreprenuerId,
-        },
-        attributes: ["id"],
-      });
-      if (!assignment) {
-        return res.status(403).json({
-          status: false,
-          message: "You are not assigned to this entrepreneur",
-        });
-      }
-    }
+    // Any Business Development Advisor may open and review any startup's grant.
 
     const sharedFilter = {
       entreprenuerId: enterprise.entreprenuerId,
@@ -922,7 +911,8 @@ const getTrackerProgramOverview = async (req, res) => {
         },
       ],
     };
-    if (isMentorScopedRole(role)) {
+    // Only a mentor is narrowed to their own startups; every BDA sees them all.
+    if (role === "Mentor") {
       enterpriseWhere.mentorId = mentorId;
     }
 
@@ -1546,6 +1536,38 @@ const createWeeklyLog = async (req, res) => {
   }
 };
 
+// Tell the Business Development Advisors a startup has something to review:
+// a milestone plan submitted or resubmitted, or a report filed against one.
+// Addressed to the BDA role, so it reaches every advisor. A failure here never
+// blocks the startup's own action.
+const notifyBdasOfMilestone = async (milestone, kind) => {
+  try {
+    const [business, enterprise] = await Promise.all([
+      Business.findByPk(milestone.businessId, { attributes: ["name"] }),
+      TrackerEnterprise.findOne({
+        where: { entreprenuerId: milestone.entreprenuerId, businessId: milestone.businessId },
+        attributes: ["uuid"],
+        order: [["updatedAt", "DESC"]],
+      }),
+    ]);
+    const who = business ? business.name : "A startup";
+    const what =
+      kind === "report"
+        ? `filed a report on the milestone "${milestone.title}"`
+        : kind === "revision"
+          ? `resubmitted the milestone plan "${milestone.title}" for review`
+          : `submitted the milestone plan "${milestone.title}" for review`;
+    await Notification.create({
+      to: "BDA",
+      message: `${who} ${what}`,
+      type: `tracker.milestone.${kind}`,
+      link: enterprise ? `/dashboard/mentorTracker/enterprise/${enterprise.uuid}` : "/dashboard/mentorTracker",
+    });
+  } catch (error) {
+    console.error("Failed to notify BDAs of a milestone:", error.message);
+  }
+};
+
 const createMilestone = async (req, res) => {
   try {
     const requester = req.user;
@@ -1675,6 +1697,8 @@ const createMilestone = async (req, res) => {
       disbursed: Boolean(disbursed),
     });
 
+    if (requester.role === "Enterprenuer") await notifyBdasOfMilestone(milestone, "plan");
+
     successResponse(res, milestone);
   } catch (error) {
     errorResponse(res, error);
@@ -1688,7 +1712,10 @@ const listMilestones = async (req, res) => {
     const { entreprenuer_uuid, business_uuid } = req.query;
     const isStaffScopedRole = ["BDA"].includes(role);
 
-    if (["Mentor", "BDA"].includes(role)) {
+    // A mentor sees the milestones they supervise. Every Business Development
+    // Advisor sees every startup's milestones, so a submitted plan reaches them
+    // for review whoever the startup's supervisor is.
+    if (role === "Mentor") {
       where.mentorId = req.user.id;
     } else if (role === "Enterprenuer") {
       where.entreprenuerId = req.user.id;
@@ -1710,21 +1737,7 @@ const listMilestones = async (req, res) => {
       // Staff/Reviewer should see milestones for entrepreneurs assigned to
       // them even if historical milestones were created under a different
       // mentorId. Validate assignment, then scope by entrepreneur.
-      if (isStaffScopedRole) {
-        const assignment = await MentorEntreprenuer.findOne({
-          where: {
-            mentorId: req.user.id,
-            entreprenuerId: entrepreneur.id,
-          },
-          attributes: ["id"],
-        });
-
-        if (!assignment) {
-          return successResponse(res, []);
-        }
-
-        delete where.mentorId;
-      }
+      if (isStaffScopedRole) delete where.mentorId;
 
       where.entreprenuerId = entrepreneur.id;
     }
@@ -1849,6 +1862,7 @@ const submitMilestone = async (req, res) => {
     }
 
     const updated = await milestone.update(payload);
+    await notifyBdasOfMilestone(updated, "report");
 
     successResponse(res, updated);
   } catch (error) {
@@ -2479,6 +2493,9 @@ const reviseMilestone = async (req, res) => {
     }
 
     const updated = await milestone.update(payload);
+    if (["submitted", "resubmitted"].includes(payload.planStatus)) {
+      await notifyBdasOfMilestone(updated, "revision");
+    }
     successResponse(res, updated);
   } catch (error) {
     errorResponse(res, error);

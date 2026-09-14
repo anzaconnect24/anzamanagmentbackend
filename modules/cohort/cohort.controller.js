@@ -4147,6 +4147,21 @@ const getGrantRecipients = async (req, res) => {
 
     const ownerUuid = new Map(owners.map((row) => [row.id, row.uuid]));
 
+    // "Manage grant" opens the recipient's grant workspace - milestones,
+    // activity-level review, reports - which is addressed by its tracker record.
+    const trackers = grantProgram && ownerIds.length
+      ? await TrackerEnterprise.findAll({
+          where: { programId: grantProgram.id, entreprenuerId: { [Op.in]: ownerIds } },
+          attributes: ["uuid", "entreprenuerId"],
+          order: [["updatedAt", "DESC"]],
+          raw: true,
+        })
+      : [];
+    const trackerUuid = new Map();
+    for (const row of trackers) {
+      if (!trackerUuid.has(row.entreprenuerId)) trackerUuid.set(row.entreprenuerId, row.uuid);
+    }
+
     const candidates = memberships
       .filter((row) => row.Business)
       .map((row) => {
@@ -4154,6 +4169,7 @@ const getGrantRecipients = async (req, res) => {
 
         return {
           businessUuid: row.Business.uuid,
+          trackerEnterpriseUuid: trackerUuid.get(row.Business.userId) || null,
           // Falls back to whatever the roster already recorded, for a startup
           // whose owner account has since been removed.
           entreprenuerUuid:

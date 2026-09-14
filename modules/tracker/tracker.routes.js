@@ -92,7 +92,9 @@ router.delete(
 router.get(
   "/enterprises/:uuid",
   validateJWT,
-  requireRoles(["Mentor", "BDA", "Admin", "Finance"]),
+  // The M&E Officer reads a recipient's grant workspace from a programme's
+  // grants page; every change they could make stays behind the other routes.
+  requireRoles(["Mentor", "BDA", "Admin", "Finance", "ME"]),
   getMentorEnterpriseDetails,
 );
 router.patch(
