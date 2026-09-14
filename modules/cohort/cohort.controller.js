@@ -45,7 +45,9 @@ const SEES_ALL_PROGRAMMES = ["Admin", "BDA", "ME"];
 // Running a programme's coaching sessions and milestones is a different
 // question from seeing it: that stays with Admin and whoever is assigned to
 // lead the programme, so a coach cannot act on a programme that is not theirs.
-const canAccessCohortProgram=async(req,program)=>req.user.role==="Admin"||!!(await CohortProgramLead.findOne({where:{cohortProgramId:program.id,userId:req.user.id}}));
+// Every Business Development Advisor works every programme as its lead would;
+// being named lead now decides who is notified, not who may act.
+const canAccessCohortProgram=async(req,program)=>["Admin","BDA"].includes(req.user.role)||!!(await CohortProgramLead.findOne({where:{cohortProgramId:program.id,userId:req.user.id}}));
 
 // Slides read per (startup, module) across a programme's modules. Progress is
 // measured on SlideReader rows, which the slide viewer already writes, so it
@@ -4202,6 +4204,56 @@ const getGrantRecipients = async (req, res) => {
 // purpose updated: disbursement, utilisation, tranches and the assigned BDA
 // live on those same objects, and rebuilding them from scratch would erase a
 // disbursement the Finance Officer had already recorded.
+// A grant recipient reports through the grant tracker: its Grant Management
+// page, milestone reports and tranche schedule all hang off a TrackerEnterprise.
+// Selecting a recipient opens that record once, supervised by the staff member
+// responsible for the startup - its assigned advisor or mentor, the programme's
+// lead, or whoever made the selection - so the startup can submit milestones
+// and reports straight away. An existing record only has its grant updated.
+const ensureGrantTrackers = async ({ program, grantProgram, memberships, recipients, fallbackUserId }) => {
+  const lead = await CohortProgramLead.findOne({
+    where: { cohortProgramId: program.id },
+    attributes: ["userId"],
+    order: [["createdAt", "ASC"]],
+  });
+  const byBusiness = new Map(
+    memberships.filter((row) => row.Business).map((row) => [row.Business.uuid, row]),
+  );
+
+  let opened = 0;
+  for (const recipient of recipients) {
+    const membership = byBusiness.get(recipient.businessUuid);
+    const business = membership && membership.Business;
+    if (!business || !business.userId) continue;
+
+    const existing = await TrackerEnterprise.findOne({
+      where: { entreprenuerId: business.userId, programId: grantProgram.id },
+    });
+    if (existing) {
+      await existing.update({ grantUsd: Number(recipient.grantUsd || 0) });
+      continue;
+    }
+
+    const mentorId =
+      membership.assignedAdvisorId || membership.assignedMentorId || (lead && lead.userId) || fallbackUserId;
+    if (!mentorId) continue;
+
+    await TrackerEnterprise.create({
+      mentorId,
+      entreprenuerId: business.userId,
+      businessId: business.id,
+      programId: grantProgram.id,
+      name: business.name || "Enterprise",
+      category: program.category || grantProgram.programCategory || null,
+      ceSector: recipient.sector || null,
+      district: business.location || null,
+      grantUsd: Number(recipient.grantUsd || 0),
+    });
+    opened += 1;
+  }
+  return opened;
+};
+
 const setGrantRecipients = async (req, res) => {
   try {
     const program = await CohortProgram.findOne({
@@ -4283,6 +4335,16 @@ const setGrantRecipients = async (req, res) => {
       existing.filter((row) => row && row.businessUuid).map((row) => [row.businessUuid, row]),
     );
 
+    // The startup's own Grant Management - the sidebar entry, the route guard
+    // and the milestones page - finds its grant by the founder's account uuid,
+    // so every recipient must carry it. Without it a startup added here could
+    // never see or report on the grant it was given.
+    const founderIds = [...new Set(wanted.map((row) => onProgramme.get(row.businessUuid).Business.userId).filter(Boolean))];
+    const founders = founderIds.length
+      ? await User.findAll({ where: { id: { [Op.in]: founderIds } }, attributes: ["id", "uuid"], raw: true })
+      : [];
+    const founderUuid = new Map(founders.map((row) => [row.id, row.uuid]));
+
     const next = wanted.map((row) => {
       const membership = onProgramme.get(row.businessUuid);
       const business = membership.Business;
@@ -4292,7 +4354,6 @@ const setGrantRecipients = async (req, res) => {
       // what the lead controls is written.
       return {
         ...(held || {
-          entreprenuerUuid: null,
           businessUuid: business.uuid,
           disbursedAmount: 0,
           utilized: 0,
@@ -4300,6 +4361,7 @@ const setGrantRecipients = async (req, res) => {
           disbursed: false,
           overdueReports: 0,
         }),
+        entreprenuerUuid: (held && held.entreprenuerUuid) || founderUuid.get(business.userId) || null,
         businessUuid: business.uuid,
         name: business.name,
         sector: business.BusinessSector?.name || held?.sector || null,
@@ -4333,7 +4395,16 @@ const setGrantRecipients = async (req, res) => {
       ),
     });
 
+    const trackersOpened = await ensureGrantTrackers({
+      program,
+      grantProgram,
+      memberships,
+      recipients: next,
+      fallbackUserId: req.user.id,
+    });
+
     successResponse(res, {
+      trackersOpened,
       grantProgramUuid: grantProgram.uuid,
       recipients: next.length,
       committed: next.reduce((total, row) => total + Number(row.grantUsd || 0), 0),
@@ -4657,6 +4728,7 @@ module.exports = {
   saveProgramWorkplan,
   getGrantRecipients,
   setGrantRecipients,
+  ensureGrantTrackers,
   programOverview,
   composeProgramReport,
   getProgramReports,

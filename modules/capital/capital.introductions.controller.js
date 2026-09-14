@@ -393,11 +393,18 @@ const providerDirectory = async (req, res) => {
     if (req.query.type) where.providerType = req.query.type;
     if (req.query.q) where.name = { [Op.like]: `%${req.query.q}%` };
 
-    const providers = await CapitalProvider.findAll({ where, order: [["name", "ASC"]] });
+    const providers = await CapitalProvider.findAll({
+      where,
+      include: [{ model: User, as: "account", attributes: ["uuid", "image"], required: false }],
+      order: [["name", "ASC"]],
+    });
     successResponse(res, {
       data: providers.map((provider) => {
         const shaped = shapeProvider(provider);
         delete shaped.previousTransactions;
+        // A picture and a link to the public profile are not contact details.
+        shaped.image = provider.account ? provider.account.image : null;
+        shaped.accountUuid = provider.account ? provider.account.uuid : null;
         return shaped;
       }),
     });

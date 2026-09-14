@@ -1604,29 +1604,32 @@ const createMilestone = async (req, res) => {
     } else if (requester.role === "Enterprenuer") {
       entrepreneurId = requester.id;
 
-      const approvedAssignment = await MentorEntreprenuer.findOne({
+      // A startup's milestone belongs to the tracker record its Grant
+      // Management page reads, so that record's supervisor comes first.
+      // Preferring a mentor assignment filed milestones under a different
+      // mentor, and the startup's own page never showed them. The assignment
+      // stays the fallback for a startup that has no tracker record.
+      const trackerEnterprise = await TrackerEnterprise.findOne({
         where: {
           entreprenuerId: entrepreneurId,
-          approved: true,
         },
         attributes: ["mentorId"],
         order: [["updatedAt", "DESC"]],
       });
 
-      if (approvedAssignment?.mentorId) {
-        mentorId = approvedAssignment.mentorId;
-      }
+      mentorId = trackerEnterprise?.mentorId || null;
 
       if (!mentorId) {
-        const trackerEnterprise = await TrackerEnterprise.findOne({
+        const approvedAssignment = await MentorEntreprenuer.findOne({
           where: {
             entreprenuerId: entrepreneurId,
+            approved: true,
           },
           attributes: ["mentorId"],
           order: [["updatedAt", "DESC"]],
         });
 
-        mentorId = trackerEnterprise?.mentorId || null;
+        mentorId = approvedAssignment?.mentorId || null;
       }
 
       if (!mentorId) {

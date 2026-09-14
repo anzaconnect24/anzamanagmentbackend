@@ -44,7 +44,8 @@ const mirrorInvestmentRequest = async (req, investmentRequest, { notifyManager =
   try {
     if (!investmentRequest) return null;
 
-    const existing = await CapitalRequest.findOne({ where: { legacyRequestId: investmentRequest.id } });
+    // A request deleted in capital facilitation was still mirrored; do not bring it back.
+    const existing = await CapitalRequest.findOne({ where: { legacyRequestId: investmentRequest.id }, paranoid: false });
     if (existing) return existing;
 
     const business = await findBusiness(investmentRequest.businessId);

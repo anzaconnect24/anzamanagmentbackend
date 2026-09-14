@@ -14,6 +14,8 @@ const next = async (Model, prefix, transaction) => {
     where: { reference: { [Op.like]: `${stem}%` } },
     attributes: ["reference"],
     order: [["reference", "DESC"]],
+    // A deleted record still owns its number; never hand it out again.
+    paranoid: false,
     transaction,
   });
 

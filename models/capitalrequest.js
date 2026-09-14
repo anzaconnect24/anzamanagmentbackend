@@ -93,8 +93,12 @@ module.exports = (sequelize, DataTypes) => {
       infoRequest: DataTypes.TEXT,
       recommendations: DataTypes.TEXT,
       declineReason: DataTypes.TEXT,
+      deletedById: DataTypes.INTEGER,
+      deleteReason: DataTypes.TEXT,
     },
-    { sequelize, modelName: "CapitalRequest", tableName: "capital_requests" },
+    // Paranoid: a deleted request keeps its row (and deletedAt) for the record,
+    // and every query leaves it out unless it asks for paranoid: false.
+    { sequelize, modelName: "CapitalRequest", tableName: "capital_requests", paranoid: true },
   );
 
   return CapitalRequest;

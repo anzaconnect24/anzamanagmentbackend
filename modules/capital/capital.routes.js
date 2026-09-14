@@ -57,6 +57,7 @@ router.put("/permissions", can("capital.permissions.manage"), reports.setPermiss
 router.get("/requests", can("capital.requests.view"), requests.listRequests);
 router.get("/requests/:uuid", can("capital.requests.view"), requests.getRequest);
 router.patch("/requests/:uuid/review", can("capital.requests.review"), requests.reviewRequest);
+router.delete("/requests/:uuid", can("capital.requests.delete"), requests.deleteRequest);
 // The enterprise to its own request, or a manager to any.
 router.post("/requests/:uuid/documents", file, requests.uploadRequestDocument);
 
@@ -122,6 +123,7 @@ router.get("/my/opportunities", enterprise, opportunities.myOpportunities);
 router.get("/my/requests", enterprise, requests.myRequests);
 router.post("/my/requests", enterprise, requests.createRequest);
 router.patch("/my/requests/:uuid", enterprise, requests.updateMyRequest);
+router.delete("/my/requests/:uuid", enterprise, requests.deleteMyRequest);
 router.get("/my/providers", enterprise, introductions.providerDirectory);
 router.get("/my/introductions", enterprise, introductions.myIntroductions);
 router.post("/my/introductions", enterprise, introductions.requestIntroduction);

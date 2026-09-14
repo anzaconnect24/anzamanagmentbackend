@@ -30,6 +30,12 @@ const {
 const programsFor = async (user) => {
   const ids = new Set();
 
+  // Every Business Development Advisor works every programme, as a lead does.
+  if (user.role === "BDA") {
+    const programs = await CohortProgram.findAll({ where: { archivedAt: null }, attributes: ["id"], raw: true });
+    return programs.map((row) => row.id);
+  }
+
   const leads = await CohortProgramLead.findAll({
     where: { userId: user.id },
     attributes: ["cohortProgramId"],

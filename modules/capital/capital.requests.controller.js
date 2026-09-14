@@ -551,6 +551,118 @@ const uploadRequestDocument = async (req, res) => {
   }
 };
 
+// ---- Deleting a request -----------------------------------------------------
+//
+// Deletion is soft: the request disappears from every list, while its row, its
+// audit trail and its documents stay for the record. A request that has become
+// capital opportunities is never deleted - their history hangs off it - so it
+// is closed instead.
+
+// What an enterprise may still withdraw on its own: nothing Anza has acted on.
+const ENTERPRISE_DELETABLE = ["draft", "submitted", "more_information_required"];
+
+// Returns { introductions, documents } or { code, error }.
+const removeRequest = async (req, request, { reason, by }) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const opportunities = await CapitalOpportunity.count({ where: { capitalRequestId: request.id }, transaction });
+    if (opportunities) {
+      await transaction.rollback();
+      return {
+        code: 409,
+        error: `This request has ${opportunities} capital ${opportunities === 1 ? "opportunity" : "opportunities"}. Close the request instead, so their history is kept.`,
+      };
+    }
+
+    const now = new Date();
+    const [introductions] = await CapitalIntroduction.update(
+      { status: "declined", reviewNote: "The capital request was deleted", reviewedById: req.user.id, reviewedAt: now },
+      { where: { capitalRequestId: request.id, status: { [Op.in]: CapitalIntroduction.OPEN } }, transaction },
+    );
+    const [documents] = await CapitalDocument.update(
+      { deletedAt: now, deletedById: req.user.id },
+      { where: { capitalRequestId: request.id, deletedAt: null }, transaction },
+    );
+
+    await request.update({ deleteReason: reason || null, deletedById: req.user.id }, { transaction });
+    await request.destroy({ transaction });
+
+    // Written in the same transaction: no audit record, no deletion.
+    await audit(req, {
+      action: `Deleted capital request ${request.reference}${by === "enterprise" ? " (withdrawn by the enterprise)" : ""}`,
+      actionKey: "request.deleted",
+      entity: { type: "capital_request", id: request.id, uuid: request.uuid },
+      businessId: request.businessId,
+      oldValue: { status: request.status, amountRequested: request.amountRequested, currency: request.currency },
+      details: { reason: reason || null, introductionsClosed: introductions, documentsRemoved: documents },
+    }, { strict: true, transaction });
+
+    await transaction.commit();
+    return { introductions, documents };
+  } catch (error) {
+    if (!transaction.finished) await transaction.rollback();
+    throw error;
+  }
+};
+
+const deleteRequest = async (req, res) => {
+  try {
+    const reason = String((req.body && req.body.reason) || "").trim();
+    if (!reason) return fail(res, 400, "Give a reason for deleting the capital request");
+
+    const request = await CapitalRequest.findOne({
+      where: { uuid: req.params.uuid },
+      include: [{ model: Business, attributes: ["id", "name", "userId"] }],
+    });
+    if (!request) return fail(res, 404, "Capital request not found");
+
+    const result = await removeRequest(req, request, { reason, by: "manager" });
+    if (result.error) return fail(res, result.code, result.error);
+
+    if (request.Business && request.Business.userId) {
+      await notify({
+        userIds: [request.Business.userId],
+        type: "capital.request.deleted",
+        message: `Anza removed your capital request ${request.reference}: ${reason.slice(0, 160)}`,
+        link: "/dashboard/capital/applications",
+      });
+    }
+
+    successResponse(res, { uuid: request.uuid, deleted: true, ...result });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
+const deleteMyRequest = async (req, res) => {
+  try {
+    const business = await myBusiness(req.user.id);
+    const request = business && (await CapitalRequest.findOne({ where: { uuid: req.params.uuid, businessId: business.id } }));
+    if (!request) return fail(res, 404, "Capital request not found");
+
+    if (!ENTERPRISE_DELETABLE.includes(request.status)) {
+      return fail(res, 409, "Anza is already working on this application. Ask your Capital Facilitation Manager to close it.");
+    }
+
+    const reason = String((req.body && req.body.reason) || "").trim();
+    const result = await removeRequest(req, request, { reason, by: "enterprise" });
+    if (result.error) return fail(res, result.code, result.error);
+
+    if (request.status !== "draft") {
+      await notifyManagers({
+        managerId: request.assignedManagerId,
+        type: "capital.request.withdrawn",
+        message: `${business.name} withdrew capital request ${request.reference}`,
+        link: "/dashboard/capital/requests",
+      });
+    }
+
+    successResponse(res, { uuid: request.uuid, deleted: true, ...result });
+  } catch (error) {
+    errorResponse(res, error);
+  }
+};
+
 module.exports = {
   listRequests,
   getRequest,
@@ -560,4 +672,7 @@ module.exports = {
   createRequest,
   updateMyRequest,
   uploadRequestDocument,
+  ENTERPRISE_DELETABLE,
+  deleteRequest,
+  deleteMyRequest,
 };
