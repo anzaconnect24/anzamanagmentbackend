@@ -65,6 +65,7 @@ const CoachingSessionRoutes = require("./modules/coaching-sessions/coachingSessi
 const AiReportRoutes = require("./modules/ai_reports/aiReports.routes");
 const CourseRatingRoutes = require("./modules/course_ratings/courseRatings.routes");
 const CapitalRoutes = require("./modules/capital/capital.routes");
+const ProgramTargetRoutes = require("./modules/program_target/program_target.routes");
 const { startCapitalSweep } = require("./modules/capital/capital.sweep");
 const {
   usersTag,
@@ -244,6 +245,7 @@ app.use("/course-ratings", CourseRatingRoutes);
 // Capital facilitation: the Capital Facilitation Manager's deal flow, and the
 // enterprise and capital-provider sides of it.
 app.use("/capital", CapitalRoutes);
+app.use("/program-targets", ProgramTargetRoutes);
 
 app.post("/upload-file", upload.single("file"), async (req, res) => {
   try {
